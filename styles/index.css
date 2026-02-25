@@ -28,5 +28,11 @@
 
   body {
     @apply antialiased text-foreground bg-background selection:bg-primary/20;
+    height: 100%;
+  }
+
+  html,
+  #root {
+    height: 100%;
   }
 }
