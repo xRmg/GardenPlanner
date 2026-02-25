@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Settings } from 'lucide-react';
 import { PlantDetailsDialog } from './PlantDetailsDialog';
 import { VirtualBed } from './GardenBedDialog';
+import { cn } from './ui/utils';
 
 export interface Plant {
   id: string;
@@ -160,39 +161,43 @@ export function GardenGrid({
 
   return (
     <>
-      <div className="inline-block bg-card rounded-lg shadow-lg p-6 border border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-foreground">{name}</h3>
+      <div className="inline-block bg-white/80 backdrop-blur-md rounded-[3rem] shadow-xl p-8 border border-white/60 transition-all hover:shadow-2xl animate-in fade-in zoom-in duration-500">
+        <div className="flex items-center justify-between mb-6 px-2">
+          <div className="flex flex-col">
+            <h3 className="text-2xl font-bold text-foreground tracking-tight">{name}</h3>
+            <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-1">{rows} × {cols} Grid • {rows * cols} SQ FT</span>
+          </div>
           {onEdit && (
             <button
               onClick={onEdit}
-              className="p-2 hover:bg-accent rounded transition-colors"
+              className="p-3 bg-primary/5 hover:bg-primary/10 text-primary rounded-2xl transition-all shadow-sm active:scale-90"
               title="Edit garden bed"
             >
-              <Settings className="w-4 h-4 text-primary" />
+              <Settings className="w-5 h-5" />
             </button>
           )}
         </div>
 
-        <div className="inline-block bg-green-200 p-1 rounded">
+        <div className="inline-block bg-emerald-950/5 p-4 rounded-[2.5rem] border border-border/10">
           {/* Virtual bed labels */}
           {virtualBeds && virtualBeds.length > 0 && (
-            <div className="mb-2">
+            <div className="mb-4 flex flex-wrap gap-2 px-1">
               {virtualBeds.map((vb) => (
                 <div
                   key={vb.id}
-                  className="inline-block px-2 py-1 rounded text-xs mr-2 mb-1"
+                  className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-sm"
                   style={{ backgroundColor: vb.color }}
                 >
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/40 mr-2" />
                   {vb.name}
                 </div>
               ))}
             </div>
           )}
 
-          <div className="inline-grid gap-1">
+          <div className="inline-grid gap-2">
             {squares.map((row, rowIndex) => (
-              <div key={rowIndex} className="flex gap-1">
+              <div key={rowIndex} className="flex gap-2">
                 {row.map((square, colIndex) => {
                   const vBed = getVirtualBed(rowIndex, colIndex);
                   const hasThickTop = shouldDrawThickBorder(rowIndex, colIndex, 'top');
@@ -201,40 +206,40 @@ export function GardenGrid({
                   const hasThickRight = shouldDrawThickBorder(rowIndex, colIndex, 'right');
 
                   return (
-                    <div key={colIndex} className="relative group">
+                    <div key={colIndex} className="relative group/square">
                       <button
                         onClick={(e) => handleSquareClick(rowIndex, colIndex, e)}
-                        className="w-16 h-16 rounded relative transition-all hover:scale-105 cursor-pointer"
+                        className={cn(
+                          "w-16 h-16 rounded-2xl relative transition-all hover:scale-105 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
+                          square.plantInstance ? "bg-white/90" : "bg-white/40 hover:bg-white/80"
+                        )}
                         style={{
-                          backgroundColor: square.plantInstance 
-                            ? square.plantInstance.plant.color 
-                            : (vBed?.color || '#ffffff'),
-                          borderTop: hasThickTop ? '3px solid #15803d' : '2px solid #86efac',
-                          borderBottom: hasThickBottom ? '3px solid #15803d' : '2px solid #86efac',
-                          borderLeft: hasThickLeft ? '3px solid #15803d' : '2px solid #86efac',
-                          borderRight: hasThickRight ? '3px solid #15803d' : '2px solid #86efac',
+                          borderTop: hasThickTop ? `4px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
+                          borderBottom: hasThickBottom ? `4px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
+                          borderLeft: hasThickLeft ? `4px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
+                          borderRight: hasThickRight ? `4px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
                         }}
                       >
                         {square.plantInstance ? (
-                          <div className="flex flex-col items-center justify-center h-full relative">
-                            <span className="text-2xl">{square.plantInstance.plant.icon}</span>
-                            <span className="text-xs mt-1 text-gray-700 truncate w-full px-1">
+                          <div className="flex flex-col items-center justify-center h-full relative animate-in zoom-in duration-300">
+                            <span className="text-3xl drop-shadow-sm select-none">{square.plantInstance.plant.icon}</span>
+                            <span className="text-[9px] font-black uppercase text-muted-foreground/60 truncate w-full px-1 text-center mt-1">
                               {square.plantInstance.variety || square.plantInstance.plant.name}
                             </span>
                           </div>
-                        ) : (
-                          <div className="text-gray-400 text-xs">
-                            {selectedPlant ? '+' : ''}
+                        ) : selectedPlant && (
+                          <div className="opacity-0 group-hover/square:opacity-20 flex items-center justify-center">
+                            <span className="text-3xl grayscale select-none">{selectedPlant.icon}</span>
                           </div>
                         )}
                       </button>
                       {square.plantInstance && (
                         <button
                           onClick={(e) => handleRemovePlant(rowIndex, colIndex, e)}
-                          className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          className="absolute -top-1 -right-1 bg-white border border-red-100 text-red-500 rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 hover:bg-red-50 transition-all z-10"
                           title="Remove plant"
                         >
-                          <X className="w-3 h-3 text-white" />
+                          <X className="w-3 h-3" />
                         </button>
                       )}
                     </div>
@@ -243,10 +248,6 @@ export function GardenGrid({
               </div>
             ))}
           </div>
-        </div>
-        
-        <div className="mt-2 text-sm text-muted-foreground">
-          {rows} × {cols} grid ({rows * cols} squares)
         </div>
       </div>
 

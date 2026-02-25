@@ -1,4 +1,4 @@
-import { Calendar, Sprout, CheckCircle2, Droplets, Leaf, Package, Scissors } from 'lucide-react';
+import { Calendar, Sprout, Droplets, Leaf, Package, Scissors } from 'lucide-react';
 import { Plant } from './GardenGrid';
 
 export interface GardenEvent {
@@ -88,123 +88,109 @@ export function EventsBar({ events, suggestions, onCompleteSuggestion }: EventsB
   };
 
   return (
-    <div className="w-80 bg-card border-l border-border flex flex-col">
+    <div className="w-80 bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-white/70 shadow-2xl flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-border bg-primary text-primary-foreground">
-        <h2 className="flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
+      <div className="p-6 pb-4 flex items-center justify-between border-b border-border/10 bg-primary/10">
+        <h2 className="flex items-center gap-3 font-bold text-foreground tracking-tight text-xl">
+          <Calendar className="w-6 h-6 text-primary" />
           {currentMonth}
         </h2>
       </div>
       
       {/* Suggestions Section */}
-      <div className="flex-1 overflow-y-auto border-b border-border">
-        <div className="p-4 bg-accent border-b border-border">
-          <h3 className="text-sm text-accent-foreground">Upcoming Suggestions</h3>
-        </div>
-        <div className="p-4">
-          {suggestions.length === 0 ? (
-            <div className="text-center text-gray-400 py-4">
-              <p className="text-sm">No suggestions yet</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {suggestions.map((suggestion) => {
-                const IconComponent = suggestionIcons[suggestion.type].icon;
-                const iconColor = suggestionIcons[suggestion.type].color;
-                const priorityColors = {
-                  low: 'border-l-gray-300',
-                  medium: 'border-l-yellow-400',
-                  high: 'border-l-red-400',
-                };
-                
-                return (
-                  <div
-                    key={suggestion.id}
-                    className={`p-3 bg-card rounded border-l-4 ${priorityColors[suggestion.priority]} shadow-sm hover:shadow transition-shadow`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <IconComponent className={`w-5 h-5 mt-0.5 flex-shrink-0 ${iconColor}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm">
-                          {suggestion.description}
-                        </div>
-                        {suggestion.plant && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-lg">{suggestion.plant.icon}</span>
-                            <span className="text-xs text-gray-600">{suggestion.plant.name}</span>
-                          </div>
-                        )}
-                        {suggestion.dueDate && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {formatDate(suggestion.dueDate)}
-                          </div>
-                        )}
-                      </div>
-                      {onCompleteSuggestion && (
-                        <button
-                          onClick={() => onCompleteSuggestion(suggestion)}
-                          className="p-1 hover:bg-green-50 rounded transition-colors flex-shrink-0"
-                          title="Mark as done"
-                        >
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        </button>
-                      )}
+      <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+        <div className="mb-6">
+          <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground/60 mb-4 px-2">Next Steps</h3>
+          <div className="space-y-3">
+            {suggestions.map((suggestion) => {
+              const IconComponent = suggestionIcons[suggestion.type].icon;
+              const iconColor = suggestionIcons[suggestion.type].color;
+              
+              return (
+                <div 
+                  key={suggestion.id} 
+                  className="bg-white/80 rounded-3xl p-4 shadow-sm border border-emerald-50 hover:shadow-md transition-all group animate-in slide-in-from-right-4 duration-500"
+                >
+                  <div className="flex gap-3 mb-1">
+                    <div className={`p-3 rounded-2xl bg-muted/30 ${iconColor}`}>
+                      <IconComponent className="w-5 h-5 focus:animate-bounce" />
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Events Journal Section */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 bg-muted border-b border-border">
-          <h3 className="text-sm text-muted-foreground">Garden Journal</h3>
-        </div>
-        <div className="p-4">
-          {sortedEvents.length === 0 ? (
-            <div className="text-center text-gray-400 py-4">
-              <Sprout className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No events logged</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {sortedEvents.map((event) => {
-                const IconComponent = eventIcons[event.type].icon;
-                const iconColor = eventIcons[event.type].color;
-                
-                return (
-                  <div
-                    key={event.id}
-                    className="flex items-start gap-2 p-2 rounded hover:bg-muted transition-colors"
-                  >
-                    <IconComponent className={`w-4 h-4 mt-0.5 flex-shrink-0 ${iconColor}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm">
-                        {event.type === 'planted' && event.plant && `Planted ${event.plant.name}`}
-                        {event.type === 'watered' && (event.plant ? `Watered ${event.plant.name}` : 'Watered garden')}
-                        {event.type === 'composted' && 'Added compost'}
-                        {event.type === 'weeded' && 'Weeded garden'}
-                        {event.type === 'harvested' && event.plant && `Harvested ${event.plant.name}`}
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          suggestion.priority === 'high' ? 'bg-red-50 text-red-500' :
+                          suggestion.priority === 'medium' ? 'bg-orange-50 text-orange-500' :
+                          'bg-blue-50 text-blue-500'
+                        }`}>
+                          {suggestion.priority}
+                        </span>
+                        {suggestion.dueDate && (
+                          <span className="text-[10px] font-medium text-muted-foreground/70">{formatDate(suggestion.dueDate)}</span>
+                        )}
                       </div>
-                      {event.note && (
-                        <div className="text-xs text-gray-500 mt-0.5">{event.note}</div>
+                      <p className="text-sm font-semibold text-foreground mt-1 leading-snug">{suggestion.description}</p>
+                      {suggestion.plant && (
+                        <div className="flex items-center gap-1 mt-1 opacity-70">
+                          <span className="text-sm">{suggestion.plant.icon}</span>
+                          <span className="text-[10px] font-bold text-muted-foreground">{suggestion.plant.name}</span>
+                        </div>
                       )}
-                      <div className="text-xs text-gray-400 mt-0.5">
-                        {formatEventDate(event.date)}
-                      </div>
                     </div>
-                    {event.plant && (
-                      <span className="text-lg flex-shrink-0">{event.plant.icon}</span>
-                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <button
+                    onClick={() => onCompleteSuggestion?.(suggestion)}
+                    className="w-full mt-2 py-2 rounded-2xl bg-primary/5 hover:bg-primary text-primary hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2"
+                  >
+                    Done
+                  </button>
+                </div>
+              );
+            })}
+            {suggestions.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground/40 italic text-sm bg-white/20 rounded-3xl border border-dashed border-border/50">
+                All caught up!
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Garden Journal Section */}
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground/60 mb-4 px-2">Garden Journal</h3>
+          <div className="space-y-2">
+            {sortedEvents.map((event) => {
+              const IconComponent = eventIcons[event.type].icon;
+              const iconColor = eventIcons[event.type].color;
+              
+              return (
+                <div 
+                  key={event.id} 
+                  className="flex items-start gap-3 p-3 rounded-2xl hover:bg-white/40 transition-colors animate-in fade-in duration-300"
+                >
+                  <div className={`p-2 rounded-xl bg-white shadow-sm border border-border/10 ${iconColor}`}>
+                    <IconComponent className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      <span className="font-bold">{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</span>
+                      {event.plant && ` ${event.plant.name}`}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-medium text-muted-foreground/50">{formatEventDate(event.date)}</span>
+                    </div>
+                  </div>
+                  {event.plant && (
+                    <span className="text-lg opacity-80">{event.plant.icon}</span>
+                  )}
+                </div>
+              );
+            })}
+            {events.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground/30 text-xs italic">
+                Logs will appear here
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
