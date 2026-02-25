@@ -161,43 +161,43 @@ export function GardenGrid({
 
   return (
     <>
-      <div className="inline-block bg-white/80 backdrop-blur-md rounded-[3rem] shadow-xl p-8 border border-white/60 transition-all hover:shadow-2xl animate-in fade-in zoom-in duration-500">
-        <div className="flex items-center justify-between mb-6 px-2">
+      <div className="inline-block bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-5 border border-white/60 transition-all hover:shadow-xl animate-in fade-in zoom-in duration-500">
+        <div className="flex items-center justify-between mb-4 px-1">
           <div className="flex flex-col">
-            <h3 className="text-2xl font-bold text-foreground tracking-tight">{name}</h3>
-            <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-1">{rows} × {cols} Grid • {rows * cols} SQ FT</span>
+            <h3 className="text-xl font-bold text-foreground tracking-tight">{name}</h3>
+            <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-0.5">{rows} × {cols} Grid • {rows * cols} SQ FT</span>
           </div>
           {onEdit && (
             <button
               onClick={onEdit}
-              className="p-3 bg-primary/5 hover:bg-primary/10 text-primary rounded-2xl transition-all shadow-sm active:scale-90"
+              className="p-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl transition-all shadow-sm active:scale-90"
               title="Edit garden bed"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        <div className="inline-block bg-emerald-950/5 p-4 rounded-[2.5rem] border border-border/10">
+        <div className="inline-block bg-emerald-950/5 p-2 rounded-xl border border-border/10">
           {/* Virtual bed labels */}
           {virtualBeds && virtualBeds.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2 px-1">
+            <div className="mb-3 flex flex-wrap gap-1.5 px-0.5">
               {virtualBeds.map((vb) => (
                 <div
                   key={vb.id}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-sm"
+                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider text-white shadow-sm"
                   style={{ backgroundColor: vb.color }}
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-white/40 mr-2" />
+                  <div className="w-1 h-1 rounded-full bg-white/40 mr-1.5" />
                   {vb.name}
                 </div>
               ))}
             </div>
           )}
 
-          <div className="inline-grid gap-2">
+          <div className="inline-grid gap-1.5">
             {squares.map((row, rowIndex) => (
-              <div key={rowIndex} className="flex gap-2">
+              <div key={rowIndex} className="flex gap-1.5">
                 {row.map((square, colIndex) => {
                   const vBed = getVirtualBed(rowIndex, colIndex);
                   const hasThickTop = shouldDrawThickBorder(rowIndex, colIndex, 'top');
@@ -210,26 +210,26 @@ export function GardenGrid({
                       <button
                         onClick={(e) => handleSquareClick(rowIndex, colIndex, e)}
                         className={cn(
-                          "w-16 h-16 rounded-2xl relative transition-all hover:scale-105 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
+                          "w-12 h-12 rounded-lg relative transition-all hover:scale-105 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
                           square.plantInstance ? "bg-white/90" : "bg-white/40 hover:bg-white/80"
                         )}
                         style={{
-                          borderTop: hasThickTop ? `4px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
-                          borderBottom: hasThickBottom ? `4px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
-                          borderLeft: hasThickLeft ? `4px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
-                          borderRight: hasThickRight ? `4px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
+                          borderTop: hasThickTop ? `3px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
+                          borderBottom: hasThickBottom ? `3px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
+                          borderLeft: hasThickLeft ? `3px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
+                          borderRight: hasThickRight ? `3px solid ${vBed?.color || '#15803d'}` : '1px solid rgba(0,0,0,0.05)',
                         }}
                       >
                         {square.plantInstance ? (
                           <div className="flex flex-col items-center justify-center h-full relative animate-in zoom-in duration-300">
-                            <span className="text-3xl drop-shadow-sm select-none">{square.plantInstance.plant.icon}</span>
-                            <span className="text-[9px] font-black uppercase text-muted-foreground/60 truncate w-full px-1 text-center mt-1">
+                            <span className="text-xl drop-shadow-sm select-none">{square.plantInstance.plant.icon}</span>
+                            <span className="text-[7px] font-black uppercase text-muted-foreground/60 truncate w-full px-1 text-center mt-0.5">
                               {square.plantInstance.variety || square.plantInstance.plant.name}
                             </span>
                           </div>
                         ) : selectedPlant && (
                           <div className="opacity-0 group-hover/square:opacity-20 flex items-center justify-center">
-                            <span className="text-3xl grayscale select-none">{selectedPlant.icon}</span>
+                            <span className="text-xl grayscale select-none">{selectedPlant.icon}</span>
                           </div>
                         )}
                       </button>

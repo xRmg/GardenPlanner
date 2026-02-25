@@ -114,19 +114,19 @@ export default function App() {
     }
   };
 
-  const handlePlantAdded = (plantInstance: PlantInstance, _gardenId: string) => {
+  const handlePlantAdded = (
+    plantInstance: PlantInstance,
+    _gardenId: string,
+  ) => {
     // Log planting event
     const eventLog: GardenEvent = {
-        id: `planted-${Date.now()}-${Math.random()}`,
-        type: "planted",
-        plant: plantInstance.plant,
-        date: new Date().toISOString(),
-        gardenId: _gardenId,
+      id: `planted-${Date.now()}-${Math.random()}`,
+      type: "planted",
+      plant: plantInstance.plant,
+      date: new Date().toISOString(),
+      gardenId: _gardenId,
     };
-    setEvents((prev) => [
-      eventLog,
-      ...prev,
-    ]);
+    setEvents((prev) => [eventLog, ...prev]);
 
     // Add harvest suggestion
     if (plantInstance.harvestDate) {
@@ -205,33 +205,33 @@ export default function App() {
   return (
     <div className="size-full flex flex-col bg-background relative overflow-hidden">
       {/* Decorative background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+      <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-2xl pointer-events-none" />
 
       {/* Main content area */}
-      <div className="flex-1 flex overflow-hidden p-6 gap-6 relative z-10">
+      <div className="flex-1 flex overflow-hidden p-4 gap-4 relative z-10">
         {/* Garden area */}
-        <div className="flex-1 overflow-auto bg-white/40 backdrop-blur-sm rounded-[2.5rem] border border-white/60 shadow-xl p-8 custom-scrollbar">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-foreground tracking-tight">
+        <div className="flex-1 overflow-auto bg-white/40 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-5 custom-scrollbar">
+          <div className="mb-6 px-1">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Garden Planner
             </h1>
-            <p className="text-muted-foreground mt-3 text-lg max-w-2xl leading-relaxed">
+            <p className="text-muted-foreground mt-1 text-xs max-w-xl leading-relaxed">
               Design your bountiful garden with ease. Create custom beds, plan
               your companion planting, and watch your harvest grow.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-8">
+          <div className="flex flex-wrap gap-5">
             {gardens.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center text-gray-400 w-full mt-24 py-12 border-2 border-dashed border-gray-200 rounded-3xl bg-white/20">
-                <div className="bg-primary/10 p-6 rounded-full mb-4">
-                  <div className="text-4xl">🌱</div>
+              <div className="flex flex-col items-center justify-center text-center text-gray-400 w-full mt-12 py-8 border-2 border-dashed border-gray-100 rounded-2xl bg-white/20">
+                <div className="bg-primary/10 p-4 rounded-full mb-3">
+                  <div className="text-2xl">🌱</div>
                 </div>
-                <p className="text-2xl font-medium text-gray-500">
+                <p className="text-lg font-bold text-gray-600">
                   Your garden is waiting...
                 </p>
-                <p className="mt-2 text-gray-400 max-w-sm">
+                <p className="mt-1 text-xs text-gray-400 max-w-sm">
                   Tap "New Bed" in the toolbar below to start plotting your
                   first vegetables.
                 </p>
@@ -261,7 +261,7 @@ export default function App() {
         </div>
 
         {/* Events sidebar - Floating style */}
-        <div className="w-80 h-full flex flex-col drop-shadow-2xl">
+        <div className="w-72 h-full flex flex-col drop-shadow-xl">
           <EventsBar
             events={events}
             suggestions={suggestions}
@@ -271,8 +271,8 @@ export default function App() {
       </div>
 
       {/* Bottom toolbar - Floating style */}
-      <div className="px-6 pb-6 relative z-20">
-        <div className="max-w-6xl mx-auto drop-shadow-2xl">
+      <div className="px-4 pb-4 relative z-20">
+        <div className="max-w-5xl mx-auto drop-shadow-xl">
           <ToolBar
             plants={AVAILABLE_PLANTS}
             selectedPlant={selectedPlant}
