@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden Planner</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="layout">
+
+        <!-- ===== LEFT: MAIN CONTENT ===== -->
+        <main class="main-content">
+
+            <div class="page-header">
+                <h1 class="page-title">Garden Planner</h1>
+                <p class="page-subtitle">Plan your square foot vegetable gardens. Create custom beds, define sections,
+                    and track your plants.</p>
+            </div>
+
+            <div class="garden-beds">
+
+                <!-- Garden Bed Card 1 -->
+                <div class="garden-card">
+                    <div class="card-top">
+                        <span class="card-title">Garden Bed 1</span>
+                        <button class="card-settings" title="Settings">⚙️</button>
+                    </div>
+                    <div class="grid-container" id="bed-1">
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                    </div>
+                    <p class="grid-label">4 × 4 grid (16 squares)</p>
+                </div>
+
+                <!-- Garden Bed Card 2 -->
+                <div class="garden-card">
+                    <div class="card-top">
+                        <span class="card-title">Garden Bed 2</span>
+                        <button class="card-settings" title="Settings">⚙️</button>
+                    </div>
+                    <div class="grid-container" id="bed-2">
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                    </div>
+                    <p class="grid-label">4 × 4 grid (16 squares)</p>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- ===== RIGHT: SIDEBAR ===== -->
+        <aside class="sidebar">
+
+            <!-- Sidebar dark-green header band -->
+            <div class="sidebar-header">
+                <span class="sidebar-cal-icon">📅</span>
+                <span class="sidebar-month">February 2026</span>
+            </div>
+
+            <!-- Upcoming Suggestions -->
+            <div class="section-label section-label--yellow">Upcoming Suggestions</div>
+            <ul class="suggestions-list">
+
+                <li class="suggestion-item">
+                    <div class="suggestion-bar bar--red"></div>
+                    <div class="suggestion-body">
+                        <div class="suggestion-row">
+                            <span class="suggestion-icon">🌡️</span>
+                            <span class="suggestion-text">Hot weather expected - give plants extra water</span>
+                        </div>
+                        <span class="suggestion-date">Tomorrow</span>
+                    </div>
+                    <button class="check-btn" title="Mark done">✓</button>
+                </li>
+
+                <li class="suggestion-item">
+                    <div class="suggestion-bar bar--orange"></div>
+                    <div class="suggestion-body">
+                        <div class="suggestion-row">
+                            <span class="suggestion-icon">✂️</span>
+                            <span class="suggestion-text">Regular weeding helps your vegetables grow better</span>
+                        </div>
+                        <span class="suggestion-date">In 3 days</span>
+                    </div>
+                    <button class="check-btn" title="Mark done">✓</button>
+                </li>
+
+                <li class="suggestion-item">
+                    <div class="suggestion-bar bar--deep-orange"></div>
+                    <div class="suggestion-body">
+                        <div class="suggestion-row">
+                            <span class="suggestion-icon">🎁</span>
+                            <span class="suggestion-text">Add compost to enrich soil nutrients</span>
+                        </div>
+                        <span class="suggestion-date">Mar 4</span>
+                    </div>
+                    <button class="check-btn" title="Mark done">✓</button>
+                </li>
+
+            </ul>
+
+            <!-- Garden Journal -->
+            <div class="section-label section-label--green">Garden Journal</div>
+            <div class="journal-empty">
+                <span class="journal-plant-icon">🌱</span>
+                <span class="journal-empty-text">No events logged</span>
+            </div>
+
+        </aside>
+    </div><!-- /.layout -->
+
+    <!-- ===== BOTTOM TOOLBAR ===== -->
+    <div class="toolbar">
+
+        <div class="toolbar-section toolbar-beds">
+            <span class="toolbar-label">Garden Beds</span>
+            <div class="toolbar-btn-row">
+                <button class="btn-new-bed">＋ New Bed</button>
+                <button class="btn-remove-bed">－ Remove Last</button>
+            </div>
+            <span class="bed-count">2 beds</span>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-section toolbar-plants">
+            <span class="toolbar-label">Select Plant</span>
+            <div class="plant-pills">
+                <button class="pill pill--active" data-plant="none">None (Remove)</button>
+                <button class="pill" data-plant="tomato">🍅 Tomato</button>
+                <button class="pill" data-plant="carrot">🥕 Carrot</button>
+                <button class="pill" data-plant="lettuce">🥬 Lettuce</button>
+                <button class="pill" data-plant="pepper">🌶️ Pepper</button>
+                <button class="pill" data-plant="broccoli">🥦 Broccoli</button>
+                <button class="pill" data-plant="cucumber">🥒 Cucumber</button>
+            </div>
+        </div>
+
+    </div><!-- /.toolbar -->
+
+    <script src="script.js"></script>
+</body>
+
+</html>

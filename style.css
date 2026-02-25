@@ -1,0 +1,452 @@
+/* ============================================================
+   Garden Planner — pixel-perfect static CSS
+   ============================================================ */
+
+/* ---------- Reset / base ---------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    font-size: 16px;
+    color: #1a1a1a;
+}
+
+ul {
+    list-style: none;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* ---------- Full-viewport flex layout ---------- */
+.layout {
+    display: flex;
+    height: 100vh;
+}
+
+/* ============================================================
+   MAIN CONTENT (left)
+   ============================================================ */
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    background: #E8F5E9;
+    padding: 1.5rem 1.5rem 90px 1.5rem;
+    min-width: 0;
+    /* prevent flex blowout */
+}
+
+/* ---------- Page header ---------- */
+.page-header {
+    margin-bottom: 1.25rem;
+}
+
+.page-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.2;
+    margin-bottom: 0.3rem;
+}
+
+.page-subtitle {
+    font-size: 0.85rem;
+    color: #4CAF50;
+    line-height: 1.4;
+}
+
+/* ---------- Garden beds row ---------- */
+.garden-beds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+/* ---------- Garden bed card ---------- */
+.garden-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 1.25rem;
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.card-settings {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    color: #4CAF50;
+    padding: 0;
+    line-height: 1;
+    transition: opacity 0.15s;
+}
+
+.card-settings:hover {
+    opacity: 0.7;
+}
+
+/* ---------- 4×4 grid ---------- */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(4, 52px);
+    grid-template-rows: repeat(4, 52px);
+    gap: 6px;
+}
+
+.grid-cell {
+    width: 52px;
+    height: 52px;
+    background: #f0fff4;
+    border: 1.5px solid #a5d6a7;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.grid-cell:hover {
+    border-color: #4CAF50;
+    background: #e0f7e9;
+}
+
+/* planted state (used by JS) */
+.grid-cell.planted {
+    background: #4CAF50;
+    border-color: #388E3C;
+}
+
+.grid-label {
+    font-size: 0.78rem;
+    color: #4CAF50;
+    margin-top: 0.75rem;
+}
+
+/* ============================================================
+   RIGHT SIDEBAR
+   ============================================================ */
+.sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* ---------- Sidebar header (dark green band) ---------- */
+.sidebar-header {
+    background: #2E7D32;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+.sidebar-cal-icon {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.sidebar-month {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1;
+}
+
+/* ---------- Section labels ---------- */
+.section-label {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.section-label--yellow {
+    background: #FFF8E1;
+    color: #795548;
+}
+
+.section-label--green {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+/* ---------- Suggestions list ---------- */
+.suggestions-list {
+    flex-shrink: 0;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* Colored left bar */
+.suggestion-bar {
+    width: 4px;
+    height: 40px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.bar--red {
+    background: #EF5350;
+}
+
+.bar--orange {
+    background: #FFA726;
+}
+
+.bar--deep-orange {
+    background: #FF7043;
+}
+
+/* Body: icon row + date */
+.suggestion-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.suggestion-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+}
+
+.suggestion-icon {
+    font-size: 0.95rem;
+    line-height: 1.3;
+    flex-shrink: 0;
+}
+
+.suggestion-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.35;
+}
+
+.suggestion-date {
+    font-size: 0.75rem;
+    color: #9E9E9E;
+}
+
+/* Circle check button */
+.check-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid #4CAF50;
+    background: transparent;
+    color: #4CAF50;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 8px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.check-btn:hover {
+    background: #4CAF50;
+    color: #ffffff;
+}
+
+/* ---------- Garden Journal empty state ---------- */
+.journal-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.25rem;
+    gap: 0.5rem;
+}
+
+.journal-plant-icon {
+    font-size: 1.5rem;
+    color: #BDBDBD;
+    line-height: 1;
+}
+
+.journal-empty-text {
+    font-size: 0.85rem;
+    color: #9E9E9E;
+    text-align: center;
+}
+
+/* ============================================================
+   BOTTOM TOOLBAR (fixed)
+   ============================================================ */
+.toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #ffffff;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 0 1.5rem;
+    z-index: 100;
+}
+
+/* ---------- Toolbar sections ---------- */
+.toolbar-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+}
+
+.toolbar-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #4CAF50;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+/* Garden Beds section */
+.toolbar-beds {
+    flex-shrink: 0;
+}
+
+.toolbar-btn-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-new-bed,
+.btn-remove-bed {
+    border: none;
+    border-radius: 6px;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+}
+
+.btn-new-bed {
+    background: #4CAF50;
+}
+
+.btn-remove-bed {
+    background: #EF5350;
+}
+
+.btn-new-bed:hover,
+.btn-remove-bed:hover {
+    opacity: 0.85;
+}
+
+.bed-count {
+    font-size: 0.75rem;
+    color: #9E9E9E;
+    line-height: 1;
+}
+
+/* ---------- Vertical divider ---------- */
+.toolbar-divider {
+    width: 1px;
+    height: 40px;
+    background: #e0e0e0;
+    flex-shrink: 0;
+}
+
+/* ---------- Plant pills section ---------- */
+.toolbar-plants {
+    flex: 1;
+    min-width: 0;
+}
+
+.plant-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    /* subtle scroll breathing room */
+}
+
+/* hide scrollbar but keep scrollability */
+.plant-pills::-webkit-scrollbar {
+    height: 3px;
+}
+
+.plant-pills::-webkit-scrollbar-thumb {
+    background: #c8e6c9;
+    border-radius: 2px;
+}
+
+.pill {
+    border-radius: 20px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    background: #ffffff;
+    border: 1.5px solid #e0e0e0;
+    color: #1a1a1a;
+    transition: border-color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.pill:hover {
+    border-color: #4CAF50;
+}
+
+.pill--active {
+    border: 2px solid #1a1a1a;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.pill--active:hover {
+    border-color: #1a1a1a;
+}

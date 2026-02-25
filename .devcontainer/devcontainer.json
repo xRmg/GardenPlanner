@@ -1,0 +1,39 @@
+{
+    "name": "Garden Planner",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "22"
+        }
+    },
+    "forwardPorts": [
+        5173
+    ],
+    "portsAttributes": {
+        "5173": {
+            "label": "Vite Dev Server",
+            "onAutoForward": "openBrowser"
+        }
+    },
+    "postCreateCommand": "npm install",
+    "postStartCommand": "npm run dev",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "bradlc.vscode-tailwindcss",
+                "dsznajder.es7-react-js-snippets",
+                "ms-vscode.vscode-typescript-next"
+            ],
+            "settings": {
+                "editor.defaultFormatter": "esbenp.prettier-vscode",
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.fixAll.eslint": "explicit"
+                },
+                "typescript.tsdk": "node_modules/typescript/lib"
+            }
+        }
+    }
+}
