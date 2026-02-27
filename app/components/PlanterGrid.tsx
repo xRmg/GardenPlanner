@@ -61,12 +61,14 @@ interface PlanterGridProps {
   rows: number;
   cols: number;
   selectedPlant: Plant | null;
+  initialSquares?: PlanterSquare[][];
   virtualSections?: VirtualSection[];
   backgroundColor?: string;
   viewOnly?: boolean;
   onPlantAdded?: (plantInstance: PlantInstance, planterId: string) => void;
   onPlantRemoved?: (plantInstance: PlantInstance, planterId: string) => void;
   onPlantUpdated?: (plantInstance: PlantInstance, planterId: string) => void;
+  onSquaresChange?: (squares: PlanterSquare[][], planterId: string) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onMoveUp?: () => void;
@@ -79,26 +81,38 @@ export function PlanterGrid({
   rows,
   cols,
   selectedPlant,
+  initialSquares,
   virtualSections,
   backgroundColor,
   viewOnly = false,
   onPlantAdded,
   onPlantRemoved,
   onPlantUpdated,
+  onSquaresChange,
   onEdit,
   onDelete,
   onMoveUp,
   onMoveDown,
 }: PlanterGridProps) {
-  const [squares, setSquares] = useState<PlanterSquare[][]>(
+  const buildEmptyGrid = () =>
     Array(rows)
       .fill(null)
       .map(() =>
         Array(cols)
           .fill(null)
           .map(() => ({ plantInstance: null })),
-      ),
-  );
+      );
+
+  const [squares, setSquares] = useState<PlanterSquare[][]>(() => {
+    if (
+      initialSquares &&
+      initialSquares.length === rows &&
+      initialSquares[0]?.length === cols
+    ) {
+      return initialSquares;
+    }
+    return buildEmptyGrid();
+  });
   const [selectedPlantInstance, setSelectedPlantInstance] =
     useState<PlantInstance | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -165,11 +179,10 @@ export function PlanterGrid({
         pestEvents: [],
       };
 
-      setSquares((prev) => {
-        const newSquares = prev.map((row) => [...row]);
-        newSquares[rowIndex][colIndex] = { plantInstance: newPlantInstance };
-        return newSquares;
-      });
+      const newSquares = squares.map((row) => [...row]);
+      newSquares[rowIndex][colIndex] = { plantInstance: newPlantInstance };
+      setSquares(newSquares);
+      onSquaresChange?.(newSquares, id);
 
       if (onPlantAdded) {
         onPlantAdded(newPlantInstance, id);
@@ -189,26 +202,24 @@ export function PlanterGrid({
       onPlantRemoved(currentSquare.plantInstance, id);
     }
 
-    setSquares((prev) => {
-      const newSquares = prev.map((row) => [...row]);
-      newSquares[rowIndex][colIndex] = { plantInstance: null };
-      return newSquares;
-    });
+    const newSquares = squares.map((row) => [...row]);
+    newSquares[rowIndex][colIndex] = { plantInstance: null };
+    setSquares(newSquares);
+    onSquaresChange?.(newSquares, id);
   };
 
   const handleUpdatePlant = (updatedInstance: PlantInstance) => {
     // Update in grid
-    setSquares((prev) => {
-      const newSquares = prev.map((row) =>
-        row.map((square) => {
-          if (square.plantInstance?.instanceId === updatedInstance.instanceId) {
-            return { plantInstance: updatedInstance };
-          }
-          return square;
-        }),
-      );
-      return newSquares;
-    });
+    const newSquares = squares.map((row) =>
+      row.map((square) => {
+        if (square.plantInstance?.instanceId === updatedInstance.instanceId) {
+          return { plantInstance: updatedInstance };
+        }
+        return square;
+      }),
+    );
+    setSquares(newSquares);
+    onSquaresChange?.(newSquares, id);
 
     // Notify parent
     if (onPlantUpdated) {

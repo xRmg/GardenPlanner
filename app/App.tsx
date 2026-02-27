@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PlanterGrid, Plant, PlantInstance } from "./components/PlanterGrid";
+import { PlanterGrid, Plant, PlantInstance, PlanterSquare } from "./components/PlanterGrid";
 import { EventsBar, GardenEvent, Suggestion } from "./components/EventsBar";
 import { ToolBar } from "./components/ToolBar";
 import {
@@ -255,6 +255,7 @@ interface Planter {
   name: string;
   rows: number;
   cols: number;
+  squares?: PlanterSquare[][];
   virtualSections?: VirtualSection[];
   backgroundColor?: string;
   tagline?: string;
@@ -990,12 +991,25 @@ export default function App() {
                                   selectedPlant={
                                     isEditMode ? selectedPlant : null
                                   }
+                                  initialSquares={planter.squares}
                                   virtualSections={planter.virtualSections}
                                   backgroundColor={planter.backgroundColor}
                                   viewOnly={!isEditMode}
                                   onPlantAdded={handlePlantAdded}
                                   onPlantRemoved={handlePlantRemoved}
                                   onPlantUpdated={handlePlantUpdated}
+                                  onSquaresChange={(newSquares, planterId) => {
+                                    setAreas((prev) =>
+                                      prev.map((a) => ({
+                                        ...a,
+                                        planters: a.planters.map((p) =>
+                                          p.id === planterId
+                                            ? { ...p, squares: newSquares }
+                                            : p,
+                                        ),
+                                      })),
+                                    );
+                                  }}
                                   onEdit={
                                     isEditMode
                                       ? () =>
