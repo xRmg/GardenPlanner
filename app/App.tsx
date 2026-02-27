@@ -13,6 +13,16 @@ import {
   AddSeedlingDialog,
   SeedlingFormData,
 } from "./components/AddSeedlingDialog";
+import { getDexieRepository } from "./data/dexieRepository";
+import { migrateLocalStorageToDexie } from "./data/migration";
+import { parseWithDefaults, SettingsSchema } from "./data/schema";
+import type {
+  Settings,
+  Area as SchemaArea,
+  Seedling as SchemaSeedling,
+  GardenEvent as SchemaGardenEvent,
+  Plant as SchemaPlant,
+} from "./data/schema";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import {
@@ -279,94 +289,13 @@ interface Seedling {
   status: "germinating" | "growing" | "hardening" | "ready";
 }
 
-interface Settings {
-  location: string;
-  growthZone: string;
-  weatherProvider: string;
-}
-
 export default function App() {
-  const [areas, setAreas] = useState<Area[]>(() => {
-    try {
-      const saved = localStorage.getItem("gp_areas");
-      if (saved) return JSON.parse(saved) as Area[];
-    } catch {
-      /* ignore */
-    }
-    return [
-      {
-        id: "area-1",
-        name: "Backyard",
-        tagline: "Main Vegetable Garden",
-        backgroundColor: "#f0fdf4",
-        planters: [
-          {
-            id: "1",
-            name: "Raised Bed 1",
-            rows: 4,
-            cols: 4,
-            tagline: "Brassicas & Roots",
-            backgroundColor: "#5D4037",
-          },
-          {
-            id: "2",
-            name: "Raised Bed 2",
-            rows: 4,
-            cols: 4,
-            tagline: "Nightshades",
-            backgroundColor: "#5D4037",
-          },
-        ],
-      },
-      {
-        id: "area-2",
-        name: "Patio",
-        tagline: "Container Garden",
-        backgroundColor: "#fefce8",
-        planters: [
-          {
-            id: "3",
-            name: "Large Pot",
-            rows: 1,
-            cols: 1,
-            tagline: "Cucumber",
-            backgroundColor: "#81C784",
-          },
-        ],
-      },
-    ];
-  });
-  const [customPlants, setCustomPlants] = useState<Plant[]>(() => {
-    try {
-      const saved = localStorage.getItem("gp_customPlants");
-      if (saved) return JSON.parse(saved) as Plant[];
-    } catch {
-      /* ignore */
-    }
-    return [];
-  });
-  const [seedlings, setSeedlings] = useState<Seedling[]>(() => {
-    try {
-      const saved = localStorage.getItem("gp_seedlings");
-      if (saved) return JSON.parse(saved) as Seedling[];
-    } catch {
-      /* ignore */
-    }
-    return [];
-  });
-  const [settings, setSettings] = useState<Settings>(() => {
-    try {
-      const saved = localStorage.getItem("gp_settings");
-      if (saved) return JSON.parse(saved) as Settings;
-    } catch {
-      /* ignore */
-    }
-    return {
-      location: "",
-      growthZone: "6b",
-      weatherProvider: "OpenWeather",
-    };
-  });
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [customPlants, setCustomPlants] = useState<Plant[]>([]);
+  const [seedlings, setSeedlings] = useState<Seedling[]>([]);
+  const [settings, setSettings] = useState<Settings>(() =>
+    parseWithDefaults(SettingsSchema, {}),
+  );
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
   const [events, setEvents] = useState<GardenEvent[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([
@@ -406,34 +335,61 @@ export default function App() {
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
   const [dialogDefaultIsSeed, setDialogDefaultIsSeed] = useState(false);
 
-  // Persist state to localStorage
+  // Initialize from Dexie on mount (migration + load)
   useEffect(() => {
-    try {
-      localStorage.setItem("gp_areas", JSON.stringify(areas));
-    } catch {
-      /* ignore */
-    }
+    const repo = getDexieRepository();
+    void (async () => {
+      await repo.ready();
+      await migrateLocalStorageToDexie(repo);
+      const [
+        loadedAreas,
+        loadedPlants,
+        loadedSeedlings,
+        loadedSettings,
+        loadedEvents,
+      ] = await Promise.all([
+        repo.getAreas(),
+        repo.getCustomPlants(),
+        repo.getSeedlings(),
+        repo.getSettings(),
+        repo.getEvents(),
+      ]);
+      setAreas(loadedAreas as unknown as Area[]);
+      setCustomPlants(loadedPlants as unknown as Plant[]);
+      setSeedlings(loadedSeedlings as unknown as Seedling[]);
+      setSettings(loadedSettings);
+      setEvents(loadedEvents as unknown as GardenEvent[]);
+    })();
+  }, []);
+
+  // Persist areas to Dexie
+  useEffect(() => {
+    const repo = getDexieRepository();
+    areas.forEach((area) => {
+      void repo.saveArea(area as unknown as SchemaArea);
+    });
   }, [areas]);
+
+  // Persist custom plants to Dexie
   useEffect(() => {
-    try {
-      localStorage.setItem("gp_customPlants", JSON.stringify(customPlants));
-    } catch {
-      /* ignore */
-    }
+    const repo = getDexieRepository();
+    customPlants.forEach((plant) => {
+      void repo.savePlant(plant as unknown as SchemaPlant);
+    });
   }, [customPlants]);
+
+  // Persist seedlings to Dexie
   useEffect(() => {
-    try {
-      localStorage.setItem("gp_seedlings", JSON.stringify(seedlings));
-    } catch {
-      /* ignore */
-    }
+    const repo = getDexieRepository();
+    seedlings.forEach((seedling) => {
+      void repo.saveSeedling(seedling as unknown as SchemaSeedling);
+    });
   }, [seedlings]);
+
+  // Persist settings to Dexie
   useEffect(() => {
-    try {
-      localStorage.setItem("gp_settings", JSON.stringify(settings));
-    } catch {
-      /* ignore */
-    }
+    const repo = getDexieRepository();
+    void repo.saveSettings(settings);
   }, [settings]);
 
   const harvestAlerts = suggestions
@@ -466,15 +422,14 @@ export default function App() {
       status: "germinating",
     };
     setSeedlings((prev) => [newSeedling, ...prev]);
-    setEvents((prev) => [
-      {
-        id: `sow-event-${Date.now()}`,
-        type: "sown",
-        plant: data.plant,
-        date: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
+    const sowEvent: GardenEvent = {
+      id: `sow-event-${Date.now()}`,
+      type: "sown",
+      plant: data.plant,
+      date: new Date().toISOString(),
+    };
+    setEvents((prev) => [sowEvent, ...prev]);
+    void getDexieRepository().saveEvent(sowEvent as unknown as SchemaGardenEvent);
   };
 
   const handleOpenSowModal = (plant: Plant) => {
@@ -520,15 +475,14 @@ export default function App() {
     setSeedlings((prev) => [newSeedling, ...prev]);
 
     // 3. Log event
-    setEvents((prev) => [
-      {
-        id: `sow-event-${Date.now()}`,
-        type: "sown",
-        plant,
-        date: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
+    const sowEvent: GardenEvent = {
+      id: `sow-event-${Date.now()}`,
+      type: "sown",
+      plant,
+      date: new Date().toISOString(),
+    };
+    setEvents((prev) => [sowEvent, ...prev]);
+    void getDexieRepository().saveEvent(sowEvent as unknown as SchemaGardenEvent);
   };
 
   const handleUpdateSeedlingStatus = (
@@ -543,20 +497,19 @@ export default function App() {
     const seedling = seedlings.find((s) => s.id === id);
     if (!seedling) return;
 
-    setEvents((prev) => [
-      {
-        id: `update-seedling-${Date.now()}`,
-        type:
-          status === "growing"
+    const statusEvent: GardenEvent = {
+      id: `update-seedling-${Date.now()}`,
+      type:
+        status === "growing"
+          ? "sprouted"
+          : status === "hardening" || status === "ready"
             ? "sprouted"
-            : status === "hardening" || status === "ready"
-              ? "sprouted"
-              : "watered",
-        plant: seedling.plant,
-        date: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
+            : "watered",
+      plant: seedling.plant,
+      date: new Date().toISOString(),
+    };
+    setEvents((prev) => [statusEvent, ...prev]);
+    void getDexieRepository().saveEvent(statusEvent as unknown as SchemaGardenEvent);
   };
 
   const handlePlantFromBatch = (seedling: Seedling) => {
@@ -567,6 +520,7 @@ export default function App() {
 
   const handleRemoveSeedling = (id: string) => {
     setSeedlings((prev) => prev.filter((s) => s.id !== id));
+    void getDexieRepository().deleteSeedling(id);
   };
 
   const handleAddPlant = (plant: Plant) => {
@@ -582,6 +536,7 @@ export default function App() {
 
   const handleRemovePlantManually = (id: string) => {
     setCustomPlants((prev) => prev.filter((p) => p.id !== id));
+    void getDexieRepository().deletePlant(id);
   };
 
   const handleEditPlantManually = (plant: Plant) => {
@@ -602,6 +557,7 @@ export default function App() {
 
   const handleRemoveArea = (id: string) => {
     setAreas((prev) => prev.filter((a) => a.id !== id));
+    void getDexieRepository().deleteArea(id);
   };
 
   const handleUpdateArea = (id: string, updates: Partial<Area>) => {
@@ -664,6 +620,10 @@ export default function App() {
         };
       }),
     );
+    const repo = getDexieRepository();
+    events
+      .filter((e) => e.gardenId === planterId)
+      .forEach((e) => void repo.deleteEvent(e.id));
     setEvents((prev) => prev.filter((e) => e.gardenId !== planterId));
   };
 
@@ -711,6 +671,7 @@ export default function App() {
       gardenId: _planterId,
     };
     setEvents((prev) => [eventLog, ...prev]);
+    void getDexieRepository().saveEvent(eventLog as unknown as SchemaGardenEvent);
 
     // Add harvest suggestion
     if (plantInstance.harvestDate) {
@@ -777,15 +738,14 @@ export default function App() {
               ? "weeded"
               : "composted"; // repot -> composted as fallback
 
-    setEvents((prev) => [
-      {
-        id: `event-${Date.now()}-${Math.random()}`,
-        type: eventType as GardenEvent["type"],
-        plant: suggestion.plant,
-        date: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
+    const completedEvent: GardenEvent = {
+      id: `event-${Date.now()}-${Math.random()}`,
+      type: eventType as GardenEvent["type"],
+      plant: suggestion.plant,
+      date: new Date().toISOString(),
+    };
+    setEvents((prev) => [completedEvent, ...prev]);
+    void getDexieRepository().saveEvent(completedEvent as unknown as SchemaGardenEvent);
   };
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
