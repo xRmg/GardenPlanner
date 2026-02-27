@@ -1,7 +1,7 @@
 # Garden Planner — Planning & TODO Document
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 in progress — 1.1 ✅ schemas · 1.2 ✅ repository interface + LocalStorageRepository
+> **Status**: Phase 1 in progress — 1.1 ✅ schemas · 1.2 ✅ repository interface + LocalStorageRepository · 1.3 ✅ DexieRepository · 1.4 ✅ localStorage→Dexie migration · 1.12 ✅ Vitest + test suite
 > **Purpose**: Roadmap for evolving Garden Planner from a local-only "dumb" tool into a smart, AI-assisted, multi-language, multi-user platform.
 
 ---
@@ -822,17 +822,17 @@ These are items NOT in the user's original request but critical for success:
 - **Problem**: No audit done; shadcn/Radix provides good baseline but custom components may lack labels
 - **TODO**: Run axe/Lighthouse audit, ensure all interactive elements are keyboard-accessible
 
-### 6.11 Events Not Persisted (Bug)
+### 6.11 Events Not Persisted (Bug) ✅ Fixed
 
 - **Problem**: `events` (the garden event log) is stored only in `useState` — it is lost on every page refresh. This is a silent data loss bug.
-- **TODO**: Persist `events` to Dexie as part of the Phase 1 DAL migration
-- **Impact**: Users lose their full event history (planted, watered, harvested, sown, etc.) on every reload
+- **Fix**: Persisted to Dexie `events` table in `DexieRepository` (PR #1, task 1.3)
+- **Impact**: Resolved — event history survives page refreshes
 
-### 6.12 Plant Placements Not Persisted (Bug)
+### 6.12 Plant Placements Not Persisted (Bug) ✅ Fixed
 
 - **Problem**: `PlanterGrid` manages the `squares` grid (what is planted where) in its own local `useState`. The `Planter` type has no `squares` field and App.tsx never writes placements back to `areas`. All plant positions are silently lost on every page refresh.
-- **Fix**: `PlanterSchema` now includes `squares: PlanterSquare[][]`. The `DexieRepository` (task 1.3) will persist this. `PlanterGrid` will receive `squares` as a prop instead of initialising them from empty state.
-- **Impact**: Currently the most severe data loss bug — users lose their entire garden layout on reload.
+- **Fix**: `PlanterSchema` now includes `squares: PlanterSquare[][]`. `DexieRepository` persists this. `PlanterGrid` receives `squares` as a prop via `initialSquares` and writes back via `onSquaresChange` (PR #1, task 1.3).
+- **Impact**: Resolved — garden layouts survive page refreshes.
 
 ---
 
@@ -949,8 +949,8 @@ These are items NOT in the user's original request but critical for success:
 - [x] Define Zod schemas: `PlantSchema`, `AreaSchema`, `SeedlingSchema`, `SettingsSchema` → `app/data/schema.ts`
 - [x] Create `GardenRepository` interface → `app/data/repository.ts`
 - [x] `LocalStorageRepository` (bridge impl, validates on every read) → `app/data/localStorageRepository.ts`
-- [ ] Implement `DexieRepository`
-- [ ] Write localStorage → Dexie migration
+- [x] Implement `DexieRepository` → `app/data/dexieRepository.ts` (PR #1)
+- [x] Write localStorage → Dexie migration → `app/data/migration.ts` (PR #1)
 - [ ] Add JSON export/import
 - [ ] Decompose `App.tsx` state into custom hooks
 - [ ] BYOK OpenRouter in Settings
@@ -961,7 +961,7 @@ These are items NOT in the user's original request but critical for success:
 - [ ] Open-Meteo weather integration (direct, no API key)
 - [ ] Geocoding for Settings.location → lat/lng
 - [ ] Error boundaries + Sonner toast for persistence errors
-- [ ] Vitest setup + schemas test suite
+- [x] Vitest setup + schemas test suite → `app/data/__tests__/` (PR #1)
 - [ ] `npm install i18next react-i18next i18next-browser-languagedetector`
 - [ ] i18next config with namespaces: `ui`, `plants`, `calendar`, `errors`
 - [ ] Extract all hardcoded strings from 9 component files into `en/` JSON files
@@ -1028,4 +1028,4 @@ These are items NOT in the user's original request but critical for success:
 
 ---
 
-> **Next step**: Tasks 1.1 and 1.2 are complete. Begin **Task 1.3** — `DexieRepository` (fixes Bug 6.11 + Bug 6.12, replaces localStorage as the active store).
+> **Next step**: Tasks 1.1–1.4 and 1.12 are complete (PR #1 merged). Begin **Task 1.5** — JSON export/import for data portability, or **Task 1.6** — decompose `App.tsx` state into custom hooks.
