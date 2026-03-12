@@ -1225,6 +1225,7 @@ export default function App() {
         onSave={handleAddPlant}
         initialPlant={editingPlant || undefined}
         defaultIsSeed={dialogDefaultIsSeed}
+        settings={settings}
       />
 
       <SowSeedsDialog

@@ -37,15 +37,29 @@ import {
 import type { GardenRepository } from "./repository";
 
 // ---------------------------------------------------------------------------
+// AI plant cache row type
+// ---------------------------------------------------------------------------
+
+export interface AiPlantCacheRow {
+  /** Normalised cache key: "name|latinName|koeppenZone" (lowercase, trimmed). */
+  key: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
+  timestamp: number;
+  model: string;
+}
+
+// ---------------------------------------------------------------------------
 // Dexie database definition
 // ---------------------------------------------------------------------------
 
-class GardenPlannerDB extends Dexie {
+export class GardenPlannerDB extends Dexie {
   areas!: Table<Area, string>;
   customPlants!: Table<Plant, string>;
   seedlings!: Table<Seedling, string>;
   settings!: Table<{ key: string; value: Settings }, string>;
   events!: Table<GardenEvent, string>;
+  aiPlantCache!: Table<AiPlantCacheRow, string>;
 
   constructor() {
     super("GardenPlannerDB");
@@ -118,7 +132,26 @@ class GardenPlannerDB extends Dexie {
           }
         });
     });
+    // v6: add aiPlantCache table for caching AI-generated plant data (30-day TTL)
+    this.version(6).stores({
+      aiPlantCache: "key, timestamp",
+    });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Singleton DB instance (shared across DexieRepository and AI services)
+// ---------------------------------------------------------------------------
+
+let _db: GardenPlannerDB | null = null;
+
+/**
+ * Returns the shared GardenPlannerDB instance.
+ * Used by DexieRepository and the AI plant cache service.
+ */
+export function getGardenPlannerDB(): GardenPlannerDB {
+  if (!_db) _db = new GardenPlannerDB();
+  return _db;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,7 +162,7 @@ export class DexieRepository implements GardenRepository {
   private db: GardenPlannerDB;
 
   constructor() {
-    this.db = new GardenPlannerDB();
+    this.db = getGardenPlannerDB();
   }
 
   async ready(): Promise<void> {
