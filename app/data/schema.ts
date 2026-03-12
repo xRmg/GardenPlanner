@@ -58,8 +58,8 @@ export const VirtualSectionSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
   type: z.enum(["rows", "columns"]),
-  start: z.number().int().min(0),
-  end: z.number().int().min(0),
+  start: z.number().int().min(1),
+  end: z.number().int().min(1),
   color: z.string().optional(),
 });
 
