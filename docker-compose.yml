@@ -1,25 +1,56 @@
 version: "3.9"
 
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: garden-planner-backend
+    restart: unless-stopped
+
+    networks:
+      - pangolin
+
+    environment:
+      - NODE_ENV=production
+
+    volumes:
+      - garden-data:/app/data
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
   garden-planner:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: garden-planner
-    ports:
-      - "80:80"
     restart: unless-stopped
+
     networks:
-      - garden-network
+      - pangolin
+
+    environment:
+      - NODE_ENV=production
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/index.html"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 5s
-    environment:
-      - NODE_ENV=production
+
+volumes:
+  garden-data:
 
 networks:
-  garden-network:
-    driver: bridge
+  pangolin:
+    external: true

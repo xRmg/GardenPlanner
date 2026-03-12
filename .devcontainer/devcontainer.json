@@ -4,20 +4,25 @@
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22"
-    }
+    },
+    "ghcr.io/devcontainers/features/sqlite3:1": {}
   },
-  "forwardPorts": [5173],
+  "forwardPorts": [5173, 3000],
   "containerEnv": {
     "HOST": "0.0.0.0"
   },
-  "runArgs": ["-p", "5173:5173"],
+  "runArgs": ["-p", "5173:5173", "-p", "3000:3000"],
   "portsAttributes": {
     "5173": {
       "label": "Vite Dev Server",
       "onAutoForward": "openBrowser"
+    },
+    "3000": {
+      "label": "Backend API",
+      "onAutoForward": "ignore"
     }
   },
-  "postCreateCommand": "npm install",
+  "postCreateCommand": "npm install && cd backend && npm install && cd ..",
   "postStartCommand": "npm run dev",
   "customizations": {
     "vscode": {

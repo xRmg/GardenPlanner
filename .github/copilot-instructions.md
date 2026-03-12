@@ -10,7 +10,7 @@ Garden Planner is a client-side React + TypeScript single-page application for p
 - Track seedling batches germinated indoors
 - Receive care suggestions based on garden state
 
-All data is currently stored in `localStorage` via the repository layer. The app is designed to be self-hosted with no mandatory backend.
+All data is stored in **IndexedDB via Dexie v4**, accessed through the `GardenRepository` interface. On first load the app auto-migrates any existing `localStorage` data. The app is designed to be self-hosted with no mandatory backend.
 
 ---
 
@@ -23,8 +23,10 @@ All data is currently stored in `localStorage` via the repository layer. The app
 | Styling | Tailwind CSS v4 (`@tailwindcss/vite`) |
 | UI components | Radix UI primitives + shadcn/ui (see `components.json`) |
 | Icons | Lucide React |
-| Schema & validation | Zod |
+| Schema & validation | Zod v4 |
 | Forms | react-hook-form + `@hookform/resolvers/zod` |
+| Persistence | **Dexie v4** (IndexedDB) — auto-migrates from `localStorage` on first load |
+| Testing | **Vitest** — unit tests in `app/data/__tests__/` |
 
 ---
 
@@ -47,9 +49,14 @@ All data is currently stored in `localStorage` via the repository layer. The app
 │   │   ├── figma/               # Figma-exported/prototype components (not for production use)
 │   │   └── ui/                  # shadcn/ui base components (button, dialog, tabs, etc.)
 │   └── data/
-│       ├── schema.ts            # Zod schemas + inferred TypeScript types (single source of truth)
-│       ├── repository.ts        # Abstract repository interface
-│       └── localStorageRepository.ts  # localStorage implementation of repository
+│       ├── schema.ts                  # Zod schemas + inferred TypeScript types (single source of truth)
+│       ├── repository.ts              # Abstract GardenRepository interface
+│       ├── dexieRepository.ts         # Active implementation (IndexedDB via Dexie v4)
+│       ├── localStorageRepository.ts  # Legacy bridge implementation (kept for fallback/testing)
+│       ├── migration.ts               # One-time auto-migration: localStorage → Dexie
+│       └── __tests__/
+│           ├── schema.test.ts
+│           └── localStorageRepository.test.ts
 ├── src/
 │   └── main.tsx                 # Vite entry point — mounts <App />
 ├── styles/                      # Global CSS (Tailwind base + custom properties)
@@ -90,7 +97,7 @@ npm run build        # TypeScript check + Vite production build → dist/
 npm run preview      # Preview production build locally
 ```
 
-There is no test runner configured yet. Linting uses ESLint (config in `eslint.config.js`).
+Tests use **Vitest** (`npx vitest run`). Test files live in `app/data/__tests__/`. Linting uses ESLint (config in `eslint.config.js`).
 
 ---
 
@@ -100,7 +107,9 @@ There is no test runner configured yet. Linting uses ESLint (config in `eslint.c
 Top-level state lives in `App.tsx` using `useState`/`useEffect`. State is passed down as props to dialogs and components. There is no global state library (no Redux, Zustand, etc.).
 
 ### Repository Pattern
-Data access goes through the repository interface (`app/data/repository.ts`). The current implementation is `localStorageRepository.ts`. When adding new persistence logic, add methods to the interface and implement them in the localStorage class.
+Data access goes through the `GardenRepository` interface (`app/data/repository.ts`). The active implementation is `DexieRepository` (IndexedDB via Dexie v4). `LocalStorageRepository` is kept as a bridge for testing and fallback. When adding new persistence logic, add methods to the interface and implement them in `dexieRepository.ts`.
+
+On first load, `migration.ts` auto-migrates any existing `localStorage` data into Dexie — safe to call on every startup (idempotent).
 
 ### Path Alias
 The `@` alias resolves to the project root. Use `@/app/...`, `@/styles/...`, etc. for imports.
@@ -118,11 +127,26 @@ The `@` alias resolves to the project root. Use `@/app/...`, `@/styles/...`, etc
 
 ---
 
-## Planned Features (see `docs/` and `todo.md`)
+## Feature Status (see `todo.md` for full roadmap)
 
-- **AI plant lookup** — OpenRouter integration (primary: `google/gemini-2.0-flash`) to auto-fill plant data from a name; see `docs/ai-integration-design.md`
-- **i18n** — react-i18next with namespace support (`ui`, `plants`, `calendar`, `errors`); see `docs/i18n-and-plant-library-architecture.md`
-- **Shared plant library** — community-curated plant catalogue with sync and local overrides
+**Working now**
+- Garden areas, planters, grid-based plant placement — all saved to IndexedDB
+- Event logging (planted, watered, harvested, etc.)
+- Seedling batch tracking
+- Custom plant catalogue (defaults + user additions)
+- Settings (location, growth zone, AI provider)
+
+**Immediate next — Phase 1 remaining**
+- **State refactoring** ⚠️ BLOCKER — decompose `App.tsx` into custom hooks before starting AI work (task 1.6)
+- **JSON export/import** — data portability safety net (task 1.5)
+- **AI plant lookup** — OpenRouter BYOK, "Ask AI ✨" in `PlantDefinitionDialog` (tasks 1.7–1.8); see `docs/ai-integration-design.md`
+- **Rules engine + weather** — frost alerts, harvest reminders, Open-Meteo (tasks 1.9–1.10)
+- **i18n infrastructure** — react-i18next, string extraction (tasks 1.13–1.15); see `docs/i18n-and-plant-library-architecture.md`
+
+**Future phases**
+- Shared community plant library (Phase 2 — Hono backend + Cloudflare D1)
+- Multi-user / family sharing with per-area roles (Phase 3 — Supabase auth + sync)
+- Dutch (nl) translations (Phase 3)
 
 ---
 

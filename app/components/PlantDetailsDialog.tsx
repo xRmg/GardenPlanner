@@ -26,6 +26,13 @@ interface PlantDetailsDialogProps {
   onUpdate: (updated: PlantInstance) => void;
 }
 
+interface PestEvent {
+  id: string;
+  date: string;
+  type: "pest" | "treatment";
+  description: string;
+}
+
 // Generic plant care information database
 const PLANT_INFO: Record<
   string,
@@ -109,29 +116,20 @@ const PLANT_INFO: Record<
   },
 };
 
-interface PestEvent {
-  id: string;
-  date: string;
-  type: "pest" | "treatment";
-  description: string;
-}
-
 export function PlantDetailsDialog({
   open,
   onOpenChange,
   plantInstance,
   onUpdate,
 }: PlantDetailsDialogProps) {
+  if (!plantInstance) return null;
+
   const [variety, setVariety] = useState(plantInstance?.variety || "");
   const [pestEvents, setPestEvents] = useState<PestEvent[]>(
     plantInstance?.pestEvents || [],
   );
   const [newEventDescription, setNewEventDescription] = useState("");
-  const [newEventType, setNewEventType] = useState<"pest" | "treatment">(
-    "pest",
-  );
-
-  if (!plantInstance) return null;
+  const [newEventType, setNewEventType] = useState<"pest" | "treatment">("pest");
 
   const plantInfo = PLANT_INFO[plantInstance.plant.name] || {
     sunlight: "Not available",
@@ -169,7 +167,6 @@ export function PlantDetailsDialog({
 
   useEffect(() => {
     if (!open) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" && e.ctrlKey) {
         e.preventDefault();
@@ -179,7 +176,6 @@ export function PlantDetailsDialog({
         onOpenChange(false);
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, variety, pestEvents]);
@@ -194,7 +190,7 @@ export function PlantDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <span
@@ -218,15 +214,23 @@ export function PlantDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Plant Description */}
+          {plantInstance.plant.description && (
+            <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
+              <h3 className="text-sm font-semibold mb-2">Description</h3>
+              <p className="text-sm text-gray-700">{plantInstance.plant.description}</p>
+            </div>
+          )}
+
           {/* Specific Plant Instance Info */}
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-            <h3 className="text-sm mb-3">Your Plant Details</h3>
+            <h3 className="text-sm font-semibold mb-3">Your Plant Details</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-start gap-2">
                 <Calendar className="w-4 h-4 mt-0.5 text-blue-600" />
                 <div>
                   <div className="text-xs text-gray-600">Planted</div>
-                  <div className="text-sm">
+                  <div className="text-sm font-medium">
                     {plantInstance.plantingDate
                       ? formatDate(plantInstance.plantingDate)
                       : "Not recorded"}
@@ -237,7 +241,7 @@ export function PlantDetailsDialog({
                 <Clock className="w-4 h-4 mt-0.5 text-green-600" />
                 <div>
                   <div className="text-xs text-gray-600">Expected Harvest</div>
-                  <div className="text-sm">
+                  <div className="text-sm font-medium">
                     {plantInstance.harvestDate
                       ? formatDate(plantInstance.harvestDate)
                       : "Not set"}
@@ -303,7 +307,7 @@ export function PlantDetailsDialog({
           <div className="border rounded-lg p-4">
             <h3 className="text-sm mb-3 flex items-center gap-2">
               <Bug className="w-4 h-4" />
-              Pest & Treatment Log
+              Pest &amp; Treatment Log
             </h3>
 
             {/* Add new event */}
@@ -326,9 +330,7 @@ export function PlantDetailsDialog({
                   placeholder="Describe what happened..."
                   className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleAddEvent();
-                    }
+                    if (e.key === "Enter") handleAddEvent();
                   }}
                 />
                 <button

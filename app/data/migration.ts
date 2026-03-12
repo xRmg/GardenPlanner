@@ -19,7 +19,7 @@ import {
   parseWithDefaults,
   safeParse,
 } from "./schema";
-import type { DexieRepository } from "./dexieRepository";
+import type { GardenRepository } from "./repository";
 
 const LEGACY_KEYS = {
   areas: "gp_areas",
@@ -54,7 +54,7 @@ function readLegacyArray<T>(
  * No-op if already migrated or if there is no legacy data.
  */
 export async function migrateLocalStorageToDexie(
-  repo: DexieRepository,
+  repo: GardenRepository,
 ): Promise<void> {
   if (localStorage.getItem(MIGRATED_FLAG) === "1") return;
 

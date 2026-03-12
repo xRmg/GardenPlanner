@@ -6,6 +6,7 @@ import {
   Package,
   Scissors,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import { Plant } from "./PlanterGrid";
 
@@ -18,7 +19,8 @@ export interface GardenEvent {
     | "weeded"
     | "harvested"
     | "sown"
-    | "sprouted";
+    | "sprouted"
+    | "removed";
   plant?: Plant;
   date: string;
   gardenId?: string;
@@ -54,6 +56,7 @@ const eventIcons = {
   harvested: { icon: Leaf, color: "text-purple-600" },
   sown: { icon: Sprout, color: "text-blue-400" },
   sprouted: { icon: Sprout, color: "text-emerald-400" },
+  removed: { icon: Trash2, color: "text-red-600" },
 };
 
 const suggestionIcons = {

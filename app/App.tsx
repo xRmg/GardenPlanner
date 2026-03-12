@@ -18,7 +18,7 @@ import {
   AddSeedlingDialog,
   SeedlingFormData,
 } from "./components/AddSeedlingDialog";
-import { getDexieRepository } from "./data/dexieRepository";
+import { createServerRepository } from "./data/serverRepository";
 import { migrateLocalStorageToDexie } from "./data/migration";
 import { parseWithDefaults, SettingsSchema } from "./data/schema";
 import type {
@@ -232,6 +232,7 @@ interface Seedling {
 
 export default function App() {
   const hasLoadedFromDB = useRef(false);
+  const repositoryRef = useRef(createServerRepository());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [savedIndicator, setSavedIndicator] = useState(false);
@@ -301,13 +302,13 @@ export default function App() {
   const [orError, setOrError] = useState("");
   const [showOrKey, setShowOrKey] = useState(false);
 
-  // Initialize from Dexie on mount (migration + load)
+  // Initialize from server (with local Dexie fallback) on mount
   useEffect(() => {
-    const repo = getDexieRepository();
+    const repo = repositoryRef.current;
     (async () => {
       try {
         await repo.ready();
-        console.info("[DB] Dexie ready");
+        console.info("[DB] Repository ready");
         await migrateLocalStorageToDexie(repo);
         const [
           loadedAreas,
@@ -446,7 +447,7 @@ export default function App() {
   // Persist areas to Dexie (skip until initial load is done to avoid race)
   useEffect(() => {
     if (!hasLoadedFromDB.current) return;
-    const repo = getDexieRepository();
+    const repo = repositoryRef.current;
     console.info(`[DB] Saving ${areas.length} areas`);
     Promise.all(
       areas.map((area) => repo.saveArea(area as unknown as SchemaArea)),
@@ -458,7 +459,7 @@ export default function App() {
   // Persist custom plants to Dexie
   useEffect(() => {
     if (!hasLoadedFromDB.current) return;
-    const repo = getDexieRepository();
+    const repo = repositoryRef.current;
     if (customPlants.length > 0)
       console.info(`[DB] Saving ${customPlants.length} plants`);
     Promise.all(
@@ -473,7 +474,7 @@ export default function App() {
   // Persist seedlings to Dexie
   useEffect(() => {
     if (!hasLoadedFromDB.current) return;
-    const repo = getDexieRepository();
+    const repo = repositoryRef.current;
     Promise.all(
       seedlings.map((seedling) =>
         repo.saveSeedling(seedling as unknown as SchemaSeedling),
@@ -486,7 +487,7 @@ export default function App() {
   // Persist settings to Dexie
   useEffect(() => {
     if (!hasLoadedFromDB.current) return;
-    const repo = getDexieRepository();
+    const repo = repositoryRef.current;
     repo
       .saveSettings(settings)
       .then(flashSaved)
@@ -509,7 +510,7 @@ export default function App() {
   const AVAILABLE_PLANTS = customPlants.map((p) => ({
     ...p,
     isSeed: p.isSeed ?? false,
-    amount: p.amount ?? (p.isSeed ? 25 : 1),
+    // Preserve undefined amounts (unlimited) — don't override with defaults
   }));
 
   // Calculate how many plants of each type are currently planted in the grid
@@ -536,7 +537,7 @@ export default function App() {
   const getAvailableStock = (plantId: string): number => {
     const plant = AVAILABLE_PLANTS.find((p) => p.id === plantId);
     if (!plant) return 0;
-    if (plant.amount === undefined) return Infinity; // unlimited
+    if (plant.amount === undefined) return Infinity; // unlimited stock
     const usedCount = getUsedPlantCount(plantId);
     return Math.max(0, plant.amount - usedCount);
   };
@@ -559,7 +560,7 @@ export default function App() {
       date: new Date().toISOString(),
     };
     setEvents((prev) => [sowEvent, ...prev]);
-    void getDexieRepository().saveEvent(
+    void repositoryRef.current.saveEvent(
       sowEvent as unknown as SchemaGardenEvent,
     );
   };
@@ -574,13 +575,16 @@ export default function App() {
     seedCount: number,
     location: string,
   ) => {
-    // 1. Decrement amount
+    // 1. Decrement amount (only if not unlimited)
     setCustomPlants((prev) => {
       const exists = prev.find((p) => p.id === plant.id);
       if (exists) {
         return prev.map((p) =>
           p.id === plant.id
-            ? { ...p, amount: Math.max(0, (p.amount ?? 0) - seedCount) }
+            ? {
+                ...p,
+                amount: p.amount === undefined ? undefined : Math.max(0, p.amount - seedCount),
+              }
             : p,
         );
       } else {
@@ -589,7 +593,7 @@ export default function App() {
           ...prev,
           {
             ...plant,
-            amount: Math.max(0, (plant.amount ?? 25) - seedCount),
+            amount: plant.amount === undefined ? undefined : Math.max(0, plant.amount - seedCount),
           },
         ];
       }
@@ -614,7 +618,7 @@ export default function App() {
       date: new Date().toISOString(),
     };
     setEvents((prev) => [sowEvent, ...prev]);
-    void getDexieRepository().saveEvent(
+    void repositoryRef.current.saveEvent(
       sowEvent as unknown as SchemaGardenEvent,
     );
   };
@@ -643,7 +647,7 @@ export default function App() {
       date: new Date().toISOString(),
     };
     setEvents((prev) => [statusEvent, ...prev]);
-    void getDexieRepository().saveEvent(
+    void repositoryRef.current.saveEvent(
       statusEvent as unknown as SchemaGardenEvent,
     );
   };
@@ -656,7 +660,7 @@ export default function App() {
 
   const handleRemoveSeedling = (id: string) => {
     setSeedlings((prev) => prev.filter((s) => s.id !== id));
-    void getDexieRepository().deleteSeedling(id);
+    void repositoryRef.current.deleteSeedling(id);
   };
 
   const handleAddPlant = (plant: Plant) => {
@@ -672,7 +676,7 @@ export default function App() {
 
   const handleRemovePlantManually = (id: string) => {
     setCustomPlants((prev) => prev.filter((p) => p.id !== id));
-    void getDexieRepository().deletePlant(id);
+    void repositoryRef.current.deletePlant(id);
   };
 
   const handleEditPlantManually = (plant: Plant) => {
@@ -693,7 +697,7 @@ export default function App() {
 
   const handleRemoveArea = (id: string) => {
     setAreas((prev) => prev.filter((a) => a.id !== id));
-    void getDexieRepository().deleteArea(id);
+    void repositoryRef.current.deleteArea(id);
   };
 
   const handleUpdateArea = (id: string, updates: Partial<Area>) => {
@@ -756,7 +760,7 @@ export default function App() {
         };
       }),
     );
-    const repo = getDexieRepository();
+    const repo = repositoryRef.current;
     events
       .filter((e) => e.gardenId === planterId)
       .forEach((e) => void repo.deleteEvent(e.id));
@@ -807,7 +811,7 @@ export default function App() {
       gardenId: _planterId,
     };
     setEvents((prev) => [eventLog, ...prev]);
-    void getDexieRepository().saveEvent(
+    void repositoryRef.current.saveEvent(
       eventLog as unknown as SchemaGardenEvent,
     );
 
@@ -830,7 +834,21 @@ export default function App() {
   const handlePlantRemoved = (
     plantInstance: PlantInstance,
     _planterId: string,
+    eventType: "harvested" | "removed" = "harvested",
   ) => {
+    // Log removal event
+    const eventLog: GardenEvent = {
+      id: `${eventType}-${Date.now()}-${Math.random()}`,
+      type: eventType,
+      plant: plantInstance.plant,
+      date: new Date().toISOString(),
+      gardenId: _planterId,
+    };
+    setEvents((prev) => [eventLog, ...prev]);
+    void repositoryRef.current.saveEvent(
+      eventLog as unknown as SchemaGardenEvent,
+    );
+
     // Remove harvest suggestions for this specific plant instance
     setSuggestions((prev) =>
       prev.filter((s) => s.id !== `harvest-sug-${plantInstance.instanceId}`),
@@ -883,7 +901,7 @@ export default function App() {
       date: new Date().toISOString(),
     };
     setEvents((prev) => [completedEvent, ...prev]);
-    void getDexieRepository().saveEvent(
+    void repositoryRef.current.saveEvent(
       completedEvent as unknown as SchemaGardenEvent,
     );
   };

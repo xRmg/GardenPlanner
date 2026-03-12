@@ -101,9 +101,9 @@ export function PlantPickerDialog({
                       {plant.variety}
                     </span>
                   )}
-                  {plant.isSeed && plant.amount != null && (
+                  {plant.isSeed && (
                     <span className="text-[8px] font-black text-blue-500 mt-0.5">
-                      {plant.amount} seeds
+                      {plant.amount === undefined ? '∞ seeds' : `${plant.amount} seeds`}
                     </span>
                   )}
                 </button>

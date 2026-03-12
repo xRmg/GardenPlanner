@@ -33,6 +33,7 @@ export const GardenEventTypeSchema = z.enum([
   "harvested",
   "sown",
   "sprouted",
+  "removed",
 ]);
 export const SuggestionTypeSchema = z.enum([
   "water",

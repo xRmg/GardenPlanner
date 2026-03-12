@@ -1,7 +1,8 @@
 # Garden Planner — Planning & TODO Document
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 in progress — 1.1 ✅ schemas · 1.2 ✅ repository interface + LocalStorageRepository · 1.3 ✅ DexieRepository · 1.4 ✅ localStorage→Dexie migration · 1.12 ✅ Vitest + test suite
+> **Status**: Phase 1 in progress — 1.1 ✅ · 1.2 ✅ · 1.3 ✅ · 1.4 ✅ · 1.12 ✅ — **8 of 15 tasks complete** · next: 1.5 export/import, then 1.6 hooks (unblocks AI)
+> **Blocker**: Task 1.6 (decompose `App.tsx` into hooks) must complete before AI features (1.7–1.9) can begin.
 > **Purpose**: Roadmap for evolving Garden Planner from a local-only "dumb" tool into a smart, AI-assisted, multi-language, multi-user platform.
 
 ---
@@ -30,15 +31,16 @@
 | Build       | Vite 6.3                                                                              |
 | Styling     | Tailwind CSS 4 + shadcn/ui (Radix primitives)                                         |
 | Validation  | Zod v4.3 (installed but barely used)                                                  |
-| Persistence | `localStorage` (4 keys: `gp_areas`, `gp_customPlants`, `gp_seedlings`, `gp_settings`) |
+| Persistence | **Dexie v4** (IndexedDB) — migrated from `localStorage` in Phase 1.3/1.4. Auto-migration runs on first load for existing users. |
+| Testing     | **Vitest** — schema + repository unit tests in `app/data/__tests__/`                  |
 | Backend     | **None**                                                                              |
 | Auth        | **None**                                                                              |
 | i18n        | **None**                                                                              |
 
 ### Architecture Issues
 
-- **Monolithic `App.tsx`** (~1,548 lines) — all state, persistence, and business logic in one file
-- **No data access layer** — `localStorage.getItem/setItem` inline in `useState` initializers
+- **Monolithic `App.tsx`** (~1,548 lines) — all state and orchestration in one file; DAL extracted but hooks not yet decomposed
+- **Data access layer** — `GardenRepository` interface + `DexieRepository` (IndexedDB) fully implemented; `LocalStorageRepository` kept as fallback
 - **Hardcoded plant data** — 12 `DEFAULT_PLANTS` defined as a const array in `App.tsx`
 - **Static suggestions** — 3 hardcoded water/weed/compost suggestions, never updated
 - **No state management** — everything is `useState` + prop drilling
@@ -946,27 +948,33 @@ These are items NOT in the user's original request but critical for success:
 
 ### Phase 1 — Foundation
 
-- [x] Define Zod schemas: `PlantSchema`, `AreaSchema`, `SeedlingSchema`, `SettingsSchema` → `app/data/schema.ts`
-- [x] Create `GardenRepository` interface → `app/data/repository.ts`
-- [x] `LocalStorageRepository` (bridge impl, validates on every read) → `app/data/localStorageRepository.ts`
-- [x] Implement `DexieRepository` → `app/data/dexieRepository.ts` (PR #1)
-- [x] Write localStorage → Dexie migration → `app/data/migration.ts` (PR #1)
-- [ ] Add JSON export/import
-- [ ] Decompose `App.tsx` state into custom hooks
-- [ ] BYOK OpenRouter in Settings
-- [ ] "Ask AI ✨" button in PlantDefinitionDialog
-- [ ] AI prompt template for plant data extraction
-- [ ] Caching layer for AI responses (30-day TTL, keyed by plant name+variety+zone)
-- [ ] Rules engine: frost alerts, harvest reminders, watering, companion conflicts
-- [ ] Open-Meteo weather integration (direct, no API key)
-- [ ] Geocoding for Settings.location → lat/lng
-- [ ] Error boundaries + Sonner toast for persistence errors
-- [x] Vitest setup + schemas test suite → `app/data/__tests__/` (PR #1)
-- [ ] `npm install i18next react-i18next i18next-browser-languagedetector`
-- [ ] i18next config with namespaces: `ui`, `plants`, `calendar`, `errors`
-- [ ] Extract all hardcoded strings from 9 component files into `en/` JSON files
-- [ ] Replace `MONTH_ABBR` with `Intl.DateTimeFormat` + `Intl.NumberFormat`
-- [ ] All new components written with `t()` calls from day one
+**Completed (March 2026)**
+
+- [x] **1.1** — Define Zod schemas: `PlantSchema`, `AreaSchema`, `SeedlingSchema`, `SettingsSchema` → `app/data/schema.ts`
+- [x] **1.2** — Create `GardenRepository` interface + `LocalStorageRepository` → `app/data/repository.ts`, `app/data/localStorageRepository.ts`
+- [x] **1.3** — Implement `DexieRepository` (IndexedDB) → `app/data/dexieRepository.ts`
+- [x] **1.4** — Auto-migration from `localStorage` → Dexie on first load → `app/data/migration.ts`
+- [x] **1.12** — Vitest setup + schema & repository unit tests → `app/data/__tests__/`
+- [x] **Bug** — Events persisted to Dexie (were silently lost on every page refresh)
+- [x] **Bug** — Plant placements (grid squares) persisted in `Planter.squares` (layout was lost on refresh)
+
+**Remaining Phase 1 tasks**
+
+> ⚠️ **Task 1.6 is the blocker** — AI features (1.7–1.9) cannot be tested or maintained cleanly until `App.tsx` state is decomposed into hooks.
+
+- [ ] **1.5** — JSON export/import for data portability (safety net before any breaking changes)
+- [ ] **1.6** — Decompose `App.tsx` state into custom hooks: `useGarden`, `usePlants`, `useSeedlings`, `useSettings`, `useEvents`
+- [ ] **1.7** — BYOK OpenRouter field in Settings (validate key via test call, store in Dexie, never exported)
+- [ ] **1.8** — "Ask AI ✨" button in `PlantDefinitionDialog` — AI fills plant fields, amber ⚠ on low confidence
+- [ ] **1.8a** — AI prompt template for plant data extraction + confidence thresholds
+- [ ] **1.8b** — 30-day response cache keyed by `name|variety|zone`
+- [ ] **1.9** — Rules-based suggestion engine: frost alerts, harvest readiness, watering, companion conflicts, sow window
+- [ ] **1.10** — Open-Meteo weather integration (free, no API key, cached in Dexie every 30 min)
+- [ ] **1.10a** — Geocoding for `Settings.location` → lat/lng (required by Open-Meteo)
+- [ ] **1.11** — Error boundaries + Sonner toast notifications for persistence errors
+- [ ] **1.13** — `npm install i18next react-i18next i18next-browser-languagedetector`
+- [ ] **1.14** — i18next config with namespaces: `ui`, `plants`, `calendar`, `errors`; extract all hardcoded strings
+- [ ] **1.15** — Replace `MONTH_ABBR` with `Intl.DateTimeFormat` / `Intl.NumberFormat`
 
 ### Phase 2 — Backend
 
@@ -1015,7 +1023,7 @@ These are items NOT in the user's original request but critical for success:
 
 | Package                               | Phase | Purpose                             |
 | ------------------------------------- | ----- | ----------------------------------- |
-| `dexie@^4`                            | 1     | IndexedDB wrapper                   |
+| `dexie@^4`                            | 1     | IndexedDB wrapper ✅ installed       |
 | `i18next@^24`                         | 1     | i18n framework                      |
 | `react-i18next@^15`                   | 1     | React bindings for i18next          |
 | `i18next-browser-languagedetector@^8` | 1     | Auto-detect user language           |
@@ -1023,9 +1031,11 @@ These are items NOT in the user's original request but critical for success:
 | `@hono/zod-validator@^0.5`            | 2     | Request validation                  |
 | `wrangler@^4`                         | 2     | Cloudflare Workers CLI              |
 | `@supabase/supabase-js@^2.49`         | 3     | Supabase client                     |
-| `vitest@^3`                           | 1     | Unit testing                        |
+| `vitest@^3`                           | 1     | Unit testing ✅ installed            |
 | `zustand@^5`                          | —     | Not needed — Context + hooks chosen |
 
 ---
 
-> **Next step**: Tasks 1.1–1.4 and 1.12 are complete (PR #1 merged). Begin **Task 1.5** — JSON export/import for data portability, or **Task 1.6** — decompose `App.tsx` state into custom hooks.
+> **Next step**: Tasks 1.1–1.4 and 1.12 are complete. Data loss bugs (events + grid placements) are fixed.
+> Start with **Task 1.5** (JSON export/import — quick safety net, ~0.5 day), then **Task 1.6** (decompose `App.tsx` — unblocks all AI features, ~2 days).
+> Do not begin 1.7–1.9 until 1.6 is merged.

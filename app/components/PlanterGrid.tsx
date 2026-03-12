@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Settings, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { PlantDetailsDialog } from "./PlantDetailsDialog";
+import { RemovalConfirmDialog } from "./RemovalConfirmDialog";
 import { VirtualSection } from "./PlanterDialog";
 import { cn } from "./ui/utils";
 import {
@@ -67,7 +68,7 @@ interface PlanterGridProps {
   viewOnly?: boolean;
   getAvailableStock?: (plantId: string) => number;
   onPlantAdded?: (plantInstance: PlantInstance, planterId: string) => void;
-  onPlantRemoved?: (plantInstance: PlantInstance, planterId: string) => void;
+  onPlantRemoved?: (plantInstance: PlantInstance, planterId: string, eventType?: "harvested" | "removed") => void;
   onPlantUpdated?: (plantInstance: PlantInstance, planterId: string) => void;
   onSquaresChange?: (squares: PlanterSquare[][], planterId: string) => void;
   onEdit?: () => void;
@@ -118,6 +119,7 @@ export function PlanterGrid({
   const [selectedPlantInstance, setSelectedPlantInstance] =
     useState<PlantInstance | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [plantToRemove, setPlantToRemove] = useState<{ plantInstance: PlantInstance; rowIndex: number; colIndex: number } | null>(null);
 
   // Helper function to determine which virtual section a square belongs to
   const getVirtualSection = (
@@ -206,19 +208,27 @@ export function PlanterGrid({
   ) => {
     e.stopPropagation();
     const currentSquare = squares[rowIndex][colIndex];
+    if (currentSquare.plantInstance) {
+      setPlantToRemove({ plantInstance: currentSquare.plantInstance, rowIndex, colIndex });
+    }
+  };
 
-    if (currentSquare.plantInstance && onPlantRemoved) {
-      onPlantRemoved(currentSquare.plantInstance, id);
+  const handleRemovalConfirm = (eventType: "harvested" | "removed") => {
+    if (!plantToRemove) return;
+    const { plantInstance, rowIndex, colIndex } = plantToRemove;
+    
+    if (onPlantRemoved) {
+      onPlantRemoved(plantInstance, id, eventType);
     }
 
     const newSquares = squares.map((row) => [...row]);
     newSquares[rowIndex][colIndex] = { plantInstance: null };
     setSquares(newSquares);
     onSquaresChange?.(newSquares, id);
+    setPlantToRemove(null);
   };
 
   const handleUpdatePlant = (updatedInstance: PlantInstance) => {
-    // Update in grid
     const newSquares = squares.map((row) =>
       row.map((square) => {
         if (square.plantInstance?.instanceId === updatedInstance.instanceId) {
@@ -229,8 +239,6 @@ export function PlanterGrid({
     );
     setSquares(newSquares);
     onSquaresChange?.(newSquares, id);
-
-    // Notify parent
     if (onPlantUpdated) {
       onPlantUpdated(updatedInstance, id);
     }
@@ -438,6 +446,15 @@ export function PlanterGrid({
           </div>
         </div>
       </div>
+
+      <RemovalConfirmDialog
+        open={plantToRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) setPlantToRemove(null);
+        }}
+        plantInstance={plantToRemove?.plantInstance ?? null}
+        onConfirm={handleRemovalConfirm}
+      />
 
       <PlantDetailsDialog
         open={detailsOpen}
