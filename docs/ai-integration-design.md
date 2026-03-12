@@ -39,40 +39,35 @@ For the plant lookup use case, bigger models like Claude or GPT-4o are overkill 
 #### Plant Data Extraction Prompt
 
 ```typescript
-// src/services/ai/prompts.ts
+// app/services/ai/prompts.ts
 
-export const PLANT_LOOKUP_SYSTEM_PROMPT = `You are a horticultural database assistant. Given a plant name (and optionally a variety), return structured growing data in JSON format.
+export const PLANT_LOOKUP_SYSTEM_PROMPT = `You are a horticultural database assistant. Given a plant name and an optional variety, return structured growing data in JSON format.
 
 Rules:
+- Return ONLY valid JSON. No markdown, no prose.
+- Echo the requested plant name and variety instead of inventing a different plant.
+- Include latinName using accepted botanical nomenclature when known.
 - All month fields use 1-indexed arrays (1=January, 12=December)
-- Sowing/harvest months should reflect UK/European temperate climate by default; adjust if a USDA zone is provided
+- Interpret sowing and harvest windows using the supplied Köppen–Geiger climate zone and coordinates when provided
 - spacingCm is the minimum distance between plants in centimeters
-- companions and antagonists are lowercase plant names (common names)
+- companions and antagonists are lowercase plant names or stable plant ids that can be normalized later
 - daysToHarvest is from transplant/direct sow to first harvest
 - sunRequirement is one of: "full", "partial", "shade"
-- icon should be a single emoji that best represents the plant
-- color should be a hex color that represents the plant's primary visual identity
-- Provide 2-3 common variety suggestions if the user didn't specify one
-- Include a confidence score (0-1) for each field
+- description should be 1-2 practical growing sentences, not marketing copy
+- icon and color are optional convenience fields; only include them when confidence is high
+- Include a confidence score (0-1) for each AI-managed field
 
-Return ONLY valid JSON matching the schema below. No markdown, no explanation.`;
+Return ONLY valid JSON matching the schema below.`;
 
 export const PLANT_LOOKUP_SCHEMA = {
   type: "object",
   properties: {
     name: { type: "string" },
-    icon: { type: "string", description: "Single emoji" },
-    color: { type: "string", description: "Hex color code" },
+    latinName: { type: "string" },
     variety: { type: "string" },
-    varietySuggestions: {
-      type: "array",
-      items: { type: "string" },
-      description: "2-3 common varieties if user didn't specify",
-    },
     description: { type: "string", maxLength: 200 },
     daysToHarvest: { type: "number" },
     spacingCm: { type: "number" },
-    frostHardy: { type: "boolean" },
     sunRequirement: { type: "string", enum: ["full", "partial", "shade"] },
     sowIndoorMonths: {
       type: "array",
@@ -88,27 +83,32 @@ export const PLANT_LOOKUP_SCHEMA = {
     },
     companions: { type: "array", items: { type: "string" } },
     antagonists: { type: "array", items: { type: "string" } },
+    icon: { type: "string", description: "Single emoji" },
+    color: { type: "string", description: "Hex color code" },
     confidence: {
       type: "object",
       properties: {
+        latinName: { type: "number" },
+        description: { type: "number" },
         daysToHarvest: { type: "number" },
         spacingCm: { type: "number" },
-        frostHardy: { type: "number" },
+        sunRequirement: { type: "number" },
         sowIndoorMonths: { type: "number" },
         sowDirectMonths: { type: "number" },
         harvestMonths: { type: "number" },
         companions: { type: "number" },
         antagonists: { type: "number" },
+        icon: { type: "number" },
+        color: { type: "number" },
       },
     },
   },
   required: [
     "name",
-    "icon",
-    "color",
+    "latinName",
+    "description",
     "daysToHarvest",
     "spacingCm",
-    "frostHardy",
     "sunRequirement",
     "sowIndoorMonths",
     "sowDirectMonths",
@@ -120,14 +120,26 @@ export const PLANT_LOOKUP_SCHEMA = {
 };
 
 export function buildPlantLookupUserPrompt(
-  plantName: string,
-  growthZone?: string,
-  variety?: string,
+  input: {
+    plantName: string;
+    variety?: string;
+    koeppenZone?: string;
+    latitude?: number;
+    longitude?: number;
+  },
 ): string {
-  let prompt = `Plant: "${plantName}"`;
-  if (variety) prompt += `\nVariety: "${variety}"`;
-  if (growthZone) prompt += `\nUSDA Growth Zone: ${growthZone}`;
-  return prompt;
+  const lines = [`Plant: "${input.plantName}"`];
+  if (input.variety) lines.push(`Variety: "${input.variety}"`);
+  if (input.koeppenZone) {
+    lines.push(`Köppen–Geiger climate zone: ${input.koeppenZone}`);
+  }
+  if (
+    typeof input.latitude === "number" &&
+    typeof input.longitude === "number"
+  ) {
+    lines.push(`Coordinates: ${input.latitude}, ${input.longitude}`);
+  }
+  return lines.join("\n");
 }
 ```
 
@@ -146,6 +158,7 @@ Each suggestion must have:
 
 Return a JSON array of 3-8 suggestions, ordered by priority (high first).
 Consider:
+- Local climate classification (Köppen–Geiger)
 - Weather forecast: temperature, rain, frost risk
 - Each plant's growth stage and days since sowing
 - Companion planting conflicts in the current layout
@@ -155,7 +168,9 @@ Consider:
 
 export function buildSuggestionsUserPrompt(context: {
   currentDate: string;
-  growthZone: string;
+  koeppenZone: string;
+  latitude?: number;
+  longitude?: number;
   weather: WeatherData | null;
   plants: PlantState[];
   recentEvents: GardenEvent[];
@@ -170,7 +185,7 @@ export function buildSuggestionsUserPrompt(context: {
 #### OpenRouter Client
 
 ```typescript
-// src/services/ai/openrouter.ts
+// app/services/ai/openrouter.ts
 
 interface OpenRouterConfig {
   apiKey: string;
@@ -263,7 +278,7 @@ class OpenRouterError extends Error {
 #### Retry Strategy
 
 ```typescript
-// src/services/ai/retry.ts
+// app/services/ai/retry.ts
 
 export async function withRetry<T>(
   fn: () => Promise<T>,
@@ -332,7 +347,7 @@ async function queryWithFallback(
 #### Client-Side Rate Limiter
 
 ```typescript
-// src/services/ai/rateLimiter.ts
+// app/services/ai/rateLimiter.ts
 
 export class RateLimiter {
   private timestamps: number[] = [];
@@ -357,85 +372,83 @@ export class RateLimiter {
 }
 ```
 
-#### Plant Data Cache (localStorage + in-memory)
+#### Plant Data Cache (Dexie/IndexedDB + in-memory)
 
 ```typescript
-// src/services/ai/plantCache.ts
+// app/services/ai/plantCache.ts
 
 interface CachedPlantData {
+  key: string;
   data: PlantAIResponse;
   timestamp: number;
   model: string;
 }
 
-const CACHE_KEY = "gp_ai_plant_cache";
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days — plant data doesn't change
 
 export class PlantCache {
   private memCache = new Map<string, CachedPlantData>();
 
-  constructor() {
-    this.loadFromStorage();
-  }
-
-  private normalizeKey(name: string, variety?: string, zone?: string): string {
-    return [name, variety, zone]
+  private normalizeKey(
+    name: string,
+    latinName?: string,
+    koeppenZone?: string,
+  ): string {
+    return [name, latinName, koeppenZone]
       .filter(Boolean)
       .map((s) => s!.toLowerCase().trim())
       .join("|");
   }
 
-  get(name: string, variety?: string, zone?: string): PlantAIResponse | null {
-    const key = this.normalizeKey(name, variety, zone);
-    const cached = this.memCache.get(key);
+  async get(
+    name: string,
+    latinName?: string,
+    koeppenZone?: string,
+  ): Promise<PlantAIResponse | null> {
+    const key = this.normalizeKey(name, latinName, koeppenZone);
+    const memCached = this.memCache.get(key);
+    if (memCached && Date.now() - memCached.timestamp <= CACHE_TTL_MS) {
+      return memCached.data;
+    }
+
+    const cached = await db.aiPlantCache.get(key);
     if (!cached) return null;
     if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+      await db.aiPlantCache.delete(key);
       this.memCache.delete(key);
-      this.persistToStorage();
       return null;
     }
+
+    this.memCache.set(key, cached);
     return cached.data;
   }
 
-  set(
+  async set(
     name: string,
     data: PlantAIResponse,
     model: string,
-    variety?: string,
-    zone?: string,
-  ): void {
-    const key = this.normalizeKey(name, variety, zone);
-    this.memCache.set(key, { data, timestamp: Date.now(), model });
-    this.persistToStorage();
-  }
+    latinName?: string,
+    koeppenZone?: string,
+  ): Promise<void> {
+    const key = this.normalizeKey(name, latinName, koeppenZone);
+    const cached: CachedPlantData = {
+      key,
+      data,
+      timestamp: Date.now(),
+      model,
+    };
 
-  private loadFromStorage(): void {
-    try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (raw) {
-        const entries: [string, CachedPlantData][] = JSON.parse(raw);
-        this.memCache = new Map(entries);
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
-  private persistToStorage(): void {
-    try {
-      const entries = Array.from(this.memCache.entries());
-      localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
-    } catch {
-      /* ignore */
-    }
+    this.memCache.set(key, cached);
+    await db.aiPlantCache.put(cached);
   }
 
   /** Pre-seed with the app's DEFAULT_PLANTS to avoid AI calls for known plants */
   seedDefaults(plants: Plant[]): void {
     for (const p of plants) {
-      const key = this.normalizeKey(p.name, p.variety);
+      const key = this.normalizeKey(p.name, p.latinName);
       if (!this.memCache.has(key)) {
         this.memCache.set(key, {
+          key,
           data: plantToAIResponse(p),
           timestamp: Date.now(),
           model: "builtin",
@@ -493,7 +506,7 @@ Suggestions are ephemeral and context-dependent — cache for **15 minutes** in 
 #### Rules Engine (Tier 1 — always available)
 
 ```typescript
-// src/services/suggestions/rulesEngine.ts
+// app/services/suggestions/rulesEngine.ts
 
 interface SuggestionRule {
   id: string;
@@ -522,7 +535,13 @@ const rules: SuggestionRule[] = [
       );
       if (!frostNight) return null;
 
-      const tenderPlants = ctx.plants.filter((p) => !p.plant.frostHardy);
+      const tenderPlants = ctx.plants.filter((p) =>
+        requiresFrostProtection(
+          p.plant,
+          ctx.settings.koeppenZone,
+          frostNight.tempMinC,
+        ),
+      );
       if (tenderPlants.length === 0) return null;
 
       return {
@@ -722,7 +741,9 @@ async function enrichSuggestionsWithAI(
 ): Promise<Suggestion[]> {
   const prompt = buildSuggestionsUserPrompt({
     currentDate: context.currentDate.toISOString(),
-    growthZone: context.settings.growthZone,
+    koeppenZone: context.settings.koeppenZone,
+    latitude: context.settings.latitude,
+    longitude: context.settings.longitude,
     weather: context.weather,
     existingSuggestions: ruleSuggestions,
     plants: summarizePlantState(context.plants),
@@ -757,7 +778,7 @@ async function enrichSuggestionsWithAI(
 **Primary recommendation: Open-Meteo** — no API key needed, no signup, excellent data quality from ECMWF models.
 
 ```typescript
-// src/services/weather/openMeteo.ts
+// app/services/weather/openMeteo.ts
 
 export interface WeatherData {
   current: {
@@ -821,19 +842,27 @@ export async function fetchWeather(
 }
 ```
 
-**Geocoding** (convert city name from `settings.location` to lat/lon):
+**Location capture + geocoding** (address search or map pick -> coordinates -> Köppen zone derivation):
 
 ```typescript
 // Open-Meteo also provides free geocoding
 export async function geocodeLocation(
   query: string,
-): Promise<{ lat: number; lon: number } | null> {
+): Promise<{ lat: number; lon: number; label: string } | null> {
   const response = await fetch(
     `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1`,
   );
   const data = await response.json();
   if (!data.results?.length) return null;
-  return { lat: data.results[0].latitude, lon: data.results[0].longitude };
+  return {
+    lat: data.results[0].latitude,
+    lon: data.results[0].longitude,
+    label: `${data.results[0].name}, ${data.results[0].country_code}`,
+  };
+}
+
+export function deriveKoeppenZone(lat: number, lon: number): string {
+  return koppenLookup(lat, lon);
 }
 ```
 
@@ -883,7 +912,7 @@ export async function geocodeLocation(
 #### React Hook Implementation
 
 ```typescript
-// src/hooks/useSuggestions.ts
+// app/hooks/useSuggestions.ts
 
 export function useSuggestions(
   plants: PlantWithState[],
@@ -899,20 +928,22 @@ export function useSuggestions(
 
   // Fetch weather every 30 minutes
   useEffect(() => {
-    if (!settings.location) return;
+    if (
+      typeof settings.latitude !== "number" ||
+      typeof settings.longitude !== "number"
+    ) {
+      return;
+    }
 
     const fetchWeatherData = async () => {
-      const coords = await geocodeLocation(settings.location);
-      if (coords) {
-        const data = await fetchWeather(coords.lat, coords.lon);
-        setWeather(data);
-      }
+      const data = await fetchWeather(settings.latitude, settings.longitude);
+      setWeather(data);
     };
 
     fetchWeatherData();
     const interval = setInterval(fetchWeatherData, 30 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [settings.location]);
+  }, [settings.latitude, settings.longitude]);
 
   // Generate suggestions when inputs change
   useEffect(() => {
@@ -934,7 +965,11 @@ export function useSuggestions(
     setSuggestions(ruleSuggestions);
 
     // Tier 2: AI enrichment (debounced, not on every render)
-    if (settings.openRouterApiKey && shouldRefreshAI(lastRefresh)) {
+    const aiConfigured =
+      settings.aiProvider.type === "byok" ||
+      settings.aiProvider.type === "proxy";
+
+    if (aiConfigured && shouldRefreshAI(lastRefresh)) {
       setIsLoading(true);
       enrichSuggestionsWithAI(ruleSuggestions, context)
         .then((enriched) => {
@@ -1056,14 +1091,14 @@ function getFallbackSuggestions(month: number): Suggestion[] {
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  1. User clicks "Add New Plant" in PlantDialog       │
+│  1. User clicks "Add New Plant" in PlantDefinition   │
 │     ▼                                                │
-│  2. User types plant name (e.g., "Basil")            │
+│  2. User types plant name and optional variety        │
 │     - Debounce 500ms after typing stops              │
 │     - Check local cache first                        │
 │     ▼                                                │
-│  3. Cache hit? → Show "Auto-fill from library?" bar  │
-│     Cache miss + API key set? → Show "Ask AI ✨" btn │
+│  3. Cache hit? → Offer "Use cached data"             │
+│     Cache miss + BYOK key set? → Show "Ask AI ✨" btn│
 │     No API key? → Manual entry only (current UX)     │
 │     ▼                                                │
 │  4. User clicks "Ask AI ✨" or auto-fill triggers    │
@@ -1071,20 +1106,16 @@ function getFallbackSuggestions(month: number): Suggestion[] {
 │     - "Asking AI..." indicator with cancel button    │
 │     ▼                                                │
 │  5. AI response received (~1.5s)                     │
-│     - Populate ALL fields with AI values             │
+│     - Populate AI-managed fields only                │
 │     - Fields with confidence < 0.7 get amber ⚠ badge│
 │     - All fields remain editable                     │
 │     ▼                                                │
-│  6. If varietySuggestions returned:                   │
-│     - Show variety picker chips below the name       │
-│     - User picks one → re-queries AI with variety    │
-│     ▼                                                │
-│  7. User reviews, optionally edits any field         │
+│  6. User reviews, optionally edits any field         │
 │     - Changed fields lose the AI indicator           │
 │     ▼                                                │
-│  8. User clicks "Save Plant"                         │
+│  7. User clicks "Save Plant"                         │
 │     - Data saved to customPlants as normal           │
-│     - AI response cached for this plant+variety+zone │
+│     - AI response cached for plant+latinName+climate │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -1097,7 +1128,7 @@ Add to the existing dialog, just below the plant name field:
   /* AI Auto-fill Bar — shown when name has 2+ characters */
 }
 {
-  name.trim().length >= 2 && settings.openRouterApiKey && (
+  name.trim().length >= 2 && settings.aiProvider.type === "byok" && (
     <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 rounded-xl border border-primary/20">
       {aiLoading ? (
         <>
@@ -1140,36 +1171,27 @@ Add to the existing dialog, just below the plant name field:
     </div>
   );
 }
-
-{
-  /* Variety suggestions chips */
-}
-{
-  aiResult?.varietySuggestions?.length > 0 && (
-    <div className="flex flex-wrap gap-1.5">
-      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-        Varieties:
-      </span>
-      {aiResult.varietySuggestions.map((v) => (
-        <button
-          key={v}
-          onClick={() => {
-            setVariety(v);
-            handleAiLookup(name, v); // re-query with variety
-          }}
-          className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
-            variety === v
-              ? "bg-primary text-white border-primary"
-              : "bg-muted/30 border-white/20 hover:bg-white/60"
-          }`}
-        >
-          {v}
-        </button>
-      ))}
-    </div>
-  );
-}
 ```
+
+AI-managed fields for the MVP:
+
+- `latinName`
+- `description`
+- `daysToHarvest`
+- `spacingCm`
+- `sunRequirement`
+- `sowIndoorMonths`
+- `sowDirectMonths`
+- `harvestMonths`
+- `companions`
+- `antagonists`
+- Optional when high-confidence: `icon`, `color`
+
+User-owned inputs stay editable and are not overwritten as source-of-truth:
+
+- `name`
+- `variety`
+- Inventory-specific fields such as `isSeed` and `amount`
 
 ### C3. Handling AI Uncertainty
 
@@ -1224,7 +1246,7 @@ const handleFieldChange = (
 ```
 1. Built-in defaults (DEFAULT_PLANTS array — 12 plants, zero-cost)
       ↓ miss
-2. localStorage cache (keyed by name|variety|zone, 30-day TTL)
+2. Dexie cache (keyed by name|latinName|koeppenZone, 30-day TTL)
       ↓ miss
 3. In-flight dedup (if same query is already pending, await it)
       ↓ miss
@@ -1261,7 +1283,7 @@ function normalizePlantName(name: string): string {
 | Component                                    | Tokens          |
 | -------------------------------------------- | --------------- |
 | System prompt                                | ~350            |
-| User prompt (plant name + zone)              | ~30             |
+| User prompt (plant name + climate context)   | ~30             |
 | JSON response (full plant data + confidence) | ~400            |
 | **Total per lookup**                         | **~780 tokens** |
 
@@ -1317,29 +1339,29 @@ All models are negligibly cheap for this use case. Choose on quality, not cost.
 
 ### Phase 1: Foundation (Week 1)
 
-1. Add `openRouterApiKey` to `Settings` interface and settings UI
-2. Create `src/services/ai/openrouter.ts` — OpenRouter client with retry + model fallback
-3. Create `src/services/ai/plantCache.ts` — localStorage-backed cache
-4. Create `src/services/ai/prompts.ts` — prompt templates + schema
+1. Extend the Settings UI around `aiProvider` / `aiModel` for BYOK OpenRouter validation and storage
+2. Create `app/services/ai/openrouter.ts` — OpenRouter client with retry + model fallback
+3. Create `app/services/ai/plantCache.ts` — Dexie-backed AI response cache
+4. Create `app/services/ai/prompts.ts` — prompt templates + JSON schema
 
 ### Phase 2: AI Plant Entry (Week 2)
 
 5. Add "Ask AI ✨" button to `PlantDefinitionDialog.tsx`
 6. Implement `usePlantAILookup` hook (debounce, cache check, API call, confidence display)
-7. Add variety suggestion chips UI
+7. Populate only AI-managed horticultural fields; preserve user-entered name / variety
 8. Add confidence badges to form fields
 
 ### Phase 3: Weather Integration (Week 3)
 
-9. Create `src/services/weather/openMeteo.ts` — weather client
-10. Add geocoding for `settings.location`
-11. Create `useWeather` hook (30-min refresh, localStorage coords cache)
+9. Create `app/services/weather/openMeteo.ts` — weather client
+10. Add geocoding / map selection to populate coordinates and derive Köppen climate zone
+11. Create `app/hooks/useWeather.ts` hook (30-min refresh, Dexie weather cache)
 12. Display current weather in the toolbar or events bar
 
 ### Phase 4: Smart Suggestions (Week 4)
 
-13. Create `src/services/suggestions/rulesEngine.ts` — deterministic rules
-14. Create `useSuggestions` hook with tiered architecture
+13. Create `app/services/suggestions/rulesEngine.ts` — deterministic rules
+14. Create `app/hooks/useSuggestions.ts` hook with tiered architecture
 15. Expand `Suggestion` type to include new types (`frost_protect`, `sow`, `fertilize`, `pest_check`, `prune`)
 16. Update `EventsBar.tsx` with new suggestion types + icons
 17. Add AI enrichment layer
@@ -1348,7 +1370,7 @@ All models are negligibly cheap for this use case. Choose on quality, not cost.
 ### File Structure
 
 ```
-src/
+app/
   services/
     ai/
       openrouter.ts        # API client

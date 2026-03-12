@@ -178,11 +178,11 @@ export default i18n;
     "addPlant": "Add Plant",
     "editPlant": "Edit Plant",
     "name": "Name",
+    "latinName": "Latin Name",
     "variety": "Variety",
     "description": "Description",
     "daysToHarvest": "Days to Harvest",
     "spacing": "Spacing (cm)",
-    "frostHardy": "Frost Hardy",
     "sunRequirement": "Sun Requirement",
     "sunFull": "Full Sun",
     "sunPartial": "Partial Shade",
@@ -206,7 +206,9 @@ export default i18n;
   "settings": {
     "location": "Location",
     "locationPlaceholder": "e.g. London, UK",
-    "growthZone": "USDA Growth Zone",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "koeppenZone": "Köppen-Geiger Climate Zone",
     "language": "Language"
   }
 }
@@ -674,11 +676,11 @@ GET    /api/v1/plants/sync?since=2026-01-15T00:00:00Z&locale=nl
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "slug": "tomato",
+  "latinName": "Solanum lycopersicum",
   "icon": "🍅",
   "color": "#ef4444",
   "spacingCm": 60,
   "daysToHarvest": 75,
-  "frostHardy": false,
   "sunRequirement": "full",
   "sowIndoorMonths": [2, 3, 4],
   "sowDirectMonths": [],

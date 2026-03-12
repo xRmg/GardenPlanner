@@ -54,13 +54,13 @@ Area { id, name, tagline, backgroundColor, planters[] }
        └─ PlanterSquare { plantInstance }
             └─ PlantInstance { instanceId, plant, plantingDate, harvestDate, variety, pestEvents[] }
 
-Plant { id, name, color, icon, description, variety, daysToHarvest, spacingCm,
-        frostHardy, sunRequirement, sowIndoorMonths[], sowDirectMonths[],
+Plant { id, name, latinName, color, icon, description, variety, daysToHarvest, spacingCm,
+        sunRequirement, sowIndoorMonths[], sowDirectMonths[],
         harvestMonths[], companions[], antagonists[], isSeed, amount }
 
 Seedling { id, plant, plantedDate, seedCount, location, method, status }
 
-Settings { location, growthZone, weatherProvider }
+Settings { latitude, longitude, koeppenZone, weatherProvider }
 
 Events: planted | watered | composted | weeded | harvested | sown | sprouted
 Suggestions: water | harvest | repot | compost | weed  (with priority)
@@ -344,7 +344,43 @@ SQLite WASM might seem appealing ("same SQL as Postgres = easier migration"), bu
 - Dexie remains as local cache with a sync adapter
 - RLS (Row-Level Security) for data isolation
 
-### 2.3 API Key Security
+### 2.3 Climate Classification: Köppen–Geiger Zones
+
+**Decision**: Use **Köppen–Geiger climate classification** instead of USDA hardiness zones.
+
+#### Why Köppen–Geiger?
+
+| Factor | USDA Hardiness | Köppen–Geiger | Better for Gardening? |
+|--------|---|---|---|
+| **What it measures** | Min winter temperature only | Temp + precipitation + seasonality | ✅ Köppen |
+| **Sowing windows** | Static (can't adjust for rainfall) | Accounts for monsoon, dry season | ✅ Köppen |
+| **Frost survival** | Primary purpose | Secondary (derived from temp data) | Comparable |
+| **Plant knowledge** | AI trained on both | Increasingly common in literature | ✅ Köppen |
+| **Data availability** | Requires user knowledge | Auto-derived from lat/lng | ✅ Köppen |
+
+#### Implementation
+
+**Storage in Settings**:
+```typescript
+Settings {
+  latitude: number,           // e.g., 51.5074 (London)
+  longitude: number,          // e.g., -0.1278
+  koeppenZone: string,        // e.g., 'Cfb' (Ocean climate)
+  weatherProvider: string
+}
+```
+
+**Derivation**: On location change, look up Köppen zone from lat/lng using:
+- **Offline option (Phase 1)**: Pre-computed lookup table (Köppen zones on a 0.5° grid, ~260 KB embedded)
+- **Online option (Phase 2+)**: Open-Meteo climate endpoint + caching
+
+**Plant cache key** (task 1.8b): `${name}|${latinName}|${koeppenZone}` — allows same plant to have different sow/harvest windows per climate.
+
+**No migration needed**: Phase 1 is pre-launch; existing user base is zero. If we add USDA zone support later, it can be a separate optional field for cross-reference.
+
+---
+
+### 2.4 API Key Security
 
 OpenRouter API keys **cannot** be exposed in the frontend bundle.
 
@@ -411,7 +447,7 @@ services:
 - For CI/CD (GitHub Actions): use repository secrets, never hardcode in workflow YAML
 - The frontend client **never** sees backend secrets at any tier — it only ever calls your own proxy endpoint
 
-### 2.4 Required Architecture Refactoring
+### 2.5 Required Architecture Refactoring
 
 Before any new features, `App.tsx` must be decomposed:
 
@@ -468,7 +504,7 @@ app/
 | **Primary model**   | `google/gemini-2.0-flash`                    | Best cost/quality for structured JSON ($0.10/M in, $0.40/M out) |
 | **Fallback chain**  | Gemini Flash → Mistral Small → Llama 3.3 70B | Redundancy across providers                                     |
 | **Response format** | Non-streaming JSON                           | Must parse complete Plant schema                                |
-| **Caching**         | 30-day cache keyed by `name                  | variety                                                         | zone` | Avoid repeat AI calls |
+| **Caching**         | 30-day cache keyed by `name|latinName|koeppenZone` | Avoid repeat AI calls in same climate |
 | **Pre-seeded**      | 12 DEFAULT_PLANTS cached at build time       | Zero AI calls for known plants                                  |
 
 #### Example Prompt (Plant Data Extraction)
@@ -479,11 +515,11 @@ return a JSON object matching this exact schema:
 
 {
   "name": string,
+  "latinName": string,
   "variety": string,
   "icon": string (single emoji),
   "daysToHarvest": number,
   "spacingCm": number,
-  "frostHardy": boolean,
   "sunRequirement": "full" | "partial" | "shade",
   "sowIndoorMonths": number[] (1-12),
   "sowDirectMonths": number[] (1-12),
@@ -494,7 +530,7 @@ return a JSON object matching this exact schema:
   "confidence": number (0-1)
 }
 
-Growth zone: {userZone}. Climate region: {userRegion}.
+Köppen–Geiger climate zone: {koeppenZone}. User location: lat {latitude}, lng {longitude}.
 Plant: {userInput}
 ```
 
@@ -637,15 +673,15 @@ CREATE TABLE plant_translations (
   PRIMARY KEY (plant_id, locale)
 );
 
--- Growth zone adjustments (future)
+-- Köppen–Geiger climate zone adjustments (future)
 CREATE TABLE plant_zone_adjustments (
   plant_id      TEXT REFERENCES plants(id),
-  zone          TEXT NOT NULL, -- '6b', '7a', etc.
+  koppen_zone   TEXT NOT NULL, -- 'Csa', 'Dfb', 'Aw', etc.
   sow_indoor_months  TEXT,
   sow_direct_months  TEXT,
   harvest_months     TEXT,
   notes         TEXT,
-  PRIMARY KEY (plant_id, zone)
+  PRIMARY KEY (plant_id, koppen_zone)
 );
 ```
 
@@ -808,11 +844,11 @@ These are items NOT in the user's original request but critical for success:
 - **TODO**: Evaluate PWA with service worker for offline-first + installability
 - **Impact**: Garden app is a natural mobile use case
 
-### 6.8 Weather API — Location Handling
+### 6.8 Weather API — Location Handling & Köppen Zone
 
-- **Problem**: Settings has `location: string` but no geocoding
-- **TODO**: Add geocoding (lat/lng) for weather API calls; allow map-based selection
-- **Impact**: Weather integration requires coordinates, not free text
+- **Problem**: Settings needs lat/lng for weather + automatic Köppen–Geiger zone derivation
+- **TODO**: Add map-based location picker or address-to-geocode; auto-derive Köppen zone from lat/lng
+- **Impact**: Weather integration requires accurate coordinates; Köppen zone drives sow/harvest windows per climate
 
 ### 6.9 Undo/History
 
@@ -891,7 +927,7 @@ These are items NOT in the user's original request but critical for success:
 | --- | ---------------------------------------------------- | ------- | ------------ |
 | 3.1 | Dutch (nl) translations (`ui`, `calendar`, `errors`) | 2 days  | 1.14         |
 | 3.2 | Plant name translations (en + nl for default plants) | 1 day   | 1.14         |
-| 3.3 | Language switcher in Settings                        | 0.5 day | 1.13         |
+| 3.3 | Language switcher + Köppen zone display in Settings  | 0.5 day | 1.13         |
 | 3.4 | Supabase Auth integration                            | 2 days  | 2.1          |
 | 3.5 | Per-user data schema in Postgres                     | 2 days  | 3.4          |
 | 3.6 | Dexie ↔ Supabase sync adapter                        | 3 days  | 3.5, 1.3     |
@@ -908,6 +944,7 @@ These are items NOT in the user's original request but critical for success:
 - [x] Audit `App.tsx` — list every piece of state and its consumers
 - [x] Decide on state management: **Context + custom hooks** (not Zustand)
 - [x] Decide BYOK UX: Settings tab, validate via test call to OpenRouter `/api/v1/models`, store in Dexie `settings` table, never in `.env` or exported JSON
+- [x] **Climate zone system**: Switch from USDA hardiness zones to **Köppen–Geiger classification** — more useful for gardening (accounts for rainfall patterns, temperature seasonality, not just cold survival). Derives automatically from lat/lng. No backwards compatibility concern (Phase 1 pre-launch).
 
 #### App.tsx Audit Results
 
@@ -965,12 +1002,12 @@ These are items NOT in the user's original request but critical for success:
 - [ ] **1.5** — JSON export/import for data portability (safety net before any breaking changes)
 - [ ] **1.6** — Decompose `App.tsx` state into custom hooks: `useGarden`, `usePlants`, `useSeedlings`, `useSettings`, `useEvents`
 - [ ] **1.7** — BYOK OpenRouter field in Settings (validate key via test call, store in Dexie, never exported)
-- [ ] **1.8** — "Ask AI ✨" button in `PlantDefinitionDialog` — AI fills plant fields, amber ⚠ on low confidence
+- [ ] **1.8** — "Ask AI ✨" button in `PlantDefinitionDialog` — AI fills latin name + core growing fields, amber ⚠ on low confidence
 - [ ] **1.8a** — AI prompt template for plant data extraction + confidence thresholds
-- [ ] **1.8b** — 30-day response cache keyed by `name|variety|zone`
+- [ ] **1.8b** — 30-day response cache keyed by `name|latinName|koeppenZone`
 - [ ] **1.9** — Rules-based suggestion engine: frost alerts, harvest readiness, watering, companion conflicts, sow window
 - [ ] **1.10** — Open-Meteo weather integration (free, no API key, cached in Dexie every 30 min)
-- [ ] **1.10a** — Geocoding for `Settings.location` → lat/lng (required by Open-Meteo)
+- [ ] **1.10a** — Geocoding / map selection → `latitude` + `longitude`, then derive `koeppenZone`
 - [ ] **1.11** — Error boundaries + Sonner toast notifications for persistence errors
 - [ ] **1.13** — `npm install i18next react-i18next i18next-browser-languagedetector`
 - [ ] **1.14** — i18next config with namespaces: `ui`, `plants`, `calendar`, `errors`; extract all hardcoded strings
@@ -1012,7 +1049,7 @@ These are items NOT in the user's original request but critical for success:
 - [ ] Undo/redo stack
 - [ ] Accessibility audit (axe/Lighthouse)
 - [ ] More locales beyond en/nl
-- [ ] Growth zone-specific plant data adjustments
+- [ ] Köppen zone-specific plant data adjustments
 - [ ] Calendar view for sow/harvest timeline
 - [ ] Community features: share garden layouts
 - [ ] Push notifications for urgent suggestions (frost, harvest)
