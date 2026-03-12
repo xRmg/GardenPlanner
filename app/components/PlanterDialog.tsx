@@ -116,9 +116,10 @@ export function PlanterDialog({
 
     setVirtualSections([...virtualSections, newVirtualSection]);
     setNewVirtualSectionName("");
-    const nextStart = newVirtualSectionEnd + 1;
-    setNewVirtualSectionStart(Math.min(nextStart, maxValue));
-    setNewVirtualSectionEnd(Math.min(newVirtualSectionEnd + 2, maxValue));
+    const nextStart = Math.min(newVirtualSectionEnd + 1, maxValue);
+    const nextEnd = Math.max(nextStart, Math.min(newVirtualSectionEnd + 2, maxValue));
+    setNewVirtualSectionStart(nextStart);
+    setNewVirtualSectionEnd(nextEnd);
   };
 
   const handleRemoveVirtualSection = (id: string) => {
