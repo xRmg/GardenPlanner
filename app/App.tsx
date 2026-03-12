@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PlanterGrid, Plant, PlantInstance, PlanterSquare } from "./components/PlanterGrid";
 import { EventsBar, GardenEvent, Suggestion } from "./components/EventsBar";
 import { ToolBar } from "./components/ToolBar";
@@ -752,17 +752,30 @@ export default function App() {
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
 
-  const filteredAvailablePlants = AVAILABLE_PLANTS.filter((plant) => {
-    const matchesFilter =
-      plantsFilter === "all" ||
-      (plantsFilter === "plants" && !plant.isSeed) ||
-      (plantsFilter === "seeds" && plant.isSeed);
-    const matchesSearch =
-      !plantsSearch.trim() ||
-      plant.name.toLowerCase().includes(plantsSearch.toLowerCase()) ||
-      (plant.variety ?? "").toLowerCase().includes(plantsSearch.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const plantTabCounts = useMemo(
+    () => ({
+      all: AVAILABLE_PLANTS.length,
+      plants: AVAILABLE_PLANTS.filter((p) => !p.isSeed).length,
+      seeds: AVAILABLE_PLANTS.filter((p) => p.isSeed).length,
+    }),
+    [AVAILABLE_PLANTS],
+  );
+
+  const filteredAvailablePlants = useMemo(
+    () =>
+      AVAILABLE_PLANTS.filter((plant) => {
+        const matchesFilter =
+          plantsFilter === "all" ||
+          (plantsFilter === "plants" && !plant.isSeed) ||
+          (plantsFilter === "seeds" && plant.isSeed);
+        const matchesSearch =
+          !plantsSearch.trim() ||
+          plant.name.toLowerCase().includes(plantsSearch.toLowerCase()) ||
+          (plant.variety ?? "").toLowerCase().includes(plantsSearch.toLowerCase());
+        return matchesFilter && matchesSearch;
+      }),
+    [AVAILABLE_PLANTS, plantsFilter, plantsSearch],
+  );
 
   return (
     <div className="size-full flex flex-col bg-background relative overflow-hidden">
@@ -1093,14 +1106,14 @@ export default function App() {
                     <div className="flex gap-0.5 bg-muted/30 rounded-lg p-0.5">
                       {(
                         [
-                          { key: "all", label: `All (${AVAILABLE_PLANTS.length})` },
+                          { key: "all", label: `All (${plantTabCounts.all})` },
                           {
                             key: "plants",
-                            label: `🌿 Plants (${AVAILABLE_PLANTS.filter((p) => !p.isSeed).length})`,
+                            label: `🌿 Plants (${plantTabCounts.plants})`,
                           },
                           {
                             key: "seeds",
-                            label: `🌾 Seeds (${AVAILABLE_PLANTS.filter((p) => p.isSeed).length})`,
+                            label: `🌾 Seeds (${plantTabCounts.seeds})`,
                           },
                         ] as { key: "all" | "plants" | "seeds"; label: string }[]
                       ).map(({ key, label }) => (
