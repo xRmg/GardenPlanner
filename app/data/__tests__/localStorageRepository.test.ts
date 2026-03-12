@@ -211,7 +211,7 @@ describe("LocalStorageRepository — settings", () => {
     await repo.saveSettings(makeSettings());
     const settings = await repo.getSettings();
     expect(settings.location).toBe("Amsterdam");
-    expect(settings.growthZone).toBe("8b");
+    expect(settings.growthZone).toBe("Cfb");
   });
 });
 

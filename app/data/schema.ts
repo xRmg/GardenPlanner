@@ -74,6 +74,8 @@ export const PlantSchema = z.object({
   name: z.string().min(1),
   color: z.string(),
   icon: z.string(),
+  /** Accepted botanical name, e.g. "Solanum lycopersicum". */
+  latinName: z.string().optional(),
   description: z.string().optional(),
   variety: z.string().optional(),
   daysToHarvest: z.number().int().positive().optional(),

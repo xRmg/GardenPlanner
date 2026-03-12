@@ -21,6 +21,7 @@ export interface Plant {
   name: string;
   color: string;
   icon: string;
+  latinName?: string;
   description?: string;
   variety?: string;
   daysToHarvest?: number;
