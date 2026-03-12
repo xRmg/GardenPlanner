@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Calendar,
   Sprout,
@@ -7,8 +8,15 @@ import {
   Scissors,
   CheckCircle2,
   Trash2,
+  Sun,
+  Snowflake,
+  Bug,
+  Loader2,
+  RefreshCw,
+  CloudRain,
 } from "lucide-react";
 import { Plant } from "./PlanterGrid";
+import type { SuggestionMode } from "../data/schema";
 
 export interface GardenEvent {
   id: string;
@@ -29,11 +37,32 @@ export interface GardenEvent {
 
 export interface Suggestion {
   id: string;
-  type: "water" | "harvest" | "repot" | "compost" | "weed";
+  type:
+    | "water"
+    | "harvest"
+    | "repot"
+    | "compost"
+    | "weed"
+    | "sow"
+    | "fertilize"
+    | "no_water"
+    | "frost_protect"
+    | "thin_seedlings"
+    | "harden_seedlings"
+    | "companion_conflict"
+    | "succession_sow"
+    | "pest_alert"
+    | "disease_risk"
+    | "end_of_season"
+    | "mulch"
+    | "prune";
   plant?: Plant;
   priority: "low" | "medium" | "high";
   description: string;
   dueDate?: string;
+  planterId?: string;
+  expiresAt?: string;
+  source?: "rules" | "ai" | "static";
 }
 
 interface EventsBarProps {
@@ -46,6 +75,8 @@ interface EventsBarProps {
     areaName: string;
   }>;
   onCompleteSuggestion?: (suggestion: Suggestion) => void;
+  suggestionsMode?: SuggestionMode;
+  suggestionsLoading?: boolean;
 }
 
 const eventIcons = {
@@ -59,12 +90,46 @@ const eventIcons = {
   removed: { icon: Trash2, color: "text-red-600" },
 };
 
-const suggestionIcons = {
+const suggestionIcons: Record<string, { icon: React.ElementType; color: string }> = {
   water: { icon: Droplets, color: "text-blue-600" },
   harvest: { icon: Leaf, color: "text-purple-600" },
   repot: { icon: Package, color: "text-indigo-600" },
   compost: { icon: Package, color: "text-amber-700" },
   weed: { icon: Scissors, color: "text-orange-600" },
+  sow: { icon: Sprout, color: "text-emerald-600" },
+  fertilize: { icon: Package, color: "text-yellow-600" },
+  no_water: { icon: CloudRain, color: "text-sky-500" },
+  frost_protect: { icon: Snowflake, color: "text-cyan-600" },
+  thin_seedlings: { icon: Sprout, color: "text-lime-600" },
+  harden_seedlings: { icon: Sun, color: "text-yellow-500" },
+  companion_conflict: { icon: Leaf, color: "text-rose-600" },
+  succession_sow: { icon: Sprout, color: "text-teal-600" },
+  pest_alert: { icon: Bug, color: "text-red-600" },
+  disease_risk: { icon: Bug, color: "text-orange-700" },
+  end_of_season: { icon: Leaf, color: "text-amber-600" },
+  mulch: { icon: Leaf, color: "text-amber-800" },
+  prune: { icon: Scissors, color: "text-violet-600" },
+};
+
+const DEFAULT_SUGGESTION_ICON = { icon: Package, color: "text-muted-foreground" };
+
+const MODE_BADGES: Record<SuggestionMode, { label: string; className: string }> = {
+  "ai+weather": {
+    label: "✨ AI",
+    className: "bg-violet-50 text-violet-600 border border-violet-200",
+  },
+  "rules+weather": {
+    label: "🌤 Weather",
+    className: "bg-sky-50 text-sky-600 border border-sky-200",
+  },
+  rules: {
+    label: "📅 Rules",
+    className: "bg-emerald-50 text-emerald-600 border border-emerald-200",
+  },
+  static: {
+    label: "📋 Tips",
+    className: "bg-gray-50 text-gray-500 border border-gray-200",
+  },
 };
 
 export function EventsBar({
@@ -72,6 +137,8 @@ export function EventsBar({
   suggestions,
   harvestAlerts = [],
   onCompleteSuggestion,
+  suggestionsMode,
+  suggestionsLoading = false,
 }: EventsBarProps) {
   const sortedEvents = [...events].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -208,70 +275,106 @@ export function EventsBar({
 
         {/* Next Steps Section */}
         <div>
-          <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3 px-1">
-            Next Steps
-          </h3>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+              Next Steps
+            </h3>
+            <div className="flex items-center gap-1.5">
+              {suggestionsLoading && (
+                <Loader2 className="w-2.5 h-2.5 text-muted-foreground/40 animate-spin" />
+              )}
+              {suggestionsMode && !suggestionsLoading && (
+                <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${MODE_BADGES[suggestionsMode].className}`}>
+                  {MODE_BADGES[suggestionsMode].label}
+                </span>
+              )}
+            </div>
+          </div>
           <div className="space-y-2.5">
-            {suggestions.map((suggestion) => {
-              const IconComponent = suggestionIcons[suggestion.type].icon;
-              const iconColor = suggestionIcons[suggestion.type].color;
-
-              return (
+            {suggestionsLoading && suggestions.length === 0 ? (
+              // Loading skeleton
+              [1, 2, 3].map((i) => (
                 <div
-                  key={suggestion.id}
-                  className="bg-white/80 rounded-lg p-2.5 shadow-sm border border-emerald-50 hover:shadow-md transition-all group animate-in slide-in-from-right-4 duration-500"
+                  key={i}
+                  className="bg-white/80 rounded-lg p-2.5 shadow-sm border border-emerald-50 animate-pulse"
                 >
                   <div className="flex gap-2.5">
-                    <div
-                      className={`p-1.5 rounded-md bg-muted/20 ${iconColor} shrink-0 mt-0.5`}
-                    >
-                      <IconComponent className="w-3.5 h-3.5" />
+                    <div className="w-7 h-7 rounded-md bg-muted/20 shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-2 bg-muted/20 rounded w-16" />
+                      <div className="h-3 bg-muted/20 rounded w-full" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
-                            suggestion.priority === "high"
-                              ? "bg-red-50 text-red-500"
-                              : suggestion.priority === "medium"
-                                ? "bg-orange-50 text-orange-500"
-                                : "bg-blue-50 text-blue-500"
-                          }`}
-                        >
-                          {suggestion.priority}
-                        </span>
-                        {suggestion.dueDate && (
-                          <span className="text-[8px] font-medium text-muted-foreground/40">
-                            {formatDate(suggestion.dueDate)}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs font-bold text-foreground mt-0.5 leading-tight">
-                        {suggestion.description}
-                      </p>
-                      {suggestion.plant && (
-                        <div className="flex items-center gap-1 mt-0.5 opacity-60">
-                          <span className="text-xs scale-90 origin-left">
-                            {suggestion.plant.icon}
-                          </span>
-                          <span className="text-[7.5px] font-black uppercase text-muted-foreground tracking-wider">
-                            {suggestion.plant.name}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => onCompleteSuggestion?.(suggestion)}
-                      className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 transition-all mt-0.5"
-                      title="Mark done"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
-              );
-            })}
-            {suggestions.length === 0 && (
+              ))
+            ) : (
+              suggestions.map((suggestion) => {
+                const iconEntry = suggestionIcons[suggestion.type] ?? DEFAULT_SUGGESTION_ICON;
+                const IconComponent = iconEntry.icon;
+                const iconColor = iconEntry.color;
+
+                return (
+                  <div
+                    key={suggestion.id}
+                    className="bg-white/80 rounded-lg p-2.5 shadow-sm border border-emerald-50 hover:shadow-md transition-all group animate-in slide-in-from-right-4 duration-500"
+                  >
+                    <div className="flex gap-2.5">
+                      <div
+                        className={`p-1.5 rounded-md bg-muted/20 ${iconColor} shrink-0 mt-0.5`}
+                      >
+                        <IconComponent className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
+                              suggestion.priority === "high"
+                                ? "bg-red-50 text-red-500"
+                                : suggestion.priority === "medium"
+                                  ? "bg-orange-50 text-orange-500"
+                                  : "bg-blue-50 text-blue-500"
+                            }`}
+                          >
+                            {suggestion.priority}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {suggestion.source === "ai" && (
+                              <span className="text-[6px] font-black text-violet-400/60 uppercase tracking-wider">AI</span>
+                            )}
+                            {suggestion.dueDate && (
+                              <span className="text-[8px] font-medium text-muted-foreground/40">
+                                {formatDate(suggestion.dueDate)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs font-bold text-foreground mt-0.5 leading-tight">
+                          {suggestion.description}
+                        </p>
+                        {suggestion.plant && (
+                          <div className="flex items-center gap-1 mt-0.5 opacity-60">
+                            <span className="text-xs scale-90 origin-left">
+                              {suggestion.plant.icon}
+                            </span>
+                            <span className="text-[7.5px] font-black uppercase text-muted-foreground tracking-wider">
+                              {suggestion.plant.name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => onCompleteSuggestion?.(suggestion)}
+                        className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 transition-all mt-0.5"
+                        title="Mark done"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            {!suggestionsLoading && suggestions.length === 0 && (
               <div className="text-center py-6 px-4 text-muted-foreground/40 bg-white/30 rounded-2xl border border-dashed border-border/40">
                 <div className="text-lg mb-0.5">✨</div>
                 <p className="text-[9px] font-black uppercase tracking-widest">
