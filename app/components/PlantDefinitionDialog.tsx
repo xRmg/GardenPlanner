@@ -79,7 +79,8 @@ export function PlantDialog({
     initialPlant?.daysToHarvest || 60,
   );
   const [isSeed, setIsSeed] = useState(initialPlant?.isSeed ?? defaultIsSeed);
-  const [amount, setAmount] = useState(initialPlant?.amount || 10);
+  const [amount, setAmount] = useState(initialPlant?.amount ?? 10);
+  const [infiniteStock, setInfiniteStock] = useState(initialPlant?.amount === undefined);
   const [spacingCm, setSpacingCm] = useState(initialPlant?.spacingCm || 30);
   const [frostHardy, setFrostHardy] = useState(
     initialPlant?.frostHardy ?? false,
@@ -112,7 +113,8 @@ export function PlantDialog({
       setColor(initialPlant?.color || COLORS[0]);
       setDaysToHarvest(initialPlant?.daysToHarvest || 60);
       setIsSeed(initialPlant?.isSeed ?? defaultIsSeed);
-      setAmount(initialPlant?.amount || 10);
+      setInfiniteStock(initialPlant?.amount === undefined);
+      setAmount(initialPlant?.amount ?? 10);
       setSpacingCm(initialPlant?.spacingCm || 30);
       setFrostHardy(initialPlant?.frostHardy ?? false);
       setSowIndoorMonths(initialPlant?.sowIndoorMonths || []);
@@ -144,7 +146,7 @@ export function PlantDialog({
       color,
       daysToHarvest,
       isSeed,
-      amount,
+      amount: infiniteStock ? undefined : amount,
       spacingCm,
       frostHardy,
       sowIndoorMonths: sowIndoorMonths.length ? sowIndoorMonths : undefined,
@@ -201,16 +203,35 @@ export function PlantDialog({
               </span>
             </div>
             <div className="ml-auto flex items-center gap-3">
-              <div className="flex flex-col items-end">
-                <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-1">
+              <div className="flex flex-col items-end gap-1">
+                <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block">
                   {isSeed ? "Seed Count" : "Quantity"}
                 </label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-20 px-3 py-1.5 bg-white/50 border border-white/40 rounded-xl text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
-                />
+                <div className="flex items-center gap-2">
+                  {infiniteStock ? (
+                    <span className="w-20 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center font-black text-emerald-600 text-lg shadow-inner select-none">
+                      ∞
+                    </span>
+                  ) : (
+                    <input
+                      type="number"
+                      min={0}
+                      value={amount}
+                      onChange={(e) => setAmount(Number(e.target.value))}
+                      className="w-20 px-3 py-1.5 bg-white/50 border border-white/40 rounded-xl text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                    />
+                  )}
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Switch
+                      checked={infiniteStock}
+                      onCheckedChange={setInfiniteStock}
+                      className="data-[state=checked]:bg-emerald-500 scale-75"
+                    />
+                    <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60">
+                      ∞ Unlimited
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
