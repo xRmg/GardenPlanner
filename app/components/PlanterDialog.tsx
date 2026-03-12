@@ -370,8 +370,8 @@ export function PlanterDialog({
                     <div className="flex-1">
                       <div className="font-medium">{vb.name}</div>
                       <div className="text-xs text-gray-600">
-                        {vb.type === "rows" ? "Rows" : "Columns"} {vb.start + 1} to{" "}
-                        {vb.end}
+                        {vb.type === "rows" ? "Rows" : "Columns"} {vb.start + 1}{" "}
+                        to {vb.end}
                       </div>
                     </div>
                     <button
