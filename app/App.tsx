@@ -334,6 +334,8 @@ export default function App() {
   const [selectedSowPlant, setSelectedSowPlant] = useState<Plant | null>(null);
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
   const [dialogDefaultIsSeed, setDialogDefaultIsSeed] = useState(false);
+  const [plantsFilter, setPlantsFilter] = useState<"all" | "plants" | "seeds">("all");
+  const [plantsSearch, setPlantsSearch] = useState("");
 
   // Initialize from Dexie on mount (migration + load)
   useEffect(() => {
@@ -750,6 +752,18 @@ export default function App() {
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
 
+  const filteredAvailablePlants = AVAILABLE_PLANTS.filter((plant) => {
+    const matchesFilter =
+      plantsFilter === "all" ||
+      (plantsFilter === "plants" && !plant.isSeed) ||
+      (plantsFilter === "seeds" && plant.isSeed);
+    const matchesSearch =
+      !plantsSearch.trim() ||
+      plant.name.toLowerCase().includes(plantsSearch.toLowerCase()) ||
+      (plant.variety ?? "").toLowerCase().includes(plantsSearch.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
   return (
     <div className="size-full flex flex-col bg-background relative overflow-hidden">
       {/* Decorative background elements */}
@@ -1032,42 +1046,88 @@ export default function App() {
 
             <TabsContent value="plants">
               <div className="bg-white/40 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-5 h-[calc(100vh-12rem)] overflow-auto shadow-sm">
-                <div className="flex justify-between items-center mb-5">
-                  <div>
-                    <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
-                      My Plants & Seeds
-                    </h2>
-                    <p className="text-muted-foreground text-[11px] font-medium mt-1 uppercase tracking-wider opacity-60">
-                      Manage your catalog of vegetables, seeds, and flowers.
-                    </p>
+                <div className="mb-5">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
+                        My Plants & Seeds
+                      </h2>
+                      <p className="text-muted-foreground text-[11px] font-medium mt-1 uppercase tracking-wider opacity-60">
+                        Manage your catalog of vegetables, seeds, and flowers.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setEditingPlant(null);
+                          setDialogDefaultIsSeed(true);
+                          setShowAddPlantModal(true);
+                        }}
+                        variant="outline"
+                        className="h-8 rounded-lg px-3 border-primary/40 text-primary hover:bg-primary/5 shadow-sm text-xs font-bold uppercase tracking-wider"
+                      >
+                        <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Seeds
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setEditingPlant(null);
+                          setDialogDefaultIsSeed(false);
+                          setShowAddPlantModal(true);
+                        }}
+                        className="h-8 rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider"
+                      >
+                        <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Plant
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => {
-                        setEditingPlant(null);
-                        setDialogDefaultIsSeed(true);
-                        setShowAddPlantModal(true);
-                      }}
-                      variant="outline"
-                      className="h-8 rounded-lg px-3 border-primary/40 text-primary hover:bg-primary/5 shadow-sm text-xs font-bold uppercase tracking-wider"
-                    >
-                      <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Seeds
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setEditingPlant(null);
-                        setDialogDefaultIsSeed(false);
-                        setShowAddPlantModal(true);
-                      }}
-                      className="h-8 rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider"
-                    >
-                      <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Plant
-                    </Button>
+
+                  {/* Search + filter row */}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="search"
+                      placeholder="Search plants…"
+                      value={plantsSearch}
+                      onChange={(e) => setPlantsSearch(e.target.value)}
+                      className="h-8 flex-1 max-w-xs bg-white/60 border border-border/40 rounded-lg px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                    />
+                    <div className="flex gap-0.5 bg-muted/30 rounded-lg p-0.5">
+                      {(
+                        [
+                          { key: "all", label: `All (${AVAILABLE_PLANTS.length})` },
+                          {
+                            key: "plants",
+                            label: `🌿 Plants (${AVAILABLE_PLANTS.filter((p) => !p.isSeed).length})`,
+                          },
+                          {
+                            key: "seeds",
+                            label: `🌾 Seeds (${AVAILABLE_PLANTS.filter((p) => p.isSeed).length})`,
+                          },
+                        ] as { key: "all" | "plants" | "seeds"; label: string }[]
+                      ).map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => setPlantsFilter(key)}
+                          className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+                            plantsFilter === key
+                              ? "bg-white shadow-sm text-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
-                  {AVAILABLE_PLANTS.map((plant) => {
+                  {filteredAvailablePlants.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground/50">
+                      <p className="text-sm font-bold uppercase tracking-wider">No results</p>
+                      <p className="text-xs mt-1">Try a different filter or search term</p>
+                    </div>
+                  ) : null}
+                  {filteredAvailablePlants.map((plant) => {
                     const isCustom = customPlants.some(
                       (p) => p.id === plant.id,
                     );
@@ -1185,9 +1245,12 @@ export default function App() {
 
                         {/* Actions */}
                         <div className="flex justify-between items-center pt-1.5 border-t border-white/30 mt-auto">
-                          <span className="text-sm font-black text-foreground/60 uppercase tracking-wider">
-                            {plant.amount ?? 0}{" "}
-                            {plant.isSeed ? "seeds" : "plants"}
+                          <span className={`text-sm font-black uppercase tracking-wider ${
+                            isDepleted ? "text-red-500" : "text-foreground/60"
+                          }`}>
+                            {plant.amount === undefined
+                              ? "∞ Unlimited"
+                              : `${plant.amount} ${plant.isSeed ? "seeds" : "qty"}`}
                           </span>
                           <div className="flex gap-1.5">
                             {plant.isSeed && !isDepleted && (
