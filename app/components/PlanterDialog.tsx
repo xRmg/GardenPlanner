@@ -117,7 +117,7 @@ export function PlanterDialog({
     setVirtualSections([...virtualSections, newVirtualSection]);
     setNewVirtualSectionName("");
     const nextStart = Math.min(newVirtualSectionEnd + 1, maxValue);
-    const nextEnd = Math.max(nextStart, Math.min(newVirtualSectionEnd + 2, maxValue));
+    const nextEnd = Math.min(nextStart + 1, maxValue);
     setNewVirtualSectionStart(nextStart);
     setNewVirtualSectionEnd(nextEnd);
   };

@@ -1385,7 +1385,7 @@ export default function App() {
                               Started
                             </p>
                             <p className="text-[10px] font-bold">
-                              {new Date(seedling.plantedDate).toLocaleDateString("en-US", {
+                              {new Date(seedling.plantedDate).toLocaleDateString(settings.locale || undefined, {
                                 month: "short",
                                 day: "numeric",
                               })}

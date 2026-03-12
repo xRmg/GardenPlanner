@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Map as MapIcon } from "lucide-react";
 import { Plant } from "./PlanterGrid";
 
@@ -27,14 +27,13 @@ export function ToolBar({
 }: ToolBarProps) {
   const [filter, setFilter] = useState<PlantFilter>("all");
 
-  const filtered = plants.filter((p) => {
-    if (filter === "plants") return !p.isSeed;
-    if (filter === "seeds") return p.isSeed;
-    return true;
-  });
-
-  const seedCount = plants.filter((p) => p.isSeed).length;
-  const plantCount = plants.filter((p) => !p.isSeed).length;
+  const { filtered, seedCount, plantCount } = useMemo(() => {
+    const seeds = plants.filter((p) => p.isSeed);
+    const nonSeeds = plants.filter((p) => !p.isSeed);
+    const list =
+      filter === "plants" ? nonSeeds : filter === "seeds" ? seeds : plants;
+    return { filtered: list, seedCount: seeds.length, plantCount: nonSeeds.length };
+  }, [plants, filter]);
 
   return (
     <div className="min-h-20 bg-white/70 backdrop-blur-md border border-white/60 p-3 flex items-center gap-4 rounded-xl shadow-lg flex-wrap">
