@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  garden-planner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: garden-planner
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - garden-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/index.html"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    environment:
+      - NODE_ENV=production
+
+networks:
+  garden-network:
+    driver: bridge
