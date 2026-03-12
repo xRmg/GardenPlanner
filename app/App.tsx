@@ -37,6 +37,7 @@ import { useAreaManager } from "./hooks/useAreaManager";
 import { usePlantCatalog } from "./hooks/usePlantCatalog";
 import { useSeedlingManager } from "./hooks/useSeedlingManager";
 import { useGardenEvents } from "./hooks/useGardenEvents";
+import { useSuggestions } from "./hooks/useSuggestions";
 
 
 const MONTH_ABBR = [
@@ -164,13 +165,25 @@ export default function App() {
 
   // ── Events + suggestions ──────────────────────────────────────────────────
   const {
-    suggestions,
     harvestAlerts,
     handlePlantAdded,
     handlePlantRemoved,
     handlePlantUpdated,
     handleCompleteSuggestion,
   } = useGardenEvents({ setEvents, repositoryRef });
+
+  const {
+    suggestions,
+    loading: suggestionsLoading,
+    mode: suggestionsMode,
+  } = useSuggestions({
+    areas: areas as unknown as import("./data/schema").Area[],
+    seedlings: seedlings as unknown as import("./data/schema").Seedling[],
+    events: events as unknown as import("./data/schema").GardenEvent[],
+    settings,
+    plants: AVAILABLE_PLANTS as unknown as import("./data/schema").Plant[],
+    hasLoadedFromDB,
+  });
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
 
@@ -1178,9 +1191,11 @@ export default function App() {
         <div className="w-72 h-full flex flex-col drop-shadow-xl">
           <EventsBar
             events={events}
-            suggestions={suggestions}
+            suggestions={suggestions as unknown as import("./components/EventsBar").Suggestion[]}
             harvestAlerts={harvestAlerts}
             onCompleteSuggestion={handleCompleteSuggestion}
+            suggestionsMode={suggestionsMode}
+            suggestionsLoading={suggestionsLoading}
           />
         </div>
       </div>

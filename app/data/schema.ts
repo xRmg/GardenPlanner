@@ -36,11 +36,26 @@ export const GardenEventTypeSchema = z.enum([
   "removed",
 ]);
 export const SuggestionTypeSchema = z.enum([
+  // Rules-engine types
   "water",
   "harvest",
   "repot",
   "compost",
   "weed",
+  "sow",
+  "fertilize",
+  "no_water",
+  "frost_protect",
+  // AI-only types
+  "thin_seedlings",
+  "harden_seedlings",
+  "companion_conflict",
+  "succession_sow",
+  "pest_alert",
+  "disease_risk",
+  "end_of_season",
+  "mulch",
+  "prune",
 ]);
 export const PrioritySchema = z.enum(["low", "medium", "high"]);
 
@@ -84,6 +99,8 @@ export const PlantSchema = z.object({
   amount: z.number().int().min(0).optional(),
   spacingCm: z.number().positive().optional(),
   frostHardy: z.boolean().optional(),
+  /** Whether this plant is sensitive to frost (opposite of frostHardy). */
+  frostSensitive: z.boolean().optional(),
   companions: z.array(z.string()).default([]),
   antagonists: z.array(z.string()).default([]),
   sowIndoorMonths: z.array(z.number().int().min(1).max(12)).default([]),
@@ -254,6 +271,12 @@ export const SuggestionSchema = z.object({
   priority: PrioritySchema,
   description: z.string(),
   dueDate: z.string().datetime({ offset: true }).optional(),
+  /** Which planter this suggestion applies to, if plant-specific. */
+  planterId: z.string().optional(),
+  /** Automatically dismiss this suggestion after this time. */
+  expiresAt: z.string().datetime({ offset: true }).optional(),
+  /** Origin of the suggestion — rules engine, AI, or bundled static tips. */
+  source: z.enum(["rules", "ai", "static"]).default("rules"),
 });
 
 // ---------------------------------------------------------------------------
@@ -267,6 +290,13 @@ export type GardenEventType = z.infer<typeof GardenEventTypeSchema>;
 export type SuggestionType = z.infer<typeof SuggestionTypeSchema>;
 export type Priority = z.infer<typeof PrioritySchema>;
 export type PlantSource = z.infer<typeof PlantSourceSchema>;
+
+/** Which tier of suggestion quality is active. */
+export type SuggestionMode =
+  | "ai+weather"    // Tier 1: AI + live weather
+  | "rules+weather" // Tier 2: rules engine + live weather
+  | "rules"         // Tier 3: rules engine, offline
+  | "static";       // Tier 4: bundled tips, empty garden
 
 export type VirtualSection = z.infer<typeof VirtualSectionSchema>;
 export type Plant = z.infer<typeof PlantSchema>;

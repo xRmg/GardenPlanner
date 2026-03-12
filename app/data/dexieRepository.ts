@@ -51,6 +51,30 @@ export interface AiPlantCacheRow {
 }
 
 // ---------------------------------------------------------------------------
+// Weather cache row type
+// ---------------------------------------------------------------------------
+
+export interface WeatherCacheRow {
+  /** Cache key: `${lat.toFixed(2)}|${lng.toFixed(2)}` */
+  id: string;
+  /** Serialised WeatherData object. */
+  data: unknown;
+  fetchedAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// AI suggestions cache row type
+// ---------------------------------------------------------------------------
+
+export interface AiSuggestionsCacheRow {
+  /** Deterministic hash of context inputs. */
+  id: string;
+  /** Array of suggestion objects. */
+  suggestions: unknown[];
+  createdAt: number;
+}
+
+// ---------------------------------------------------------------------------
 // Dexie database definition
 // ---------------------------------------------------------------------------
 
@@ -61,6 +85,8 @@ export class GardenPlannerDB extends Dexie {
   settings!: Table<{ key: string; value: Settings }, string>;
   events!: Table<GardenEvent, string>;
   aiPlantCache!: Table<AiPlantCacheRow, string>;
+  weatherCache!: Table<WeatherCacheRow, string>;
+  aiSuggestionsCache!: Table<AiSuggestionsCacheRow, string>;
 
   constructor() {
     super("GardenPlannerDB");
@@ -136,6 +162,11 @@ export class GardenPlannerDB extends Dexie {
     // v6: add aiPlantCache table for caching AI-generated plant data (30-day TTL)
     this.version(6).stores({
       aiPlantCache: "key, timestamp",
+    });
+    // v7: add weatherCache (3h TTL) and aiSuggestionsCache (24h TTL)
+    this.version(7).stores({
+      weatherCache: "id, fetchedAt",
+      aiSuggestionsCache: "id, createdAt",
     });
   }
 }
