@@ -63,8 +63,8 @@ export function PlanterDialog({
   const [newVirtualSectionType, setNewVirtualSectionType] = useState<
     "rows" | "columns"
   >("rows");
-  const [newVirtualSectionStart, setNewVirtualSectionStart] = useState(0);
-  const [newVirtualSectionEnd, setNewVirtualSectionEnd] = useState(1);
+  const [newVirtualSectionStart, setNewVirtualSectionStart] = useState(1);
+  const [newVirtualSectionEnd, setNewVirtualSectionEnd] = useState(2);
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -94,12 +94,12 @@ export function PlanterDialog({
     const maxValue = newVirtualSectionType === "rows" ? rows : cols;
 
     if (
-      newVirtualSectionStart < 0 ||
+      newVirtualSectionStart < 1 ||
       newVirtualSectionEnd > maxValue ||
-      newVirtualSectionStart >= newVirtualSectionEnd
+      newVirtualSectionStart > newVirtualSectionEnd
     ) {
       alert(
-        `Invalid range. Must be between 0 and ${maxValue}, and start must be less than end.`,
+        `Invalid range. Must be between 1 and ${maxValue}, and start must be ≤ end.`,
       );
       return;
     }
@@ -116,8 +116,10 @@ export function PlanterDialog({
 
     setVirtualSections([...virtualSections, newVirtualSection]);
     setNewVirtualSectionName("");
-    setNewVirtualSectionStart(newVirtualSectionEnd);
-    setNewVirtualSectionEnd(Math.min(newVirtualSectionEnd + 2, maxValue));
+    const nextStart = Math.min(newVirtualSectionEnd + 1, maxValue);
+    const nextEnd = Math.min(nextStart + 1, maxValue);
+    setNewVirtualSectionStart(nextStart);
+    setNewVirtualSectionEnd(nextEnd);
   };
 
   const handleRemoveVirtualSection = (id: string) => {
@@ -298,7 +300,7 @@ export function PlanterDialog({
                       setNewVirtualSectionType(
                         e.target.value as "rows" | "columns",
                       );
-                      setNewVirtualSectionStart(0);
+                      setNewVirtualSectionStart(1);
                       setNewVirtualSectionEnd(
                         e.target.value === "rows"
                           ? Math.min(2, rows)
@@ -320,11 +322,11 @@ export function PlanterDialog({
                   </label>
                   <input
                     type="number"
-                    min="0"
-                    max={newVirtualSectionType === "rows" ? rows - 1 : cols - 1}
+                    min="1"
+                    max={newVirtualSectionType === "rows" ? rows : cols}
                     value={newVirtualSectionStart}
                     onChange={(e) =>
-                      setNewVirtualSectionStart(parseInt(e.target.value) || 0)
+                      setNewVirtualSectionStart(parseInt(e.target.value) || 1)
                     }
                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -368,7 +370,7 @@ export function PlanterDialog({
                       <div className="font-medium">{vb.name}</div>
                       <div className="text-xs text-gray-600">
                         {vb.type === "rows" ? "Rows" : "Columns"} {vb.start} to{" "}
-                        {vb.end - 1}
+                        {vb.end}
                       </div>
                     </div>
                     <button

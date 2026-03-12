@@ -126,9 +126,9 @@ export function PlanterGrid({
 
     return virtualSections.find((vb) => {
       if (vb.type === "rows") {
-        return rowIndex >= vb.start && rowIndex < vb.end;
+        return (rowIndex + 1) >= vb.start && (rowIndex + 1) <= vb.end;
       } else {
-        return colIndex >= vb.start && colIndex < vb.end;
+        return (colIndex + 1) >= vb.start && (colIndex + 1) <= vb.end;
       }
     });
   };
@@ -143,11 +143,11 @@ export function PlanterGrid({
 
     for (const vb of virtualSections) {
       if (vb.type === "rows") {
-        if (side === "top" && rowIndex === vb.start) return true;
-        if (side === "bottom" && rowIndex === vb.end - 1) return true;
+        if (side === "top" && (rowIndex + 1) === vb.start) return true;
+        if (side === "bottom" && (rowIndex + 1) === vb.end) return true;
       } else {
-        if (side === "left" && colIndex === vb.start) return true;
-        if (side === "right" && colIndex === vb.end - 1) return true;
+        if (side === "left" && (colIndex + 1) === vb.start) return true;
+        if (side === "right" && (colIndex + 1) === vb.end) return true;
       }
     }
 
