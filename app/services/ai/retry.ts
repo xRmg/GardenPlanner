@@ -36,6 +36,8 @@ export async function withRetry<T>(
       await new Promise((r) => setTimeout(r, delay));
     }
   }
-  // Unreachable — the loop always returns or throws before here
+  // This line is unreachable; the loop above always returns or throws.
+  // The assertion satisfies TypeScript's control-flow analysis.
+  /* istanbul ignore next */
   throw new Error("Unreachable");
 }

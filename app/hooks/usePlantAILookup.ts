@@ -145,7 +145,8 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           error instanceof DOMException &&
           error.name === "AbortError"
         ) {
-          // User cancelled — treat as silent
+          // User cancelled — treat as silent, clear loading
+          setAiLoading(false);
           return;
         }
         const msg =
@@ -153,9 +154,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         setAiError(`AI lookup failed: ${msg}`);
         console.error("[usePlantAILookup]", error);
       } finally {
-        if (!controller.signal.aborted) {
-          setAiLoading(false);
-        }
+        setAiLoading(false);
       }
     },
     [settings],

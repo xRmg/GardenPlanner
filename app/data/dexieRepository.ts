@@ -43,8 +43,9 @@ import type { GardenRepository } from "./repository";
 export interface AiPlantCacheRow {
   /** Normalised cache key: "name|latinName|koeppenZone" (lowercase, trimmed). */
   key: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
+  /** AI-generated plant data. Typed as `unknown` to keep the repository layer
+   *  free of a dependency on the AI service types. Callers cast to PlantAIResponse. */
+  data: unknown;
   timestamp: number;
   model: string;
 }

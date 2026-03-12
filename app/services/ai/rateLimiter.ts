@@ -19,6 +19,7 @@ export class RateLimiter {
 
     if (this.timestamps.length >= this.maxRequests) {
       const oldestInWindow = this.timestamps[0];
+      // Add a small buffer (50ms) to account for timer imprecision
       const waitMs = this.windowMs - (now - oldestInWindow) + 50;
       await new Promise((r) => setTimeout(r, waitMs));
     }

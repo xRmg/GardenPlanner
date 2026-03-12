@@ -166,7 +166,8 @@ export function PlantDialog({
     if (!overrides.has("antagonists")) setAntagonists(aiResult.antagonists.join(", "));
     if (!overrides.has("icon") && aiResult.icon) setIcon(aiResult.icon);
     if (!overrides.has("color") && aiResult.color) setColor(aiResult.color);
-  }, [aiResult]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiResult, userOverrides]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -303,9 +304,12 @@ export function PlantDialog({
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
-                  markOverride("name");
-                  if (aiResult && e.target.value.trim() !== aiResult.name) {
-                    clearAiResult();
+                  if (aiResult) {
+                    if (e.target.value.trim() !== aiResult.name) {
+                      clearAiResult();
+                    } else {
+                      markOverride("name");
+                    }
                   }
                 }}
                 placeholder="e.g., Roma Tomato"
