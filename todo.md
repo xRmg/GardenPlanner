@@ -1,8 +1,8 @@
 # Garden Planner — Planning & TODO Document
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 in progress — 1.1 ✅ · 1.2 ✅ · 1.3 ✅ · 1.4 ✅ · 1.12 ✅ — **8 of 15 tasks complete** · next: 1.5 export/import, then 1.6 hooks (unblocks AI)
-> **Blocker**: Task 1.6 (decompose `App.tsx` into hooks) must complete before AI features (1.7–1.9) can begin.
+> **Status**: Phase 1 in progress — 1.1 ✅ · 1.2 ✅ · 1.3 ✅ · 1.4 ✅ · 1.5 ✅ · 1.6 ✅ · 1.7 ✅ · 1.8 ✅ · 1.8a ✅ · 1.8b ✅ · 1.12 ✅ — **11 of 15 tasks complete** · next: 1.9 suggestion engine (dual-mode: rules + AI), then 1.10 weather integration
+> **Next up**: Task 1.9 — Dual-mode Suggestion Engine. Weather integration (1.10) feeds directly into suggestions.
 > **Purpose**: Roadmap for evolving Garden Planner from a local-only "dumb" tool into a smart, AI-assisted, multi-language, multi-user platform.
 
 ---
@@ -550,6 +550,8 @@ Plant: {userInput}
 
 ### 3.3 Smart Event Suggestions Engine
 
+> **Planning complete** (March 2026) — see `docs/suggestion-engine-plan.md` for the full implementation plan, `docs/suggestion-engine-architecture.md` for software architecture, and `docs/ai-suggestion-prompts-spec.md` for AI prompt/schema design.
+
 **Goal**: Replace static suggestions with dynamic, context-aware recommendations.
 
 #### Architecture: Hybrid (Rules Engine + AI Enrichment)
@@ -995,17 +997,26 @@ These are items NOT in the user's original request but critical for success:
 - [x] **Bug** — Events persisted to Dexie (were silently lost on every page refresh)
 - [x] **Bug** — Plant placements (grid squares) persisted in `Planter.squares` (layout was lost on refresh)
 
+**Completed (March 2026 — continued)**
+
+- [x] **1.5** — JSON export/import for data portability
+- [x] **1.6** — Decompose `App.tsx` state into custom hooks: `useGardenData`, `usePlantCatalog`, `useSeedlingManager`, `useAreaManager`, `useGardenEvents`, `useOpenRouterSettings`, `useLocationSettings`, `usePlantAILookup` → `app/hooks/`
+- [x] **1.7** — BYOK OpenRouter field in Settings (validate key via test call, store in Dexie, never exported) → `useOpenRouterSettings`, `app/services/ai/openrouter.ts`
+- [x] **1.8** — "Ask AI ✨" button in `PlantDefinitionDialog` — AI fills latin name + core growing fields, amber ⚠ on low confidence → `usePlantAILookup`
+- [x] **1.8a** — AI prompt template for plant data extraction + confidence thresholds → `app/services/ai/prompts.ts`
+- [x] **1.8b** — 30-day response cache keyed by `name|latinName|koeppenZone` → `app/services/ai/plantCache.ts`
+
 **Remaining Phase 1 tasks**
 
-> ⚠️ **Task 1.6 is the blocker** — AI features (1.7–1.9) cannot be tested or maintained cleanly until `App.tsx` state is decomposed into hooks.
-
-- [ ] **1.5** — JSON export/import for data portability (safety net before any breaking changes)
-- [ ] **1.6** — Decompose `App.tsx` state into custom hooks: `useGarden`, `usePlants`, `useSeedlings`, `useSettings`, `useEvents`
-- [ ] **1.7** — BYOK OpenRouter field in Settings (validate key via test call, store in Dexie, never exported)
-- [ ] **1.8** — "Ask AI ✨" button in `PlantDefinitionDialog` — AI fills latin name + core growing fields, amber ⚠ on low confidence
-- [ ] **1.8a** — AI prompt template for plant data extraction + confidence thresholds
-- [ ] **1.8b** — 30-day response cache keyed by `name|latinName|koeppenZone`
-- [ ] **1.9** — Rules-based suggestion engine: frost alerts, harvest readiness, watering, companion conflicts, sow window
+- [ ] **1.9** — Dual-mode suggestion engine
+  - [ ] **1.9a** — Schema changes: extend `SuggestionTypeSchema` (sow, fertilize, no-water, frost + 10 AI types), add `source`/`planterId`/`expiresAt` to `SuggestionSchema`, optional Plant fields (`wateringIntervalDays`, `fertilizeIntervalWeeks`, `frostSensitive`)
+  - [ ] **1.9b** — `app/services/weather.ts`: Open-Meteo `/v1/forecast` client (current + hourly 48h + daily 7d + `past_days=2`) with 3h Dexie `weatherCache` table and stale-while-revalidate
+  - [ ] **1.9c** — `app/services/suggestions/rulesEngine.ts`: 6 rules — weeding (temp+precip), sowing (window+frost date), harvesting (daysToHarvest+harvestMonths), fertilization (schedule), watering (ET₀ budget), no-watering (rain imminent). All with cooldowns and mutual exclusion.
+  - [ ] **1.9d** — `app/hooks/useSuggestions.ts`: hook wiring garden state + weather + evaluateSuggestions(), refresh strategy (mount + 15min timer + debounced on areas/seedlings change), 4-tier mode selection
+  - [ ] **1.9e** — Wire `useSuggestions` into `EventsBar` / `App.tsx`, replace hardcoded suggestions, add mode indicator badge, wire `onCompleteSuggestion` → auto-log GardenEvent
+  - [ ] **1.9f** — `app/services/suggestions/aiSuggestions.ts`: AI context serializer (~800 tokens), prompt builder, response Zod validator, 10 AI-only suggestion types, 24h Dexie `aiSuggestionsCache`
+  - [ ] **1.9g** — `app/services/suggestions/merger.ts`: dedup rules+AI output by type+plant, sort high→low priority, cap AI suggestions at 8 in merged list
+  - [ ] **1.9h** — Unit tests for rules engine (deterministic inputs → expected suggestions) and weather cache
 - [ ] **1.10** — Open-Meteo weather integration (free, no API key, cached in Dexie every 30 min)
 - [ ] **1.10a** — Geocoding / map selection → `latitude` + `longitude`, then derive `koeppenZone`
 - [ ] **1.11** — Error boundaries + Sonner toast notifications for persistence errors

@@ -5,6 +5,23 @@ import routes from "./routes.js";
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  const originalSend = res.send;
+
+  res.send = function (data: any) {
+    const duration = Date.now() - startTime;
+    const statusCode = res.statusCode;
+    const logColor = statusCode >= 500 ? '\x1b[31m' : statusCode >= 400 ? '\x1b[33m' : '\x1b[32m';
+    const resetColor = '\x1b[0m';
+    console.log(`${logColor}[${statusCode}]${resetColor} ${req.method} ${req.path} (${duration}ms)`);
+    return originalSend.call(this, data);
+  };
+
+  next();
+});
+
 // Middleware
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -22,10 +39,13 @@ app.use((req, res, next) => {
 });
 
 // Initialize database schema
+console.log("[DB] Initializing database schema...");
 initializeSchema();
+console.log("[DB] ✓ Database schema initialized");
 
 // Health check
 app.get("/health", (req, res) => {
+  console.log("[HEALTH] Health check request");
   res.json({ status: "ok" });
 });
 
@@ -52,7 +72,7 @@ app.use(
 
 // Start server
 const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🌱 Garden Planner backend listening on http://0.0.0.0:${PORT}`);
+  console.log(`\n🌱 Garden Planner backend listening on http://0.0.0.0:${PORT}\n`);
 });
 
 // Graceful shutdown

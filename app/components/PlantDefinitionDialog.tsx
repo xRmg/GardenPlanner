@@ -159,11 +159,11 @@ export function PlantDialog({
     if (!overrides.has("daysToHarvest") && aiResult.daysToHarvest) setDaysToHarvest(aiResult.daysToHarvest);
     if (!overrides.has("spacingCm") && aiResult.spacingCm) setSpacingCm(aiResult.spacingCm);
     if (!overrides.has("sunRequirement") && aiResult.sunRequirement) setSunRequirement(aiResult.sunRequirement);
-    if (!overrides.has("sowIndoorMonths")) setSowIndoorMonths(aiResult.sowIndoorMonths);
-    if (!overrides.has("sowDirectMonths")) setSowDirectMonths(aiResult.sowDirectMonths);
-    if (!overrides.has("harvestMonths")) setHarvestMonths(aiResult.harvestMonths);
-    if (!overrides.has("companions")) setCompanions(aiResult.companions.join(", "));
-    if (!overrides.has("antagonists")) setAntagonists(aiResult.antagonists.join(", "));
+    if (!overrides.has("sowIndoorMonths")) setSowIndoorMonths(aiResult.sowIndoorMonths ?? []);
+    if (!overrides.has("sowDirectMonths")) setSowDirectMonths(aiResult.sowDirectMonths ?? []);
+    if (!overrides.has("harvestMonths")) setHarvestMonths(aiResult.harvestMonths ?? []);
+    if (!overrides.has("companions")) setCompanions((aiResult.companions ?? []).join(", "));
+    if (!overrides.has("antagonists")) setAntagonists((aiResult.antagonists ?? []).join(", "));
     if (!overrides.has("icon") && aiResult.icon) setIcon(aiResult.icon);
     if (!overrides.has("color") && aiResult.color) setColor(aiResult.color);
   // eslint-disable-next-line react-hooks/exhaustive-deps

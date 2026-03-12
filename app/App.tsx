@@ -123,6 +123,7 @@ export default function App() {
     showAddPlantModal,
     setShowAddPlantModal,
     editingPlant,
+    setEditingPlant,
     dialogDefaultIsSeed,
     setDialogDefaultIsSeed,
     plantsFilter,

@@ -35,10 +35,12 @@ interface GardenData {
  * Returns the complete garden state (all areas, planters, plants, events, seedlings, settings)
  */
 router.get("/garden", (req: Request, res: Response) => {
+  console.log("[API:GET /garden] Fetching complete garden state...");
   try {
     const db = getDb();
 
     // Fetch all plants
+    console.log("[DB] Querying plants...");
     const plants = db
       .prepare("SELECT * FROM plants")
       .all()
@@ -62,8 +64,10 @@ router.get("/garden", (req: Request, res: Response) => {
         sunRequirement: row.sunRequirement || undefined,
         source: row.source || "bundled",
       }));
+    console.log(`[DB] ✓ Loaded ${plants.length} plants`);
 
     // Fetch all areas with planters
+    console.log("[DB] Querying areas...");
     const areas = db
       .prepare("SELECT * FROM areas ORDER BY created_at")
       .all()
@@ -91,8 +95,10 @@ router.get("/garden", (req: Request, res: Response) => {
           planters,
         };
       });
+    console.log(`[DB] ✓ Loaded ${areas.length} areas`);
 
     // Fetch all seedlings
+    console.log("[DB] Querying seedlings...");
     const seedlings = db
       .prepare("SELECT * FROM seedlings ORDER BY created_at")
       .all()
@@ -105,8 +111,10 @@ router.get("/garden", (req: Request, res: Response) => {
         method: row.method || undefined,
         status: row.status,
       }));
+    console.log(`[DB] ✓ Loaded ${seedlings.length} seedlings`);
 
     // Fetch all events
+    console.log("[DB] Querying events...");
     const events = db
       .prepare("SELECT * FROM events ORDER BY date DESC")
       .all()
@@ -119,8 +127,10 @@ router.get("/garden", (req: Request, res: Response) => {
         note: row.note || undefined,
         profileId: row.profileId || "default",
       }));
+    console.log(`[DB] ✓ Loaded ${events.length} events`);
 
     // Fetch settings
+    console.log("[DB] Querying settings...");
     const settingsRow = db
       .prepare("SELECT * FROM settings WHERE id = 'default'")
       .get() as any;
@@ -134,6 +144,7 @@ router.get("/garden", (req: Request, res: Response) => {
       lng: settingsRow.lng || undefined,
       profileId: settingsRow.profileId || "default",
     };
+    console.log("[DB] ✓ Loaded settings");
 
     const gardenData: GardenData = {
       areas,
@@ -143,9 +154,10 @@ router.get("/garden", (req: Request, res: Response) => {
       settings,
     };
 
+    console.log(`[API:GET /garden] ✓ Returning garden state: ${areas.length} areas, ${plants.length} plants, ${seedlings.length} seedlings, ${events.length} events`);
     res.json(gardenData);
   } catch (error) {
-    console.error("Error fetching garden data:", error);
+    console.error("[API:GET /garden] Error fetching garden data:", error);
     res.status(500).json({ error: "Failed to fetch garden data" });
   }
 });
@@ -161,16 +173,18 @@ router.post("/garden/sync", (req: Request, res: Response) => {
     const { areas, plants, seedlings, events, settings } = req.body;
 
     console.log(
-      `[API] POST /api/garden/sync: areas=${Array.isArray(areas) ? areas.length : 0}, ` +
+      `[API:POST /garden/sync] Syncing garden data: areas=${Array.isArray(areas) ? areas.length : 0}, ` +
       `plants=${Array.isArray(plants) ? plants.length : 0}, ` +
       `seedlings=${Array.isArray(seedlings) ? seedlings.length : 0}, ` +
       `events=${Array.isArray(events) ? events.length : 0}`
     );
 
     // Start transaction
+    console.log("[DB] Starting transaction...");
     const transaction = db.transaction(() => {
       // Sync plants
       if (plants && Array.isArray(plants)) {
+        console.log(`[DB] Syncing ${plants.length} plants...`);
         // Clear existing plants (keep bundled ones from initial load)
         // Actually, just upsert all — simplest approach
         db.prepare("DELETE FROM plants").run();
@@ -318,14 +332,167 @@ router.post("/garden/sync", (req: Request, res: Response) => {
     });
 
     // Execute transaction
+    console.log("[DB] Executing transaction...");
     transaction();
+    console.log("[DB] ✓ Transaction completed successfully");
 
-    console.log("[API] ✓ Garden data synced successfully");
+    console.log("[API:POST /garden/sync] ✓ Garden data synced successfully");
     // Return updated state
     res.json({ success: true, message: "Garden data synced successfully" });
   } catch (error) {
-    console.error("Error syncing garden data:", error);
+    console.error("[API:POST /garden/sync] Error syncing garden data:", error);
     res.status(500).json({ error: "Failed to sync garden data" });
+  }
+});
+
+/**
+ * POST /api/ai/chat
+ *
+ * Proxy for OpenRouter chat completions.
+ * - Reads the API key from the server-side settings DB (never exposed to the browser).
+ * - Accepts { messages, model?, temperature?, maxTokens? } from the client.
+ * - Forwards the request to OpenRouter and returns the response unchanged.
+ * - Logs the full request and response to the terminal for debugging.
+ */
+router.post("/ai/chat", async (req: Request, res: Response) => {
+  console.log("\n[AI Proxy] ══════════════════════════════════════════════════");
+  console.log(`[AI Proxy] Incoming request at ${new Date().toISOString()}`);
+
+  try {
+    const db = getDb();
+
+    // Read API key and model from settings DB — key never leaves the server
+    const settingsRow = db
+      .prepare("SELECT aiProvider, aiModel FROM settings WHERE id = 'default'")
+      .get() as { aiProvider: string; aiModel: string } | undefined;
+
+    if (!settingsRow) {
+      console.error("[AI Proxy] ✗ No settings row found in DB");
+      res.status(500).json({ error: "Settings not found in database" });
+      return;
+    }
+
+    const aiProvider = JSON.parse(settingsRow.aiProvider || '{"type":"none"}') as
+      | { type: "none" }
+      | { type: "byok"; key: string }
+      | { type: "proxy"; proxyUrl: string; token?: string };
+
+    console.log(`[AI Proxy] AI provider type: ${aiProvider.type}`);
+
+    if (aiProvider.type !== "byok" || !("key" in aiProvider) || !aiProvider.key) {
+      console.error("[AI Proxy] ✗ AI not configured — set your OpenRouter API key in Settings");
+      res.status(400).json({ error: "AI not configured. Add your OpenRouter API key in Settings." });
+      return;
+    }
+
+    const dbModel = settingsRow.aiModel || "google/gemini-2.0-flash";
+    const { messages, model, temperature = 0.3, maxTokens = 1024 } = req.body as {
+      messages: Array<{ role: string; content: string }>;
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+    };
+
+    const resolvedModel = model || dbModel;
+
+    // ── Log full request ──────────────────────────────────────────────────
+    console.log("[AI Proxy] ─── REQUEST ──────────────────────────────────────");
+    console.log(`[AI Proxy] Model:       ${resolvedModel}`);
+    console.log(`[AI Proxy] Temperature: ${temperature}`);
+    console.log(`[AI Proxy] Max tokens:  ${maxTokens}`);
+    console.log(`[AI Proxy] Messages (${messages?.length ?? 0} total):`);
+    if (Array.isArray(messages)) {
+      messages.forEach((m, i) => {
+        console.log(`  [${i}] role=${m.role} | ${m.content.length} chars`);
+        console.log(`  ┌─────────────────────────────────────────────────`);
+        m.content.split("\n").forEach((line) => console.log(`  │ ${line}`));
+        console.log(`  └─────────────────────────────────────────────────`);
+      });
+    }
+
+    const requestBody = {
+      model: resolvedModel,
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+      response_format: { type: "json_object" },
+    };
+
+    console.log("[AI Proxy] ─── Sending to OpenRouter ───────────────────────");
+
+    // ── Forward to OpenRouter ─────────────────────────────────────────────
+    const orResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${aiProvider.key}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost",
+        "X-Title": "Garden Planner",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log(`[AI Proxy] OpenRouter HTTP status: ${orResponse.status}`);
+
+    const orJson = await orResponse.json() as {
+      id?: string;
+      choices?: Array<{
+        message?: { content?: string; reasoning_content?: string; [key: string]: unknown };
+        finish_reason?: string;
+        native_finish_reason?: string;
+      }>;
+      usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+      error?: unknown;
+      [key: string]: unknown;
+    };
+
+    // ── Log full response ─────────────────────────────────────────────────
+    console.log("[AI Proxy] ─── RESPONSE ─────────────────────────────────────");
+    if (orJson.usage) {
+      console.log(
+        `[AI Proxy] Tokens: prompt=${orJson.usage.prompt_tokens}, ` +
+        `completion=${orJson.usage.completion_tokens}, total=${orJson.usage.total_tokens}`,
+      );
+    }
+    if (orJson.choices) {
+      orJson.choices.forEach((choice, i) => {
+        const content = choice.message?.content ?? "";
+        const reasoning = choice.message?.reasoning_content ?? "";
+        console.log(`[AI Proxy] Choice[${i}]:`);
+        console.log(`  finish_reason:        ${choice.finish_reason}`);
+        console.log(`  native_finish_reason: ${choice.native_finish_reason}`);
+        console.log(`  content length:       ${content.length} chars`);
+        if (content) {
+          console.log(`  content preview:`);
+          console.log(`  ┌─────────────────────────────────────────────────`);
+          content.substring(0, 1000).split("\n").forEach((line) => console.log(`  │ ${line}`));
+          if (content.length > 1000) console.log(`  │ ... (${content.length - 1000} more chars)`);
+          console.log(`  └─────────────────────────────────────────────────`);
+        }
+        if (reasoning) {
+          console.log(`  reasoning_content length: ${reasoning.length} chars`);
+          console.log(`  reasoning preview:`);
+          reasoning.substring(0, 500).split("\n").forEach((line) => console.log(`  │ ${line}`));
+        }
+        // Log unexpected keys on the message object
+        const knownKeys = new Set(["content", "role", "reasoning_content"]);
+        const extraKeys = Object.keys(choice.message ?? {}).filter((k) => !knownKeys.has(k));
+        if (extraKeys.length > 0) {
+          console.log(`  unexpected message keys: ${extraKeys.join(", ")}`);
+          extraKeys.forEach((k) => console.log(`    ${k}:`, JSON.stringify((choice.message as Record<string, unknown>)[k])));
+        }
+      });
+    }
+    if (!orResponse.ok) {
+      console.error("[AI Proxy] ✗ OpenRouter error:", JSON.stringify(orJson.error ?? orJson));
+    }
+    console.log("[AI Proxy] ══════════════════════════════════════════════════\n");
+
+    res.status(orResponse.status).json(orJson);
+  } catch (error) {
+    console.error("[AI Proxy] ✗ Unexpected error:", error);
+    console.log("[AI Proxy] ══════════════════════════════════════════════════\n");
+    res.status(500).json({ error: "AI proxy error", details: String(error) });
   }
 });
 

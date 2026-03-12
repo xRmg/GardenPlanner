@@ -71,9 +71,37 @@ Rules:
 - sunRequirement is one of: "full", "partial", "shade"
 - description should be 1-2 practical growing sentences, not marketing copy
 - icon and color are optional convenience fields; only include them when confidence is high
-- Include a confidence score (0-1) for each AI-managed field
+- Include a confidence object with a score (0-1) for each AI-managed field
 
-Return ONLY valid JSON matching the schema below.`;
+Return ONLY valid JSON with EXACTLY these field names:
+{
+  "name": string,
+  "latinName": string,
+  "variety": string (optional),
+  "description": string,
+  "daysToHarvest": number,
+  "spacingCm": number,
+  "sunRequirement": "full" | "partial" | "shade",
+  "sowIndoorMonths": number[],
+  "sowDirectMonths": number[],
+  "harvestMonths": number[],
+  "companions": string[],
+  "antagonists": string[],
+  "icon": string (optional, single emoji),
+  "color": string (optional, hex color),
+  "confidence": {
+    "latinName": number,
+    "description": number,
+    "daysToHarvest": number,
+    "spacingCm": number,
+    "sunRequirement": number,
+    "sowIndoorMonths": number,
+    "sowDirectMonths": number,
+    "harvestMonths": number,
+    "companions": number,
+    "antagonists": number
+  }
+}`;
 
 // ---------------------------------------------------------------------------
 // JSON schema (passed as structured output hint, not enforced at runtime)

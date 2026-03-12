@@ -15,6 +15,8 @@
 import { useState, useRef, useCallback } from "react";
 import type { Settings } from "../data/schema";
 import { OpenRouterClient } from "../services/ai/openrouter";
+
+const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
 import {
   PLANT_LOOKUP_SYSTEM_PROMPT,
   buildPlantLookupUserPrompt,
@@ -72,8 +74,11 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 
   const handleAiLookup = useCallback(
     async (plantName: string, variety?: string) => {
+      const isDev = import.meta.env.DEV;
       const name = plantName.trim();
       if (!name || settings.aiProvider.type !== "byok") return;
+
+      if (isDev) console.log("[usePlantAILookup] Starting AI lookup for:", { name, variety });
 
       // Cancel any previous request
       abortRef.current?.abort();
@@ -88,19 +93,35 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         const koeppenZone = settings.growthZone || undefined;
 
         // 1. Try cache first (no API call needed)
+        if (isDev) console.log("[usePlantAILookup] Checking cache…");
         const cached = await cache.get(name, undefined, koeppenZone);
         if (cached) {
+          if (isDev) console.log("[usePlantAILookup] ✓ Cache hit:", cached);
           setAiResult(cached);
           setAiModel("cache");
           setAiLoading(false);
           return;
         }
+        if (isDev) console.log("[usePlantAILookup] Cache miss, calling API…");
 
         // 2. Build the API client
+        // When a backend is available (VITE_API_BASE is set), route through
+        // the server proxy so the API key stays server-side and all request/
+        // response logging appears in the npm terminal.
+        const proxyUrl = API_BASE ? `${API_BASE}/api/ai/chat` : undefined;
         const client = new OpenRouterClient({
-          apiKey: settings.aiProvider.key,
+          apiKey: settings.aiProvider.type === "byok" ? settings.aiProvider.key : "",
           model: settings.aiModel,
+          proxyUrl,
         });
+
+        if (isDev) {
+          if (proxyUrl) {
+            console.log(`[usePlantAILookup] Using backend proxy: ${proxyUrl} (API key stays server-side; full logs in npm terminal)`);
+          } else {
+            console.log("[usePlantAILookup] No backend detected — calling OpenRouter directly from browser");
+          }
+        }
 
         // 3. Call the API
         const userPrompt = buildPlantLookupUserPrompt({
@@ -111,6 +132,19 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           longitude: settings.lng,
         });
 
+        if (isDev) {
+          console.log("[usePlantAILookup] ══════════════════════════════════════");
+          console.log("[usePlantAILookup] API Request:");
+          console.log("[usePlantAILookup] Model:", settings.aiModel);
+          console.log("[usePlantAILookup] Köppen zone:", koeppenZone);
+          console.log("[usePlantAILookup] Coordinates:", settings.lat, settings.lng);
+          console.log("[usePlantAILookup] ── System Prompt ──");
+          console.log(PLANT_LOOKUP_SYSTEM_PROMPT);
+          console.log("[usePlantAILookup] ── User Prompt ──");
+          console.log(userPrompt);
+          console.log("[usePlantAILookup] ══════════════════════════════════════");
+        }
+
         const { content, model } = await client.chatCompletionWithFallback(
           [
             { role: "system", content: PLANT_LOOKUP_SYSTEM_PROMPT },
@@ -118,18 +152,53 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           ],
           {
             temperature: 0.3,
-            maxTokens: 1024,
+            // 8192 gives reasoning models (stepfun, deepseek-r1, etc.) enough
+            // room to think AND produce output. Tested: stepfun/step-3.5-flash:free
+            // uses ~3600 reasoning tokens + ~800 output tokens = ~4400 total.
+            maxTokens: 8192,
             signal: controller.signal,
           },
         );
 
+        if (isDev) {
+          console.log("[usePlantAILookup] ✓ API Response received");
+          console.log("[usePlantAILookup] Model used:", model);
+          console.log("[usePlantAILookup] Content length:", content.length);
+          console.log("[usePlantAILookup] ── Full content ──");
+          console.log(content);
+          console.log("[usePlantAILookup] ──────────────────");
+        }
+
         // 4. Parse JSON response
-        const parsed: PlantAIResponse = JSON.parse(content);
+        if (!content || content.trim().length === 0) {
+          const emptyError = "API returned empty response";
+          if (isDev) console.error("[usePlantAILookup]", emptyError);
+          setAiError(emptyError);
+          setAiLoading(false);
+          return;
+        }
+
+        if (isDev) console.log("[usePlantAILookup] Parsing JSON response…");
+        let parsed: PlantAIResponse;
+        try {
+          parsed = JSON.parse(content);
+        } catch (parseError) {
+          if (isDev) {
+            console.error("[usePlantAILookup] ✗ JSON parse failed:", parseError instanceof Error ? parseError.message : parseError);
+            console.log("[usePlantAILookup] Full content that failed to parse:");
+            console.log(content);
+          }
+          throw parseError;
+        }
+
+        if (isDev) console.log("[usePlantAILookup] ✓ JSON parsed:", parsed);
 
         // 5. Filter out fields below the rejection threshold
         const filtered = filterLowConfidenceFields(parsed);
+        if (isDev) console.log("[usePlantAILookup] ✓ Filtered (low-confidence fields removed):", filtered);
 
         // 6. Cache result
+        if (isDev) console.log("[usePlantAILookup] Caching result…");
         await cache.set(
           name,
           filtered,
@@ -137,6 +206,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           filtered.latinName,
           koeppenZone,
         );
+        if (isDev) console.log("[usePlantAILookup] ✓ Cached successfully with model:", model);
 
         setAiResult(filtered);
         setAiModel(model);
@@ -146,13 +216,14 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           error.name === "AbortError"
         ) {
           // User cancelled — treat as silent, clear loading
+          if (isDev) console.log("[usePlantAILookup] Lookup cancelled by user");
           setAiLoading(false);
           return;
         }
         const msg =
           error instanceof Error ? error.message : "Unknown error from AI";
         setAiError(`AI lookup failed: ${msg}`);
-        console.error("[usePlantAILookup]", error);
+        console.error("[usePlantAILookup] Error:", error);
       } finally {
         setAiLoading(false);
       }

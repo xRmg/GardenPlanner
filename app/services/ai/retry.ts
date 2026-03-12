@@ -14,6 +14,7 @@ export async function withRetry<T>(
     retryableStatuses?: number[];
   } = {},
 ): Promise<T> {
+  const isDev = import.meta.env.DEV;
   const {
     maxRetries = 3,
     baseDelayMs = 1000,
@@ -22,6 +23,9 @@ export async function withRetry<T>(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      if (isDev && attempt > 0) {
+        console.log(`[withRetry] Attempt ${attempt + 1}/${maxRetries + 1}`);
+      }
       return await fn();
     } catch (error) {
       const isRetryable =
@@ -33,6 +37,9 @@ export async function withRetry<T>(
       // Exponential backoff with jitter
       const delay =
         baseDelayMs * Math.pow(2, attempt) + Math.random() * 500;
+      if (isDev) {
+        console.warn(`[withRetry] Retryable error, waiting ${Math.round(delay)}ms before retry…`);
+      }
       await new Promise((r) => setTimeout(r, delay));
     }
   }
