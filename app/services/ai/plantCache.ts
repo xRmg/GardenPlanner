@@ -6,7 +6,7 @@
  *   2. Dexie/IndexedDB (persistent, 30-day TTL)
  *
  * Key format: "name|latinName|koeppenZone" (lowercase, trimmed).
- * Pre-seed with DEFAULT_PLANTS to avoid AI calls for well-known plants.
+ * Pre-seed with built-in plants to avoid AI calls for well-known plants.
  */
 
 import { getGardenPlannerDB } from "../../data/dexieRepository";
@@ -21,7 +21,10 @@ const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // ---------------------------------------------------------------------------
 
 export class PlantCache {
-  private memCache = new Map<string, { data: PlantAIResponse; timestamp: number; model: string }>();
+  private memCache = new Map<
+    string,
+    { data: PlantAIResponse; timestamp: number; model: string }
+  >();
 
   private normalizeKey(
     name: string,

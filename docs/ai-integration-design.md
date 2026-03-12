@@ -442,7 +442,7 @@ export class PlantCache {
     await db.aiPlantCache.put(cached);
   }
 
-  /** Pre-seed with the app's DEFAULT_PLANTS to avoid AI calls for known plants */
+  /** Pre-seed with the app's built-in plants to avoid AI calls for known plants */
   seedDefaults(plants: Plant[]): void {
     for (const p of plants) {
       const key = this.normalizeKey(p.name, p.latinName);
@@ -1244,7 +1244,7 @@ const handleFieldChange = (
 **Cache hierarchy:**
 
 ```
-1. Built-in defaults (DEFAULT_PLANTS array — 12 plants, zero-cost)
+1. Built-in defaults (plants seeded into Dexie — zero-cost)
       ↓ miss
 2. Dexie cache (keyed by name|latinName|koeppenZone, 30-day TTL)
       ↓ miss

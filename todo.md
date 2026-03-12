@@ -1,8 +1,8 @@
 # Garden Planner — TODO
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 in progress — 1.1–1.8b ✅ · **1.9 🔄 IN PROGRESS** · 1.12 ✅ · remaining: 1.10–1.14, then Phase 2
-> **Current sprint**: Task 1.9 — Dual-mode Suggestion Engine (8 subtasks)
+> **Status**: Phase 1 in progress — 1.1–1.9, 1.13 ✅ · remaining: 1.10–1.12, 1.14, then Phase 2
+> **Current sprint**: Tasks 1.10–1.12, 1.14 — Plant enrichment, pest events, calendar view, error handling
 > **Purpose**: Active implementation roadmap. Architecture decisions → `docs/architecture-decisions.md`. Product vision → `docs/product-vision.md`.
 
 ---
@@ -26,29 +26,16 @@
 - **1.1–1.5** — Zod schemas, `GardenRepository` interface, Dexie v4, auto-migration from localStorage, JSON export/import
 - **1.6** — Decomposed `App.tsx` into 8 custom hooks (`useGardenData`, `usePlantCatalog`, `useSeedlingManager`, `useAreaManager`, `useGardenEvents`, `useOpenRouterSettings`, `useLocationSettings`, `usePlantAILookup`)
 - **1.7–1.8b** — BYOK OpenRouter settings + "Ask AI ✨" plant lookup with 30-day cache → see [`docs/ai-integration-design.md`](docs/ai-integration-design.md)
-- **1.12** — Vitest + schema/repository tests
+- **1.9** — Dual-mode suggestion engine: weather service (Open-Meteo), rules engine (7 rules + frost), AI suggestions (10 types, 24h cache), merger, `useSuggestions` hook, wired into `EventsBar`, Dexie v7 (`weatherCache` + `aiSuggestionsCache`), full test suite → see [`docs/suggestion-engine-architecture.md`](docs/suggestion-engine-architecture.md)
+- **1.12** — Vitest + schema/repository/rules-engine tests
+- **1.13** — Auto-derive `koeppenZone` from lat/lng via Open-Meteo 30-year climate normals; pure `classifyKoppen(T, P, lat)` function; written to `settings.growthZone` when user picks a city in Settings
 - **Bug fixes** — Events + plant placements persisted to Dexie (previously lost on refresh)
 
-### 🔄 In Progress — Task 1.9: Dual-Mode Suggestion Engine
+### ⬜ Remaining — Tasks 1.10–1.14
 
-> Architecture: `docs/suggestion-engine-architecture.md` · Plan: `docs/suggestion-engine-plan.md` · Prompts: `docs/ai-suggestion-prompts-spec.md`
-
-- [ ] **1.9a** — Schema: extend `SuggestionTypeSchema` (sow, fertilize, no-water, frost + 10 AI types), add `source`/`expiresAt` to `SuggestionSchema`, Dexie v7 (`weatherCache` + `aiSuggestionsCache`)
-- [ ] **1.9b** — `app/services/weather.ts`: Open-Meteo client (current + hourly 48h + daily 7d + past 2d) with 3h Dexie cache → [`docs/suggestion-engine-architecture.md#weather`](docs/suggestion-engine-architecture.md)
-- [ ] **1.9c** — `app/services/suggestions/rulesEngine.ts`: 7 rules (weeding, sowing-indoor, sowing-direct, harvesting, fertilization, watering, no-watering, frost) with cooldowns + mutual exclusion
-- [ ] **1.9d** — `app/hooks/useSuggestions.ts`: orchestrates weather → rules → AI; mount + 15min refresh; 4-tier degradation mode
-- [ ] **1.9e** — Wire `useSuggestions` into `EventsBar` + `App.tsx`; replace hardcoded suggestions; mode badge
-- [ ] **1.9f** — `app/services/suggestions/aiSuggestions.ts`: context builder, prompt, response validator, 10 AI types, 24h cache → [`docs/ai-suggestion-prompts-spec.md`](docs/ai-suggestion-prompts-spec.md)
-- [ ] **1.9g** — `app/services/suggestions/merger.ts`: dedup, sort by priority, cap AI suggestions at 8
-- [ ] **1.9h** — Unit tests for rules engine + weather cache
-
-### ⬜ Remaining
-
-- [ ] **1.10** — Plant schema enrichment: add `sunlight`, `watering`, `spacingCm`, `daysToHarvest`, `growingTips` to `PlantSchema`; populate all default plants; display in `PlantDetailsDialog`
-- [ ] **1.10a** — Migrate hardcoded `DEFAULT_PLANTS` out of `App.tsx` into `app/data/defaultPlants.ts`; update `usePlantCatalog`
+- [ ] **1.10** — Plant schema enrichment: add `sunlight`, `watering`, `spacingCm`, `daysToHarvest`, `growingTips` to `PlantSchema`; populate these fields on all built-in plants seeded into Dexie; display in `PlantDetailsDialog`
 - [ ] **1.11** — Pest + treatment events: extend `GardenEventTypeSchema` with `pest` + `treatment` types; capture in event journal
 - [ ] **1.12** — Calendar view: month-navigable component showing events, suggestions, and harvest periods for planted crops
-- [ ] **1.13** — Auto-derive `koeppenZone` from stored lat/lng (offline 0.5° grid lookup table, no API call)
 - [ ] **1.14** — Error boundaries + Sonner toast notifications for all async failures
 
 ---
@@ -63,7 +50,7 @@
 - [ ] **2.2** — Extract ~140 hardcoded strings from `App.tsx`, `EventsBar`, `ToolBar`, and all dialogs into `app/i18n/locales/en/{ui,plants,calendar,errors}.json`
 - [ ] **2.3** — Replace `MONTH_ABBR` array with `Intl.DateTimeFormat`; use `Intl.NumberFormat` for cm/mm values throughout
 - [ ] **2.4** — Dutch (nl) translations: `ui.json`, `plants.json`, `errors.json`
-- [ ] **2.5** — Plant name translations: en + nl entries for all default plants
+- [ ] **2.5** — Plant name translations: en + nl entries for all built-in plants
 - [ ] **2.6** — Language switcher in Settings (detect browser language on first visit; persist choice in Dexie)
 
 ---

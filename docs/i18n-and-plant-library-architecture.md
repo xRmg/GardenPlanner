@@ -434,7 +434,7 @@ Files with hardcoded English strings that need `t()` wrapping:
 | `ToolBar.tsx`                | ~4 strings (labels)                                                                  | `ui`          |
 | `EventsBar.tsx`              | ~5 strings (event labels)                                                            | `ui`          |
 | `PlantDetailsDialog.tsx`     | ~10 strings (detail labels)                                                          | `ui`          |
-| Plant `DEFAULT_PLANTS` array | 12 plants × 3 fields (name, variety, description) = ~36                              | `plants`      |
+| Built-in plants (seeded into Dexie) | 12 plants × 3 fields (name, variety, description) = ~36 | `plants` |
 
 **Total: ~140 strings for v1.**
 
@@ -840,7 +840,7 @@ async function syncPlantLibrary() {
 | Phase                | Scope                                                                                    | Effort   |
 | -------------------- | ---------------------------------------------------------------------------------------- | -------- |
 | **Phase 1**          | Install react-i18next, set up config, extract UI strings, ship `en` + `nl`               | 2–3 days |
-| **Phase 2**          | Extract `DEFAULT_PLANTS` into `plants.json`, translate to Dutch, add `PlantLabel` helper | 1 day    |
+| **Phase 2**          | Extract built-in plant names into `plants.json`, translate to Dutch, add `PlantLabel` helper | 1 day    |
 | **Phase 3**          | Replace hardcoded `MONTH_ABBR` with `Intl.DateTimeFormat`, add formatters                | 0.5 day  |
 | **Phase 4**          | Language switcher in Settings, persist preference, `<html lang>`                         | 0.5 day  |
 | **Phase 5**          | TypeScript augmentation for key safety, CI lint for missing keys                         | 0.5 day  |
