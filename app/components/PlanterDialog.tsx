@@ -63,8 +63,9 @@ export function PlanterDialog({
   const [newVirtualSectionType, setNewVirtualSectionType] = useState<
     "rows" | "columns"
   >("rows");
-  const [newVirtualSectionStart, setNewVirtualSectionStart] = useState(0);
-  const [newVirtualSectionEnd, setNewVirtualSectionEnd] = useState(1);
+  // NOTE: UI uses 1-based indexing; converted to 0-based before storage
+  const [newVirtualSectionStart, setNewVirtualSectionStart] = useState(1);
+  const [newVirtualSectionEnd, setNewVirtualSectionEnd] = useState(2);
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -93,30 +94,32 @@ export function PlanterDialog({
 
     const maxValue = newVirtualSectionType === "rows" ? rows : cols;
 
+    // Validate 1-based input
     if (
-      newVirtualSectionStart < 0 ||
+      newVirtualSectionStart < 1 ||
       newVirtualSectionEnd > maxValue ||
-      newVirtualSectionStart >= newVirtualSectionEnd
+      newVirtualSectionStart > newVirtualSectionEnd
     ) {
       alert(
-        `Invalid range. Must be between 0 and ${maxValue}, and start must be less than end.`,
+        `Invalid range. Must be between 1 and ${maxValue}, and start must be <= end.`,
       );
       return;
     }
 
+    // Convert 1-based user input to 0-based storage [start, end)
     const newVirtualSection: VirtualSection = {
       id: `vsection-${Date.now()}`,
       name: newVirtualSectionName.trim(),
       type: newVirtualSectionType,
-      start: newVirtualSectionStart,
-      end: newVirtualSectionEnd,
+      start: newVirtualSectionStart - 1, // Convert to 0-based
+      end: newVirtualSectionEnd, // end is already correct (exclusive, 0-based)
       color:
         VIRTUAL_BED_COLORS[virtualSections.length % VIRTUAL_BED_COLORS.length],
     };
 
     setVirtualSections([...virtualSections, newVirtualSection]);
     setNewVirtualSectionName("");
-    setNewVirtualSectionStart(newVirtualSectionEnd);
+    setNewVirtualSectionStart(newVirtualSectionEnd + 1);
     setNewVirtualSectionEnd(Math.min(newVirtualSectionEnd + 2, maxValue));
   };
 
@@ -298,7 +301,7 @@ export function PlanterDialog({
                       setNewVirtualSectionType(
                         e.target.value as "rows" | "columns",
                       );
-                      setNewVirtualSectionStart(0);
+                      setNewVirtualSectionStart(1);
                       setNewVirtualSectionEnd(
                         e.target.value === "rows"
                           ? Math.min(2, rows)
@@ -320,11 +323,11 @@ export function PlanterDialog({
                   </label>
                   <input
                     type="number"
-                    min="0"
-                    max={newVirtualSectionType === "rows" ? rows - 1 : cols - 1}
+                    min="1"
+                    max={newVirtualSectionType === "rows" ? rows : cols}
                     value={newVirtualSectionStart}
                     onChange={(e) =>
-                      setNewVirtualSectionStart(parseInt(e.target.value) || 0)
+                      setNewVirtualSectionStart(parseInt(e.target.value) || 1)
                     }
                     className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -367,8 +370,8 @@ export function PlanterDialog({
                     <div className="flex-1">
                       <div className="font-medium">{vb.name}</div>
                       <div className="text-xs text-gray-600">
-                        {vb.type === "rows" ? "Rows" : "Columns"} {vb.start} to{" "}
-                        {vb.end - 1}
+                        {vb.type === "rows" ? "Rows" : "Columns"} {vb.start + 1} to{" "}
+                        {vb.end}
                       </div>
                     </div>
                     <button

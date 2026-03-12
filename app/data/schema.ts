@@ -52,6 +52,11 @@ export const PlantSourceSchema = z.enum(["bundled", "synced", "custom"]);
 // ---------------------------------------------------------------------------
 // VirtualSection — a named row/column band within a Planter
 // (previously exported from PlanterDialog.tsx)
+//
+// NOTE: start and end use 0-based indexing internally with a half-open
+// interval [start, end), matching standard array slicing conventions.
+// The UI converts between 1-based user input and 0-based storage:
+// - User enters "Rows 1 to 3" → stored as start: 0, end: 3 → displayed as "Rows 1 to 3"
 // ---------------------------------------------------------------------------
 
 export const VirtualSectionSchema = z.object({
