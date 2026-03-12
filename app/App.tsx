@@ -1,33 +1,15 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState } from "react";
 import {
   PlanterGrid,
-  Plant,
   PlantInstance,
   PlanterSquare,
 } from "./components/PlanterGrid";
-import { EventsBar, GardenEvent, Suggestion } from "./components/EventsBar";
+import { EventsBar } from "./components/EventsBar";
 import { ToolBar } from "./components/ToolBar";
-import {
-  PlanterDialog,
-  PlanterConfig,
-  VirtualSection,
-} from "./components/PlanterDialog";
+import { PlanterDialog } from "./components/PlanterDialog";
 import { PlantDialog } from "./components/PlantDefinitionDialog";
 import { SowSeedsDialog } from "./components/SowSeedsDialog";
-import {
-  AddSeedlingDialog,
-  SeedlingFormData,
-} from "./components/AddSeedlingDialog";
-import { createServerRepository } from "./data/serverRepository";
-import { migrateLocalStorageToDexie } from "./data/migration";
-import { parseWithDefaults, SettingsSchema } from "./data/schema";
-import type {
-  Settings,
-  Area as SchemaArea,
-  Seedling as SchemaSeedling,
-  GardenEvent as SchemaGardenEvent,
-  Plant as SchemaPlant,
-} from "./data/schema";
+import { AddSeedlingDialog } from "./components/AddSeedlingDialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import {
@@ -48,137 +30,14 @@ import {
   AlertCircle,
   MapPin,
 } from "lucide-react";
+import { useGardenData } from "./hooks/useGardenData";
+import { useLocationSettings } from "./hooks/useLocationSettings";
+import { useOpenRouterSettings } from "./hooks/useOpenRouterSettings";
+import { useAreaManager } from "./hooks/useAreaManager";
+import { usePlantCatalog } from "./hooks/usePlantCatalog";
+import { useSeedlingManager } from "./hooks/useSeedlingManager";
+import { useGardenEvents } from "./hooks/useGardenEvents";
 
-/** Map an average annual extreme minimum temperature (°C) to a USDA hardiness zone. */
-/**
- * Classify a location into a Köppen–Geiger zone from 30-year monthly climate normals.
- * T[] = 12 monthly mean temps (°C), P[] = 12 monthly precip totals (mm).
- */
-function classifyKoppen(T: number[], P: number[], lat: number): string {
-  const Tann = T.reduce((a, b) => a + b, 0) / 12;
-  const Pann = P.reduce((a, b) => a + b, 0);
-  const Tmax = Math.max(...T);
-  const Tmin = Math.min(...T);
-
-  // Hemisphere-aware summer/winter index sets
-  const isNH = lat >= 0;
-  const summerIdx = isNH ? [3, 4, 5, 6, 7, 8] : [9, 10, 11, 0, 1, 2];
-  const winterIdx = isNH ? [9, 10, 11, 0, 1, 2] : [3, 4, 5, 6, 7, 8];
-  const Psummer = summerIdx.reduce((s, m) => s + P[m], 0);
-  const Pwinter = winterIdx.reduce((s, m) => s + P[m], 0);
-
-  // Aridity threshold (mm)
-  let Pth: number;
-  if (Pann > 0 && Psummer / Pann >= 0.7) Pth = 20 * (Tann + 14);
-  else if (Pann > 0 && Pwinter / Pann >= 0.7) Pth = 20 * Tann;
-  else Pth = 20 * (Tann + 7);
-
-  // E — Polar
-  if (Tmax <= 10) return Tmax <= 0 ? "EF" : "ET";
-
-  // B — Arid
-  if (Pann < 2 * Pth) {
-    const sub = Tann >= 18 ? "h" : "k";
-    return Pann < Pth ? `BW${sub}` : `BS${sub}`;
-  }
-
-  // A — Tropical (coldest month ≥ 18 °C)
-  if (Tmin >= 18) {
-    const Pdry = Math.min(...P);
-    if (Pdry >= 60) return "Af";
-    if (Pdry >= 100 - Pann / 25) return "Am";
-    return "Aw";
-  }
-
-  // C / D
-  const prefix = Tmin <= -3 ? "D" : "C";
-
-  // Seasonal precipitation character
-  const Psdry = Math.min(...summerIdx.map((m) => P[m]));
-  const Pwdry = Math.min(...winterIdx.map((m) => P[m]));
-  const Pswet = Math.max(...summerIdx.map((m) => P[m]));
-  const Pwwet = Math.max(...winterIdx.map((m) => P[m]));
-  let dry: string;
-  if (Psdry < 40 && Psdry < Pwwet / 3) dry = "s";
-  else if (Pwdry < Pswet / 10) dry = "w";
-  else dry = "f";
-
-  // Temperature subtype
-  const monthsOver10 = T.filter((t) => t >= 10).length;
-  let sub: string;
-  if (Tmax >= 22) sub = "a";
-  else if (monthsOver10 >= 4) sub = "b";
-  else if (prefix === "D" && Tmin < -38) sub = "d";
-  else sub = "c";
-
-  return `${prefix}${dry}${sub}`;
-}
-
-/**
- * Fetch 10 years of daily mean temperature + precipitation from the
- * Open-Meteo archive API (free, no key required), compute monthly normals,
- * then return the Köppen–Geiger zone code.
- * Throws on failure — caller should catch and use a fallback.
- */
-async function fetchKoppenZone(lat: number, lon: number): Promise<string> {
-  const endYear = new Date().getFullYear() - 1;
-  const startYear = endYear - 9;
-  const url =
-    `https://archive-api.open-meteo.com/v1/archive` +
-    `?latitude=${lat}&longitude=${lon}` +
-    `&start_date=${startYear}-01-01&end_date=${endYear}-12-31` +
-    `&daily=temperature_2m_mean,precipitation_sum&timezone=auto`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Open-Meteo archive ${res.status}`);
-  const json: {
-    daily: {
-      time: string[];
-      temperature_2m_mean: (number | null)[];
-      precipitation_sum: (number | null)[];
-    };
-  } = await res.json();
-  const { time, temperature_2m_mean, precipitation_sum } = json.daily;
-
-  // Accumulate per year-month sums so we can average across years
-  const ymTemp: Record<string, number[]> = {};
-  const ymPrecip: Record<string, number[]> = {};
-  for (let i = 0; i < time.length; i++) {
-    const key = time[i].slice(0, 7); // "YYYY-MM"
-    const t = temperature_2m_mean[i];
-    const p = precipitation_sum[i];
-    if (t !== null) (ymTemp[key] ??= []).push(t);
-    if (p !== null) (ymPrecip[key] ??= []).push(p);
-  }
-
-  // Build 12-element monthly normals (average over all years for each month)
-  const monthTemp = Array<number[]>(12)
-    .fill(null!)
-    .map(() => [] as number[]);
-  const monthPrecip = Array<number[]>(12)
-    .fill(null!)
-    .map(() => [] as number[]);
-  for (const [key, vals] of Object.entries(ymTemp)) {
-    const m = parseInt(key.slice(5), 10) - 1;
-    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-    monthTemp[m].push(mean);
-  }
-  for (const [key, vals] of Object.entries(ymPrecip)) {
-    const m = parseInt(key.slice(5), 10) - 1;
-    const total = vals.reduce((a, b) => a + b, 0);
-    monthPrecip[m].push(total);
-  }
-  const T = monthTemp.map((v) =>
-    v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0,
-  );
-  const P = monthPrecip.map((v) =>
-    v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0,
-  );
-
-  if (T.every((v) => v === 0) && P.every((v) => v === 0))
-    throw new Error("No climate data returned");
-
-  return classifyKoppen(T, P, lat);
-}
 
 const MONTH_ABBR = [
   "Jan",
@@ -201,739 +60,118 @@ function formatMonthRange(months: number[]): string {
   return `${MONTH_ABBR[sorted[0] - 1]}–${MONTH_ABBR[sorted[sorted.length - 1] - 1]}`;
 }
 
-interface Planter {
-  id: string;
-  name: string;
-  rows: number;
-  cols: number;
-  squares?: PlanterSquare[][];
-  virtualSections?: VirtualSection[];
-  backgroundColor?: string;
-  tagline?: string;
-}
-
-interface Area {
-  id: string;
-  name: string;
-  tagline?: string;
-  backgroundColor?: string;
-  planters: Planter[];
-}
-
-interface Seedling {
-  id: string;
-  plant: Plant;
-  plantedDate: string;
-  seedCount: number;
-  location: string;
-  method?: "indoor" | "direct-sow";
-  status: "germinating" | "growing" | "hardening" | "ready";
-}
-
 export default function App() {
-  const hasLoadedFromDB = useRef(false);
-  const repositoryRef = useRef(createServerRepository());
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [dbError, setDbError] = useState<string | null>(null);
-  const [savedIndicator, setSavedIndicator] = useState(false);
-  const [areas, setAreas] = useState<Area[]>([]);
-  const [customPlants, setCustomPlants] = useState<Plant[]>([]);
-  const [seedlings, setSeedlings] = useState<Seedling[]>([]);
-  const [settings, setSettings] = useState<Settings>(() =>
-    parseWithDefaults(SettingsSchema, {}),
-  );
-  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
-  const [events, setEvents] = useState<GardenEvent[]>([]);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([
-    {
-      id: "sug-1",
-      type: "water",
-      priority: "high",
-      description: "Hot weather expected - give plants extra water",
-      dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "sug-2",
-      type: "weed",
-      priority: "medium",
-      description: "Regular weeding helps your vegetables grow better",
-      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "sug-3",
-      type: "compost",
-      priority: "low",
-      description: "Add compost to enrich soil nutrients",
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ]);
-  const [planterDialogOpen, setPlanterDialogOpen] = useState(false);
-  const [editingPlanter, setEditingPlanter] = useState<{
-    areaId: string;
-    planter: Planter | null;
-  } | null>(null);
+  // ── Core data (DB loading + persistence) ──────────────────────────────────
+  const {
+    dbError,
+    savedIndicator,
+    areas,
+    setAreas,
+    customPlants,
+    setCustomPlants,
+    seedlings,
+    setSeedlings,
+    settings,
+    setSettings,
+    events,
+    setEvents,
+    repositoryRef,
+  } = useGardenData();
+
+  // ── UI-only state kept in App as orchestration layer ──────────────────────
   const [activeTab, setActiveTab] = useState("areas");
   const [isEditMode, setIsEditMode] = useState(true);
-  const [showAddPlantModal, setShowAddPlantModal] = useState(false);
-  const [showAddSeedlingModal, setShowAddSeedlingModal] = useState(false);
-  const [showSowModal, setShowSowModal] = useState(false);
-  const [selectedSowPlant, setSelectedSowPlant] = useState<Plant | null>(null);
-  const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
-  const [dialogDefaultIsSeed, setDialogDefaultIsSeed] = useState(false);
-  const [plantsFilter, setPlantsFilter] = useState<"all" | "plants" | "seeds">(
-    "all",
-  );
-  const [plantsSearch, setPlantsSearch] = useState("");
+  const [selectedPlant, setSelectedPlant] = useState<PlantInstance["plant"] | null>(null);
 
-  // Location verification state
-  const [locationDraft, setLocationDraft] = useState(settings.location);
-  const [locationStatus, setLocationStatus] = useState<
-    "idle" | "checking" | "valid" | "invalid"
-  >(settings.lat != null ? "valid" : "idle");
-  const [locationError, setLocationError] = useState("");
+  // ── Settings sub-hooks ────────────────────────────────────────────────────
+  const {
+    locationDraft,
+    setLocationDraft,
+    locationStatus,
+    locationError,
+    handleVerifyLocation,
+  } = useLocationSettings(settings, setSettings);
 
-  // OpenRouter AI validation state
-  const [orKeyDraft, setOrKeyDraft] = useState(
-    settings.aiProvider.type === "byok" ? settings.aiProvider.key : "",
-  );
-  const [orStatus, setOrStatus] = useState<"idle" | "checking" | "valid" | "invalid">(
-    settings.aiProvider.type === "byok" ? "valid" : "idle",
-  );
-  const [orError, setOrError] = useState("");
-  const [showOrKey, setShowOrKey] = useState(false);
+  const {
+    orKeyDraft,
+    setOrKeyDraft,
+    orStatus,
+    orError,
+    showOrKey,
+    setShowOrKey,
+    handleValidateOpenRouter,
+  } = useOpenRouterSettings(settings, setSettings);
 
-  // Initialize from server (with local Dexie fallback) on mount
-  useEffect(() => {
-    const repo = repositoryRef.current;
-    (async () => {
-      try {
-        await repo.ready();
-        console.info("[DB] Repository ready");
-        await migrateLocalStorageToDexie(repo);
-        const [
-          loadedAreas,
-          loadedPlants,
-          loadedSeedlings,
-          loadedSettings,
-          loadedEvents,
-        ] = await Promise.all([
-          repo.getAreas(),
-          repo.getCustomPlants(),
-          repo.getSeedlings(),
-          repo.getSettings(),
-          repo.getEvents(),
-        ]);
-        console.info(
-          `[DB] Loaded: ${loadedAreas.length} areas, ${loadedPlants.length} plants, ${loadedSeedlings.length} seedlings, ${loadedEvents.length} events`,
-        );
-        setAreas(loadedAreas as unknown as Area[]);
-        setCustomPlants(loadedPlants as unknown as Plant[]);
-        setSeedlings(loadedSeedlings as unknown as Seedling[]);
-        setSettings(loadedSettings);
-        setLocationDraft(loadedSettings.location);
-        setLocationStatus(loadedSettings.lat != null ? "valid" : "idle");
-        setOrKeyDraft(
-          loadedSettings.aiProvider.type === "byok"
-            ? loadedSettings.aiProvider.key
-            : "",
-        );
-        setOrStatus(
-          loadedSettings.aiProvider.type === "byok" ? "valid" : "idle",
-        );
-        setEvents(loadedEvents as unknown as GardenEvent[]);
-        hasLoadedFromDB.current = true;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error("[DB] Failed to initialize database:", err);
-        setDbError(msg);
-      }
-    })();
-  }, []);
+  // ── Area + planter management ─────────────────────────────────────────────
+  const {
+    planterDialogOpen,
+    setPlanterDialogOpen,
+    editingPlanter,
+    handleAddArea,
+    handleRemoveArea,
+    handleUpdateArea,
+    handleAddPlanter,
+    handleEditPlanter,
+    handleSavePlanter,
+    handleRemovePlanter,
+    handleMoveArea,
+    handleMovePlanter,
+  } = useAreaManager({ setAreas, events, setEvents, repositoryRef });
 
-  const flashSaved = () => {
-    setSavedIndicator(true);
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => setSavedIndicator(false), 2000);
-  };
+  // ── Plant catalogue ───────────────────────────────────────────────────────
+  const {
+    showAddPlantModal,
+    setShowAddPlantModal,
+    editingPlant,
+    dialogDefaultIsSeed,
+    setDialogDefaultIsSeed,
+    plantsFilter,
+    setPlantsFilter,
+    plantsSearch,
+    setPlantsSearch,
+    AVAILABLE_PLANTS,
+    filteredAvailablePlants,
+    plantTabCounts,
+    getAvailableStock,
+    handleAddPlant,
+    handleRemovePlantManually,
+    handleEditPlantManually,
+  } = usePlantCatalog({ customPlants, setCustomPlants, areas, repositoryRef });
 
-  // Validate OpenRouter API key by calling /auth/key
-  const handleValidateOpenRouter = async () => {
-    const key = orKeyDraft.trim();
-    if (!key) return;
-    setOrStatus("checking");
-    setOrError("");
-    try {
-      const res = await fetch("https://openrouter.ai/api/v1/auth/key", {
-        headers: { Authorization: `Bearer ${key}` },
-      });
-      if (res.status === 401) {
-        setOrStatus("invalid");
-        setOrError("Invalid API key — check your key at openrouter.ai.");
-        setSettings((prev) => ({ ...prev, aiProvider: { type: "none" } }));
-        return;
-      }
-      if (!res.ok) {
-        setOrStatus("invalid");
-        setOrError(`OpenRouter returned status ${res.status}. Try again later.`);
-        setSettings((prev) => ({ ...prev, aiProvider: { type: "none" } }));
-        return;
-      }
-      setOrStatus("valid");
-      setSettings((prev) => ({
-        ...prev,
-        aiProvider: { type: "byok", key },
-      }));
-    } catch {
-      setOrStatus("invalid");
-      setOrError("Cannot reach OpenRouter. Check your network connection.");
-    }
-  };
+  // ── Seedling management ───────────────────────────────────────────────────
+  const {
+    showAddSeedlingModal,
+    setShowAddSeedlingModal,
+    showSowModal,
+    setShowSowModal,
+    selectedSowPlant,
+    handleAddSeedling,
+    handleOpenSowModal,
+    handleSowSeeds,
+    handleUpdateSeedlingStatus,
+    handlePlantFromBatch,
+    handleRemoveSeedling,
+  } = useSeedlingManager({
+    seedlings,
+    setSeedlings,
+    setCustomPlants,
+    setEvents,
+    repositoryRef,
+    setSelectedPlant,
+    setActiveTab,
+  });
 
-  // Verify location against OpenWeather Geocoding API and derive growth zone
-  const handleVerifyLocation = async () => {
-    const q = locationDraft.trim();
-    if (!q) return;
-    setLocationStatus("checking");
-    setLocationError("");
-    try {
-      // Open-Meteo Geocoding API (free, no API key required)
-      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Open-Meteo Geocoding ${res.status}`);
-      const json: {
-        results?: Array<{
-          latitude: number;
-          longitude: number;
-          name: string;
-          admin1?: string;
-          country?: string;
-        }>;
-      } = await res.json();
-      const results = json.results;
-      if (!Array.isArray(results) || results.length === 0) {
-        setLocationStatus("invalid");
-        setLocationError(
-          "Location not found. Try a different city name or add a country (e.g. 'Paris, France').",
-        );
-        return;
-      }
-      const { latitude, longitude, name, admin1, country } = results[0];
-      const displayName = [name, admin1, country].filter(Boolean).join(", ");
-
-      // Derive Köppen–Geiger climate zone from Open-Meteo historical data (free)
-      let growthZone = "Cfb"; // safe fallback
-      try {
-        growthZone = await fetchKoppenZone(latitude, longitude);
-      } catch {
-        // Non-fatal: location is still valid, user can correct zone manually
-      }
-      setLocationDraft(displayName);
-      setSettings((prev) => ({
-        ...prev,
-        location: displayName,
-        lat: latitude,
-        lng: longitude,
-        growthZone,
-      }));
-      setLocationStatus("valid");
-    } catch (e) {
-      setLocationStatus("invalid");
-      setLocationError(
-        e instanceof Error ? e.message : "Failed to verify location.",
-      );
-    }
-  };
-
-  // Persist areas to Dexie (skip until initial load is done to avoid race)
-  useEffect(() => {
-    if (!hasLoadedFromDB.current) return;
-    const repo = repositoryRef.current;
-    console.info(`[DB] Saving ${areas.length} areas`);
-    Promise.all(
-      areas.map((area) => repo.saveArea(area as unknown as SchemaArea)),
-    )
-      .then(flashSaved)
-      .catch((err) => console.error("[DB] Failed to save area:", err));
-  }, [areas]);
-
-  // Persist custom plants to Dexie
-  useEffect(() => {
-    if (!hasLoadedFromDB.current) return;
-    const repo = repositoryRef.current;
-    if (customPlants.length > 0)
-      console.info(`[DB] Saving ${customPlants.length} plants`);
-    Promise.all(
-      customPlants.map((plant) =>
-        repo.savePlant(plant as unknown as SchemaPlant),
-      ),
-    )
-      .then(flashSaved)
-      .catch((err) => console.error("[DB] Failed to save plant:", err));
-  }, [customPlants]);
-
-  // Persist seedlings to Dexie
-  useEffect(() => {
-    if (!hasLoadedFromDB.current) return;
-    const repo = repositoryRef.current;
-    Promise.all(
-      seedlings.map((seedling) =>
-        repo.saveSeedling(seedling as unknown as SchemaSeedling),
-      ),
-    )
-      .then(flashSaved)
-      .catch((err) => console.error("[DB] Failed to save seedling:", err));
-  }, [seedlings]);
-
-  // Persist settings to Dexie
-  useEffect(() => {
-    if (!hasLoadedFromDB.current) return;
-    const repo = repositoryRef.current;
-    repo
-      .saveSettings(settings)
-      .then(flashSaved)
-      .catch((err) => console.error("[DB] Failed to save settings:", err));
-  }, [settings]);
-
-  const harvestAlerts = suggestions
-    .filter((s) => s.type === "harvest" && s.plant && s.dueDate)
-    .map((s) => ({
-      plantName: s.plant!.name,
-      plantIcon: s.plant!.icon,
-      daysUntilHarvest: Math.ceil(
-        (new Date(s.dueDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-      ),
-      areaName: "Garden",
-    }))
-    .filter((a) => a.daysUntilHarvest <= 30)
-    .sort((a, b) => a.daysUntilHarvest - b.daysUntilHarvest);
-
-  const AVAILABLE_PLANTS = customPlants.map((p) => ({
-    ...p,
-    isSeed: p.isSeed ?? false,
-    // Preserve undefined amounts (unlimited) — don't override with defaults
-  }));
-
-  // Calculate how many plants of each type are currently planted in the grid
-  const getUsedPlantCount = (plantId: string): number => {
-    let count = 0;
-    areas.forEach((area) => {
-      area.planters.forEach((planter) => {
-        if (planter.squares) {
-          planter.squares.forEach((row) => {
-            row.forEach((square) => {
-              if (square.plantInstance?.plant.id === plantId) {
-                count++;
-              }
-            });
-          });
-        }
-      });
-    });
-    return count;
-  };
-
-  // Get available stock for a plant (total amount - used plants).
-  // Returns Infinity when the plant has no amount limit (amount === undefined).
-  const getAvailableStock = (plantId: string): number => {
-    const plant = AVAILABLE_PLANTS.find((p) => p.id === plantId);
-    if (!plant) return 0;
-    if (plant.amount === undefined) return Infinity; // unlimited stock
-    const usedCount = getUsedPlantCount(plantId);
-    return Math.max(0, plant.amount - usedCount);
-  };
-
-  const handleAddSeedling = (data: SeedlingFormData) => {
-    const newSeedling: Seedling = {
-      id: `seedling-${Date.now()}`,
-      plant: data.plant,
-      seedCount: data.seedCount,
-      location: data.location,
-      plantedDate: data.plantedDate,
-      method: data.method,
-      status: "germinating",
-    };
-    setSeedlings((prev) => [newSeedling, ...prev]);
-    const sowEvent: GardenEvent = {
-      id: `sow-event-${Date.now()}`,
-      type: "sown",
-      plant: data.plant,
-      date: new Date().toISOString(),
-    };
-    setEvents((prev) => [sowEvent, ...prev]);
-    void repositoryRef.current.saveEvent(
-      sowEvent as unknown as SchemaGardenEvent,
-    );
-  };
-
-  const handleOpenSowModal = (plant: Plant) => {
-    setSelectedSowPlant(plant);
-    setShowSowModal(true);
-  };
-
-  const handleSowSeeds = (
-    plant: Plant,
-    seedCount: number,
-    location: string,
-  ) => {
-    // 1. Decrement amount (only if not unlimited)
-    setCustomPlants((prev) => {
-      const exists = prev.find((p) => p.id === plant.id);
-      if (exists) {
-        return prev.map((p) =>
-          p.id === plant.id
-            ? {
-                ...p,
-                amount: p.amount === undefined ? undefined : Math.max(0, p.amount - seedCount),
-              }
-            : p,
-        );
-      } else {
-        // If it was a DEFAULT_PLANT, it now becomes a custom plant to track amount
-        return [
-          ...prev,
-          {
-            ...plant,
-            amount: plant.amount === undefined ? undefined : Math.max(0, plant.amount - seedCount),
-          },
-        ];
-      }
-    });
-
-    // 2. Add to seedlings
-    const newSeedling: Seedling = {
-      id: `seedling-${Date.now()}`,
-      plant,
-      seedCount,
-      location,
-      plantedDate: new Date().toISOString(),
-      status: "germinating",
-    };
-    setSeedlings((prev) => [newSeedling, ...prev]);
-
-    // 3. Log event
-    const sowEvent: GardenEvent = {
-      id: `sow-event-${Date.now()}`,
-      type: "sown",
-      plant,
-      date: new Date().toISOString(),
-    };
-    setEvents((prev) => [sowEvent, ...prev]);
-    void repositoryRef.current.saveEvent(
-      sowEvent as unknown as SchemaGardenEvent,
-    );
-  };
-
-  const handleUpdateSeedlingStatus = (
-    id: string,
-    status: Seedling["status"],
-  ) => {
-    setSeedlings((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status } : s)),
-    );
-
-    // Log the update
-    const seedling = seedlings.find((s) => s.id === id);
-    if (!seedling) return;
-
-    const statusEvent: GardenEvent = {
-      id: `update-seedling-${Date.now()}`,
-      type:
-        status === "growing"
-          ? "sprouted"
-          : status === "hardening" || status === "ready"
-            ? "sprouted"
-            : "watered",
-      plant: seedling.plant,
-      date: new Date().toISOString(),
-    };
-    setEvents((prev) => [statusEvent, ...prev]);
-    void repositoryRef.current.saveEvent(
-      statusEvent as unknown as SchemaGardenEvent,
-    );
-  };
-
-  const handlePlantFromBatch = (seedling: Seedling) => {
-    setSelectedPlant(seedling.plant);
-    setActiveTab("areas");
-    // Batch stays until deleted manually
-  };
-
-  const handleRemoveSeedling = (id: string) => {
-    setSeedlings((prev) => prev.filter((s) => s.id !== id));
-    void repositoryRef.current.deleteSeedling(id);
-  };
-
-  const handleAddPlant = (plant: Plant) => {
-    if (editingPlant) {
-      setCustomPlants((prev) =>
-        prev.map((p) => (p.id === plant.id ? plant : p)),
-      );
-    } else {
-      setCustomPlants((prev) => [...prev, plant]);
-    }
-    setEditingPlant(null);
-  };
-
-  const handleRemovePlantManually = (id: string) => {
-    setCustomPlants((prev) => prev.filter((p) => p.id !== id));
-    void repositoryRef.current.deletePlant(id);
-  };
-
-  const handleEditPlantManually = (plant: Plant) => {
-    setEditingPlant(plant);
-    setShowAddPlantModal(true);
-  };
-
-  const handleAddArea = () => {
-    const newArea: Area = {
-      id: `area-${Date.now()}`,
-      name: "New Area",
-      tagline: "Location description",
-      backgroundColor: "#f0fdf4",
-      planters: [],
-    };
-    setAreas((prev) => [...prev, newArea]);
-  };
-
-  const handleRemoveArea = (id: string) => {
-    setAreas((prev) => prev.filter((a) => a.id !== id));
-    void repositoryRef.current.deleteArea(id);
-  };
-
-  const handleUpdateArea = (id: string, updates: Partial<Area>) => {
-    setAreas((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...updates } : a)),
-    );
-  };
-
-  const handleAddPlanter = (areaId: string) => {
-    setEditingPlanter({ areaId, planter: null });
-    setPlanterDialogOpen(true);
-  };
-
-  const handleEditPlanter = (areaId: string, planter: Planter) => {
-    setEditingPlanter({ areaId, planter });
-    setPlanterDialogOpen(true);
-  };
-
-  const handleSavePlanter = (config: PlanterConfig) => {
-    if (!editingPlanter) return;
-
-    const { areaId } = editingPlanter;
-
-    setAreas((prevAreas) =>
-      prevAreas.map((area) => {
-        if (area.id !== areaId) return area;
-
-        const updatedPlanters = config.id
-          ? area.planters.map((p) =>
-              p.id === config.id
-                ? ({
-                    ...p,
-                    ...config,
-                  } as Planter)
-                : p,
-            )
-          : [
-              ...area.planters,
-              {
-                ...config,
-                id: `planter-${Date.now()}`,
-              } as Planter,
-            ];
-
-        return { ...area, planters: updatedPlanters };
-      }),
-    );
-
-    setPlanterDialogOpen(false);
-    setEditingPlanter(null);
-  };
-
-  const handleRemovePlanter = (areaId: string, planterId: string) => {
-    setAreas((prevAreas) =>
-      prevAreas.map((area) => {
-        if (area.id !== areaId) return area;
-        return {
-          ...area,
-          planters: area.planters.filter((p) => p.id !== planterId),
-        };
-      }),
-    );
-    const repo = repositoryRef.current;
-    events
-      .filter((e) => e.gardenId === planterId)
-      .forEach((e) => void repo.deleteEvent(e.id));
-    setEvents((prev) => prev.filter((e) => e.gardenId !== planterId));
-  };
-
-  const handleMoveArea = (id: string, direction: "up" | "down") => {
-    setAreas((prev) => {
-      const index = prev.findIndex((a) => a.id === id);
-      if (index < 0) return prev;
-      const newIndex = direction === "up" ? index - 1 : index + 1;
-      if (newIndex < 0 || newIndex >= prev.length) return prev;
-      const next = [...prev];
-      [next[index], next[newIndex]] = [next[newIndex], next[index]];
-      return next;
-    });
-  };
-
-  const handleMovePlanter = (
-    areaId: string,
-    planterId: string,
-    direction: "up" | "down",
-  ) => {
-    setAreas((prevAreas) =>
-      prevAreas.map((area) => {
-        if (area.id !== areaId) return area;
-        const index = area.planters.findIndex((p) => p.id === planterId);
-        if (index < 0) return area;
-        const newIndex = direction === "up" ? index - 1 : index + 1;
-        if (newIndex < 0 || newIndex >= area.planters.length) return area;
-        const next = [...area.planters];
-        [next[index], next[newIndex]] = [next[newIndex], next[index]];
-        return { ...area, planters: next };
-      }),
-    );
-  };
-
-  const handlePlantAdded = (
-    plantInstance: PlantInstance,
-    _planterId: string,
-  ) => {
-    // Log planting event
-    const eventLog: GardenEvent = {
-      id: `planted-${Date.now()}-${Math.random()}`,
-      type: "planted",
-      plant: plantInstance.plant,
-      date: new Date().toISOString(),
-      gardenId: _planterId,
-    };
-    setEvents((prev) => [eventLog, ...prev]);
-    void repositoryRef.current.saveEvent(
-      eventLog as unknown as SchemaGardenEvent,
-    );
-
-    // Add harvest suggestion
-    if (plantInstance.harvestDate) {
-      setSuggestions((prev) => [
-        ...prev,
-        {
-          id: `harvest-sug-${plantInstance.instanceId}`,
-          type: "harvest",
-          plant: plantInstance.plant,
-          priority: "medium",
-          description: `Time to harvest ${plantInstance.plant.name}`,
-          dueDate: plantInstance.harvestDate,
-        },
-      ]);
-    }
-  };
-
-  const handlePlantRemoved = (
-    plantInstance: PlantInstance,
-    _planterId: string,
-    eventType: "harvested" | "removed" = "harvested",
-  ) => {
-    // Log removal event
-    const eventLog: GardenEvent = {
-      id: `${eventType}-${Date.now()}-${Math.random()}`,
-      type: eventType,
-      plant: plantInstance.plant,
-      date: new Date().toISOString(),
-      gardenId: _planterId,
-    };
-    setEvents((prev) => [eventLog, ...prev]);
-    void repositoryRef.current.saveEvent(
-      eventLog as unknown as SchemaGardenEvent,
-    );
-
-    // Remove harvest suggestions for this specific plant instance
-    setSuggestions((prev) =>
-      prev.filter((s) => s.id !== `harvest-sug-${plantInstance.instanceId}`),
-    );
-  };
-
-  const handlePlantUpdated = (
-    plantInstance: PlantInstance,
-    _planterId: string,
-  ) => {
-    // Update harvest suggestion if harvest date changed
-    if (plantInstance.harvestDate) {
-      setSuggestions((prev) =>
-        prev.map((s) =>
-          s.id === `harvest-sug-${plantInstance.instanceId}`
-            ? {
-                ...s,
-                plant: plantInstance.plant,
-                dueDate: plantInstance.harvestDate,
-                description: `Time to harvest ${
-                  plantInstance.variety || plantInstance.plant.name
-                }`,
-              }
-            : s,
-        ),
-      );
-    }
-  };
-
-  const handleCompleteSuggestion = (suggestion: Suggestion) => {
-    // Remove the suggestion
-    setSuggestions((prev) => prev.filter((s) => s.id !== suggestion.id));
-
-    // Log the event
-    const eventType =
-      suggestion.type === "water"
-        ? "watered"
-        : suggestion.type === "harvest"
-          ? "harvested"
-          : suggestion.type === "compost"
-            ? "composted"
-            : suggestion.type === "weed"
-              ? "weeded"
-              : "composted"; // repot -> composted as fallback
-
-    const completedEvent: GardenEvent = {
-      id: `event-${Date.now()}-${Math.random()}`,
-      type: eventType as GardenEvent["type"],
-      plant: suggestion.plant,
-      date: new Date().toISOString(),
-    };
-    setEvents((prev) => [completedEvent, ...prev]);
-    void repositoryRef.current.saveEvent(
-      completedEvent as unknown as SchemaGardenEvent,
-    );
-  };
+  // ── Events + suggestions ──────────────────────────────────────────────────
+  const {
+    suggestions,
+    harvestAlerts,
+    handlePlantAdded,
+    handlePlantRemoved,
+    handlePlantUpdated,
+    handleCompleteSuggestion,
+  } = useGardenEvents({ setEvents, repositoryRef });
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
-
-  const plantTabCounts = useMemo(
-    () => ({
-      all: AVAILABLE_PLANTS.length,
-      plants: AVAILABLE_PLANTS.filter((p) => !p.isSeed).length,
-      seeds: AVAILABLE_PLANTS.filter((p) => p.isSeed).length,
-    }),
-    [AVAILABLE_PLANTS],
-  );
-
-  const filteredAvailablePlants = useMemo(
-    () =>
-      AVAILABLE_PLANTS.filter((plant) => {
-        const matchesFilter =
-          plantsFilter === "all" ||
-          (plantsFilter === "plants" && !plant.isSeed) ||
-          (plantsFilter === "seeds" && plant.isSeed);
-        const matchesSearch =
-          !plantsSearch.trim() ||
-          plant.name.toLowerCase().includes(plantsSearch.toLowerCase()) ||
-          (plant.variety ?? "")
-            .toLowerCase()
-            .includes(plantsSearch.toLowerCase());
-        return matchesFilter && matchesSearch;
-      }),
-    [AVAILABLE_PLANTS, plantsFilter, plantsSearch],
-  );
 
   return (
     <div className="size-full flex flex-col bg-background relative overflow-hidden">

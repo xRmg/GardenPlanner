@@ -1,0 +1,177 @@
+/**
+ * app/hooks/useGardenData.ts
+ *
+ * Core data hook. Manages:
+ * - Repository initialization and DB readiness
+ * - Loading all garden data from the database on mount
+ * - Persisting areas, customPlants, seedlings, and settings to the DB
+ *   whenever they change (after the initial load)
+ * - "Saved" flash indicator
+ */
+
+import { useState, useEffect, useRef } from "react";
+import { createServerRepository } from "../data/serverRepository";
+import { migrateLocalStorageToDexie } from "../data/migration";
+import { parseWithDefaults, SettingsSchema } from "../data/schema";
+import type {
+  Settings,
+  Area as SchemaArea,
+  Seedling as SchemaSeedling,
+  Plant as SchemaPlant,
+} from "../data/schema";
+import type { GardenRepository } from "../data/repository";
+import type { Area, Seedling } from "../types";
+import type { Plant } from "../components/PlanterGrid";
+import type { GardenEvent } from "../components/EventsBar";
+
+export interface GardenDataState {
+  /** Non-null when the database failed to open. Data will not persist. */
+  dbError: string | null;
+  /** True for 2 s after any successful save — drives the "Saved" indicator. */
+  savedIndicator: boolean;
+  areas: Area[];
+  setAreas: React.Dispatch<React.SetStateAction<Area[]>>;
+  customPlants: Plant[];
+  setCustomPlants: React.Dispatch<React.SetStateAction<Plant[]>>;
+  seedlings: Seedling[];
+  setSeedlings: React.Dispatch<React.SetStateAction<Seedling[]>>;
+  settings: Settings;
+  setSettings: React.Dispatch<React.SetStateAction<Settings>>;
+  events: GardenEvent[];
+  setEvents: React.Dispatch<React.SetStateAction<GardenEvent[]>>;
+  /** Stable ref to the active GardenRepository instance. */
+  repositoryRef: React.MutableRefObject<GardenRepository>;
+  /** Ref that becomes true after the initial DB load completes. Used to
+   *  guard persistence effects from firing before data has been loaded. */
+  hasLoadedFromDB: React.MutableRefObject<boolean>;
+  /** Flash the "Saved" toast for 2 seconds. */
+  flashSaved: () => void;
+}
+
+export function useGardenData(): GardenDataState {
+  const hasLoadedFromDB = useRef(false);
+  const repositoryRef = useRef<GardenRepository>(createServerRepository());
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [savedIndicator, setSavedIndicator] = useState(false);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [customPlants, setCustomPlants] = useState<Plant[]>([]);
+  const [seedlings, setSeedlings] = useState<Seedling[]>([]);
+  const [settings, setSettings] = useState<Settings>(() =>
+    parseWithDefaults(SettingsSchema, {}),
+  );
+  const [events, setEvents] = useState<GardenEvent[]>([]);
+
+  const flashSaved = () => {
+    setSavedIndicator(true);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => setSavedIndicator(false), 2000);
+  };
+
+  // Initialize from server (with local Dexie fallback) on mount
+  useEffect(() => {
+    const repo = repositoryRef.current;
+    (async () => {
+      try {
+        await repo.ready();
+        console.info("[DB] Repository ready");
+        await migrateLocalStorageToDexie(repo);
+        const [
+          loadedAreas,
+          loadedPlants,
+          loadedSeedlings,
+          loadedSettings,
+          loadedEvents,
+        ] = await Promise.all([
+          repo.getAreas(),
+          repo.getCustomPlants(),
+          repo.getSeedlings(),
+          repo.getSettings(),
+          repo.getEvents(),
+        ]);
+        console.info(
+          `[DB] Loaded: ${loadedAreas.length} areas, ${loadedPlants.length} plants, ${loadedSeedlings.length} seedlings, ${loadedEvents.length} events`,
+        );
+        setAreas(loadedAreas as unknown as Area[]);
+        setCustomPlants(loadedPlants as unknown as Plant[]);
+        setSeedlings(loadedSeedlings as unknown as Seedling[]);
+        setSettings(loadedSettings);
+        setEvents(loadedEvents as unknown as GardenEvent[]);
+        hasLoadedFromDB.current = true;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[DB] Failed to initialize database:", err);
+        setDbError(msg);
+      }
+    })();
+  }, []);
+
+  // Persist areas to Dexie (skip until initial load is done to avoid race)
+  useEffect(() => {
+    if (!hasLoadedFromDB.current) return;
+    const repo = repositoryRef.current;
+    console.info(`[DB] Saving ${areas.length} areas`);
+    Promise.all(
+      areas.map((area) => repo.saveArea(area as unknown as SchemaArea)),
+    )
+      .then(flashSaved)
+      .catch((err) => console.error("[DB] Failed to save area:", err));
+  }, [areas]);
+
+  // Persist custom plants to Dexie
+  useEffect(() => {
+    if (!hasLoadedFromDB.current) return;
+    const repo = repositoryRef.current;
+    if (customPlants.length > 0)
+      console.info(`[DB] Saving ${customPlants.length} plants`);
+    Promise.all(
+      customPlants.map((plant) =>
+        repo.savePlant(plant as unknown as SchemaPlant),
+      ),
+    )
+      .then(flashSaved)
+      .catch((err) => console.error("[DB] Failed to save plant:", err));
+  }, [customPlants]);
+
+  // Persist seedlings to Dexie
+  useEffect(() => {
+    if (!hasLoadedFromDB.current) return;
+    const repo = repositoryRef.current;
+    Promise.all(
+      seedlings.map((seedling) =>
+        repo.saveSeedling(seedling as unknown as SchemaSeedling),
+      ),
+    )
+      .then(flashSaved)
+      .catch((err) => console.error("[DB] Failed to save seedling:", err));
+  }, [seedlings]);
+
+  // Persist settings to Dexie
+  useEffect(() => {
+    if (!hasLoadedFromDB.current) return;
+    const repo = repositoryRef.current;
+    repo
+      .saveSettings(settings)
+      .then(flashSaved)
+      .catch((err) => console.error("[DB] Failed to save settings:", err));
+  }, [settings]);
+
+  return {
+    dbError,
+    savedIndicator,
+    areas,
+    setAreas,
+    customPlants,
+    setCustomPlants,
+    seedlings,
+    setSeedlings,
+    settings,
+    setSettings,
+    events,
+    setEvents,
+    repositoryRef,
+    hasLoadedFromDB,
+    flashSaved,
+  };
+}
