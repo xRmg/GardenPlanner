@@ -1471,6 +1471,8 @@ export default function App() {
             onSelectPlant={setSelectedPlant}
             onAddArea={handleAddArea}
             onAddPlant={() => setShowAddPlantModal(true)}
+            seedlingCount={seedlings.length}
+            onShowSeedlings={() => setActiveTab("seedlings")}
           />
         </div>
       </div>
