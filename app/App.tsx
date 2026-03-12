@@ -1,5 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
-import { PlanterGrid, Plant, PlantInstance, PlanterSquare } from "./components/PlanterGrid";
+import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  PlanterGrid,
+  Plant,
+  PlantInstance,
+  PlanterSquare,
+} from "./components/PlanterGrid";
 import { EventsBar, GardenEvent, Suggestion } from "./components/EventsBar";
 import { ToolBar } from "./components/ToolBar";
 import {
@@ -38,7 +43,142 @@ import {
   Sprout,
   Eye,
   EyeOff,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  MapPin,
 } from "lucide-react";
+
+/** Map an average annual extreme minimum temperature (°C) to a USDA hardiness zone. */
+/**
+ * Classify a location into a Köppen–Geiger zone from 30-year monthly climate normals.
+ * T[] = 12 monthly mean temps (°C), P[] = 12 monthly precip totals (mm).
+ */
+function classifyKoppen(T: number[], P: number[], lat: number): string {
+  const Tann = T.reduce((a, b) => a + b, 0) / 12;
+  const Pann = P.reduce((a, b) => a + b, 0);
+  const Tmax = Math.max(...T);
+  const Tmin = Math.min(...T);
+
+  // Hemisphere-aware summer/winter index sets
+  const isNH = lat >= 0;
+  const summerIdx = isNH ? [3, 4, 5, 6, 7, 8] : [9, 10, 11, 0, 1, 2];
+  const winterIdx = isNH ? [9, 10, 11, 0, 1, 2] : [3, 4, 5, 6, 7, 8];
+  const Psummer = summerIdx.reduce((s, m) => s + P[m], 0);
+  const Pwinter = winterIdx.reduce((s, m) => s + P[m], 0);
+
+  // Aridity threshold (mm)
+  let Pth: number;
+  if (Pann > 0 && Psummer / Pann >= 0.7) Pth = 20 * (Tann + 14);
+  else if (Pann > 0 && Pwinter / Pann >= 0.7) Pth = 20 * Tann;
+  else Pth = 20 * (Tann + 7);
+
+  // E — Polar
+  if (Tmax <= 10) return Tmax <= 0 ? "EF" : "ET";
+
+  // B — Arid
+  if (Pann < 2 * Pth) {
+    const sub = Tann >= 18 ? "h" : "k";
+    return Pann < Pth ? `BW${sub}` : `BS${sub}`;
+  }
+
+  // A — Tropical (coldest month ≥ 18 °C)
+  if (Tmin >= 18) {
+    const Pdry = Math.min(...P);
+    if (Pdry >= 60) return "Af";
+    if (Pdry >= 100 - Pann / 25) return "Am";
+    return "Aw";
+  }
+
+  // C / D
+  const prefix = Tmin <= -3 ? "D" : "C";
+
+  // Seasonal precipitation character
+  const Psdry = Math.min(...summerIdx.map((m) => P[m]));
+  const Pwdry = Math.min(...winterIdx.map((m) => P[m]));
+  const Pswet = Math.max(...summerIdx.map((m) => P[m]));
+  const Pwwet = Math.max(...winterIdx.map((m) => P[m]));
+  let dry: string;
+  if (Psdry < 40 && Psdry < Pwwet / 3) dry = "s";
+  else if (Pwdry < Pswet / 10) dry = "w";
+  else dry = "f";
+
+  // Temperature subtype
+  const monthsOver10 = T.filter((t) => t >= 10).length;
+  let sub: string;
+  if (Tmax >= 22) sub = "a";
+  else if (monthsOver10 >= 4) sub = "b";
+  else if (prefix === "D" && Tmin < -38) sub = "d";
+  else sub = "c";
+
+  return `${prefix}${dry}${sub}`;
+}
+
+/**
+ * Fetch 10 years of daily mean temperature + precipitation from the
+ * Open-Meteo archive API (free, no key required), compute monthly normals,
+ * then return the Köppen–Geiger zone code.
+ * Throws on failure — caller should catch and use a fallback.
+ */
+async function fetchKoppenZone(lat: number, lon: number): Promise<string> {
+  const endYear = new Date().getFullYear() - 1;
+  const startYear = endYear - 9;
+  const url =
+    `https://archive-api.open-meteo.com/v1/archive` +
+    `?latitude=${lat}&longitude=${lon}` +
+    `&start_date=${startYear}-01-01&end_date=${endYear}-12-31` +
+    `&daily=temperature_2m_mean,precipitation_sum&timezone=auto`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Open-Meteo archive ${res.status}`);
+  const json: {
+    daily: {
+      time: string[];
+      temperature_2m_mean: (number | null)[];
+      precipitation_sum: (number | null)[];
+    };
+  } = await res.json();
+  const { time, temperature_2m_mean, precipitation_sum } = json.daily;
+
+  // Accumulate per year-month sums so we can average across years
+  const ymTemp: Record<string, number[]> = {};
+  const ymPrecip: Record<string, number[]> = {};
+  for (let i = 0; i < time.length; i++) {
+    const key = time[i].slice(0, 7); // "YYYY-MM"
+    const t = temperature_2m_mean[i];
+    const p = precipitation_sum[i];
+    if (t !== null) (ymTemp[key] ??= []).push(t);
+    if (p !== null) (ymPrecip[key] ??= []).push(p);
+  }
+
+  // Build 12-element monthly normals (average over all years for each month)
+  const monthTemp = Array<number[]>(12)
+    .fill(null!)
+    .map(() => [] as number[]);
+  const monthPrecip = Array<number[]>(12)
+    .fill(null!)
+    .map(() => [] as number[]);
+  for (const [key, vals] of Object.entries(ymTemp)) {
+    const m = parseInt(key.slice(5), 10) - 1;
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    monthTemp[m].push(mean);
+  }
+  for (const [key, vals] of Object.entries(ymPrecip)) {
+    const m = parseInt(key.slice(5), 10) - 1;
+    const total = vals.reduce((a, b) => a + b, 0);
+    monthPrecip[m].push(total);
+  }
+  const T = monthTemp.map((v) =>
+    v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0,
+  );
+  const P = monthPrecip.map((v) =>
+    v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0,
+  );
+
+  if (T.every((v) => v === 0) && P.every((v) => v === 0))
+    throw new Error("No climate data returned");
+
+  return classifyKoppen(T, P, lat);
+}
 
 const MONTH_ABBR = [
   "Jan",
@@ -60,205 +200,6 @@ function formatMonthRange(months: number[]): string {
   if (sorted.length === 1) return MONTH_ABBR[sorted[0] - 1];
   return `${MONTH_ABBR[sorted[0] - 1]}–${MONTH_ABBR[sorted[sorted.length - 1] - 1]}`;
 }
-
-const DEFAULT_PLANTS: Plant[] = [
-  {
-    id: "tomato",
-    name: "Tomato",
-    icon: "🍅",
-    color: "#ef4444",
-    daysToHarvest: 75,
-    variety: "Cherry",
-    description: "Indeterminate climber. Pinch out side shoots. Stake early.",
-    spacingCm: 60,
-    frostHardy: false,
-    sunRequirement: "full",
-    sowIndoorMonths: [2, 3, 4],
-    sowDirectMonths: [],
-    harvestMonths: [7, 8, 9],
-    companions: ["basil", "carrot", "onion"],
-    antagonists: ["fennel", "broccoli"],
-  },
-  {
-    id: "carrot",
-    name: "Carrot",
-    icon: "🥕",
-    color: "#f97316",
-    daysToHarvest: 70,
-    variety: "Nantes",
-    description: "Needs deep, stone-free soil. Thin to 8cm to avoid forking.",
-    spacingCm: 8,
-    frostHardy: true,
-    sunRequirement: "full",
-    sowIndoorMonths: [],
-    sowDirectMonths: [3, 4, 5, 6, 7],
-    harvestMonths: [6, 7, 8, 9, 10],
-    companions: ["onion", "leek", "tomato"],
-    antagonists: ["fennel", "dill"],
-  },
-  {
-    id: "lettuce",
-    name: "Lettuce",
-    icon: "🥬",
-    color: "#22c55e",
-    daysToHarvest: 45,
-    variety: "Butterhead",
-    description:
-      "Sow successionally every 3 weeks to avoid a glut. Bolts in heat.",
-    spacingCm: 25,
-    frostHardy: true,
-    sunRequirement: "partial",
-    sowIndoorMonths: [2, 3],
-    sowDirectMonths: [3, 4, 5, 6, 7, 8],
-    harvestMonths: [5, 6, 7, 8, 9, 10],
-    companions: ["carrot", "radish", "strawberry"],
-    antagonists: [],
-  },
-  {
-    id: "pepper",
-    name: "Pepper",
-    icon: "🫑",
-    color: "#10b981",
-    daysToHarvest: 80,
-    variety: "Bell",
-    description:
-      "Start early indoors. Needs warmth — ideal for greenhouse or sunny porch.",
-    spacingCm: 45,
-    frostHardy: false,
-    sunRequirement: "full",
-    sowIndoorMonths: [2, 3],
-    sowDirectMonths: [],
-    harvestMonths: [7, 8, 9, 10],
-    companions: ["tomato", "basil"],
-    antagonists: ["fennel"],
-  },
-  {
-    id: "broccoli",
-    name: "Broccoli",
-    icon: "🥦",
-    color: "#15803d",
-    daysToHarvest: 65,
-    variety: "Calabrese",
-    description:
-      "Cut the central head early to encourage side shoots. Net against pigeons.",
-    spacingCm: 45,
-    frostHardy: true,
-    sunRequirement: "full",
-    sowIndoorMonths: [3, 4, 5],
-    sowDirectMonths: [4, 5, 6],
-    harvestMonths: [7, 8, 9, 10, 11],
-    companions: ["onion", "celery"],
-    antagonists: ["tomato", "strawberry"],
-  },
-  {
-    id: "cucumber",
-    name: "Cucumber",
-    icon: "🥒",
-    color: "#4ade80",
-    daysToHarvest: 55,
-    variety: "Slicing",
-    description:
-      "Train up a trellis. Keep well watered. Pick regularly to keep producing.",
-    spacingCm: 45,
-    frostHardy: false,
-    sunRequirement: "full",
-    sowIndoorMonths: [4],
-    sowDirectMonths: [5, 6],
-    harvestMonths: [7, 8, 9],
-    companions: ["bean", "pea", "lettuce"],
-    antagonists: ["sage", "fennel"],
-  },
-  {
-    id: "courgette",
-    name: "Courgette",
-    icon: "🌿",
-    color: "#65a30d",
-    daysToHarvest: 55,
-    variety: "Defender",
-    description:
-      "Harvest at 15–20cm to keep the plant cropping. One plant feeds a family.",
-    spacingCm: 90,
-    frostHardy: false,
-    sunRequirement: "full",
-    sowIndoorMonths: [4],
-    sowDirectMonths: [5],
-    harvestMonths: [7, 8, 9],
-    companions: ["bean", "tomato", "nasturtium"],
-    antagonists: [],
-  },
-  {
-    id: "onion",
-    name: "Onion",
-    icon: "🧅",
-    color: "#d97706",
-    daysToHarvest: 120,
-    variety: "Sturon",
-    description:
-      "Grow from sets for ease. Harvest when foliage falls over and dry well.",
-    spacingCm: 10,
-    frostHardy: true,
-    sunRequirement: "full",
-    sowIndoorMonths: [2, 3],
-    sowDirectMonths: [3, 4],
-    harvestMonths: [7, 8, 9],
-    companions: ["carrot", "tomato", "lettuce"],
-    antagonists: ["pea", "bean"],
-  },
-  {
-    id: "pea",
-    name: "Pea",
-    icon: "🫛",
-    color: "#84cc16",
-    daysToHarvest: 70,
-    variety: "Kelvedon Wonder",
-    description:
-      "Sow straight into the ground. Provide twiggy sticks or netting for support.",
-    spacingCm: 8,
-    frostHardy: true,
-    sunRequirement: "full",
-    sowIndoorMonths: [],
-    sowDirectMonths: [3, 4, 5, 6],
-    harvestMonths: [6, 7, 8],
-    companions: ["carrot", "turnip", "lettuce"],
-    antagonists: ["onion", "garlic"],
-  },
-  {
-    id: "bean",
-    name: "French Bean",
-    icon: "🫘",
-    color: "#16a34a",
-    daysToHarvest: 60,
-    variety: "Climbing",
-    description:
-      "Sow after last frost. Needs a strong support structure at least 2m tall.",
-    spacingCm: 15,
-    frostHardy: false,
-    sunRequirement: "full",
-    sowIndoorMonths: [4],
-    sowDirectMonths: [5, 6, 7],
-    harvestMonths: [8, 9, 10],
-    companions: ["carrot", "cucumber", "celery"],
-    antagonists: ["onion", "fennel"],
-  },
-  {
-    id: "garlic",
-    name: "Garlic",
-    icon: "🧄",
-    color: "#f5f5f5",
-    daysToHarvest: 240,
-    variety: "Hardneck",
-    description:
-      "Plant cloves in autumn, harvest June–July when leaves yellow.",
-    spacingCm: 15,
-    frostHardy: true,
-    sunRequirement: "full",
-    sowIndoorMonths: [],
-    sowDirectMonths: [10, 11],
-    harvestMonths: [6, 7],
-    companions: ["tomato", "carrot", "lettuce"],
-    antagonists: ["pea", "bean"],
-  },
-];
 
 interface Planter {
   id: string;
@@ -290,6 +231,10 @@ interface Seedling {
 }
 
 export default function App() {
+  const hasLoadedFromDB = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [savedIndicator, setSavedIndicator] = useState(false);
   const [areas, setAreas] = useState<Area[]>([]);
   const [customPlants, setCustomPlants] = useState<Plant[]>([]);
   const [seedlings, setSeedlings] = useState<Seedling[]>([]);
@@ -334,64 +279,218 @@ export default function App() {
   const [selectedSowPlant, setSelectedSowPlant] = useState<Plant | null>(null);
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
   const [dialogDefaultIsSeed, setDialogDefaultIsSeed] = useState(false);
-  const [plantsFilter, setPlantsFilter] = useState<"all" | "plants" | "seeds">("all");
+  const [plantsFilter, setPlantsFilter] = useState<"all" | "plants" | "seeds">(
+    "all",
+  );
   const [plantsSearch, setPlantsSearch] = useState("");
+
+  // Location verification state
+  const [locationDraft, setLocationDraft] = useState(settings.location);
+  const [locationStatus, setLocationStatus] = useState<
+    "idle" | "checking" | "valid" | "invalid"
+  >(settings.lat != null ? "valid" : "idle");
+  const [locationError, setLocationError] = useState("");
+
+  // OpenRouter AI validation state
+  const [orKeyDraft, setOrKeyDraft] = useState(
+    settings.aiProvider.type === "byok" ? settings.aiProvider.key : "",
+  );
+  const [orStatus, setOrStatus] = useState<"idle" | "checking" | "valid" | "invalid">(
+    settings.aiProvider.type === "byok" ? "valid" : "idle",
+  );
+  const [orError, setOrError] = useState("");
+  const [showOrKey, setShowOrKey] = useState(false);
 
   // Initialize from Dexie on mount (migration + load)
   useEffect(() => {
     const repo = getDexieRepository();
-    void (async () => {
-      await repo.ready();
-      await migrateLocalStorageToDexie(repo);
-      const [
-        loadedAreas,
-        loadedPlants,
-        loadedSeedlings,
-        loadedSettings,
-        loadedEvents,
-      ] = await Promise.all([
-        repo.getAreas(),
-        repo.getCustomPlants(),
-        repo.getSeedlings(),
-        repo.getSettings(),
-        repo.getEvents(),
-      ]);
-      setAreas(loadedAreas as unknown as Area[]);
-      setCustomPlants(loadedPlants as unknown as Plant[]);
-      setSeedlings(loadedSeedlings as unknown as Seedling[]);
-      setSettings(loadedSettings);
-      setEvents(loadedEvents as unknown as GardenEvent[]);
+    (async () => {
+      try {
+        await repo.ready();
+        console.info("[DB] Dexie ready");
+        await migrateLocalStorageToDexie(repo);
+        const [
+          loadedAreas,
+          loadedPlants,
+          loadedSeedlings,
+          loadedSettings,
+          loadedEvents,
+        ] = await Promise.all([
+          repo.getAreas(),
+          repo.getCustomPlants(),
+          repo.getSeedlings(),
+          repo.getSettings(),
+          repo.getEvents(),
+        ]);
+        console.info(
+          `[DB] Loaded: ${loadedAreas.length} areas, ${loadedPlants.length} plants, ${loadedSeedlings.length} seedlings, ${loadedEvents.length} events`,
+        );
+        setAreas(loadedAreas as unknown as Area[]);
+        setCustomPlants(loadedPlants as unknown as Plant[]);
+        setSeedlings(loadedSeedlings as unknown as Seedling[]);
+        setSettings(loadedSettings);
+        setLocationDraft(loadedSettings.location);
+        setLocationStatus(loadedSettings.lat != null ? "valid" : "idle");
+        setOrKeyDraft(
+          loadedSettings.aiProvider.type === "byok"
+            ? loadedSettings.aiProvider.key
+            : "",
+        );
+        setOrStatus(
+          loadedSettings.aiProvider.type === "byok" ? "valid" : "idle",
+        );
+        setEvents(loadedEvents as unknown as GardenEvent[]);
+        hasLoadedFromDB.current = true;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[DB] Failed to initialize database:", err);
+        setDbError(msg);
+      }
     })();
   }, []);
 
-  // Persist areas to Dexie
+  const flashSaved = () => {
+    setSavedIndicator(true);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => setSavedIndicator(false), 2000);
+  };
+
+  // Validate OpenRouter API key by calling /auth/key
+  const handleValidateOpenRouter = async () => {
+    const key = orKeyDraft.trim();
+    if (!key) return;
+    setOrStatus("checking");
+    setOrError("");
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/auth/key", {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      if (res.status === 401) {
+        setOrStatus("invalid");
+        setOrError("Invalid API key — check your key at openrouter.ai.");
+        setSettings((prev) => ({ ...prev, aiProvider: { type: "none" } }));
+        return;
+      }
+      if (!res.ok) {
+        setOrStatus("invalid");
+        setOrError(`OpenRouter returned status ${res.status}. Try again later.`);
+        setSettings((prev) => ({ ...prev, aiProvider: { type: "none" } }));
+        return;
+      }
+      setOrStatus("valid");
+      setSettings((prev) => ({
+        ...prev,
+        aiProvider: { type: "byok", key },
+      }));
+    } catch {
+      setOrStatus("invalid");
+      setOrError("Cannot reach OpenRouter. Check your network connection.");
+    }
+  };
+
+  // Verify location against OpenWeather Geocoding API and derive growth zone
+  const handleVerifyLocation = async () => {
+    const q = locationDraft.trim();
+    if (!q) return;
+    setLocationStatus("checking");
+    setLocationError("");
+    try {
+      // Open-Meteo Geocoding API (free, no API key required)
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Open-Meteo Geocoding ${res.status}`);
+      const json: {
+        results?: Array<{
+          latitude: number;
+          longitude: number;
+          name: string;
+          admin1?: string;
+          country?: string;
+        }>;
+      } = await res.json();
+      const results = json.results;
+      if (!Array.isArray(results) || results.length === 0) {
+        setLocationStatus("invalid");
+        setLocationError(
+          "Location not found. Try a different city name or add a country (e.g. 'Paris, France').",
+        );
+        return;
+      }
+      const { latitude, longitude, name, admin1, country } = results[0];
+      const displayName = [name, admin1, country].filter(Boolean).join(", ");
+
+      // Derive Köppen–Geiger climate zone from Open-Meteo historical data (free)
+      let growthZone = "Cfb"; // safe fallback
+      try {
+        growthZone = await fetchKoppenZone(latitude, longitude);
+      } catch {
+        // Non-fatal: location is still valid, user can correct zone manually
+      }
+      setLocationDraft(displayName);
+      setSettings((prev) => ({
+        ...prev,
+        location: displayName,
+        lat: latitude,
+        lng: longitude,
+        growthZone,
+      }));
+      setLocationStatus("valid");
+    } catch (e) {
+      setLocationStatus("invalid");
+      setLocationError(
+        e instanceof Error ? e.message : "Failed to verify location.",
+      );
+    }
+  };
+
+  // Persist areas to Dexie (skip until initial load is done to avoid race)
   useEffect(() => {
+    if (!hasLoadedFromDB.current) return;
     const repo = getDexieRepository();
-    areas.forEach((area) => {
-      void repo.saveArea(area as unknown as SchemaArea);
-    });
+    console.info(`[DB] Saving ${areas.length} areas`);
+    Promise.all(
+      areas.map((area) => repo.saveArea(area as unknown as SchemaArea)),
+    )
+      .then(flashSaved)
+      .catch((err) => console.error("[DB] Failed to save area:", err));
   }, [areas]);
 
   // Persist custom plants to Dexie
   useEffect(() => {
+    if (!hasLoadedFromDB.current) return;
     const repo = getDexieRepository();
-    customPlants.forEach((plant) => {
-      void repo.savePlant(plant as unknown as SchemaPlant);
-    });
+    if (customPlants.length > 0)
+      console.info(`[DB] Saving ${customPlants.length} plants`);
+    Promise.all(
+      customPlants.map((plant) =>
+        repo.savePlant(plant as unknown as SchemaPlant),
+      ),
+    )
+      .then(flashSaved)
+      .catch((err) => console.error("[DB] Failed to save plant:", err));
   }, [customPlants]);
 
   // Persist seedlings to Dexie
   useEffect(() => {
+    if (!hasLoadedFromDB.current) return;
     const repo = getDexieRepository();
-    seedlings.forEach((seedling) => {
-      void repo.saveSeedling(seedling as unknown as SchemaSeedling);
-    });
+    Promise.all(
+      seedlings.map((seedling) =>
+        repo.saveSeedling(seedling as unknown as SchemaSeedling),
+      ),
+    )
+      .then(flashSaved)
+      .catch((err) => console.error("[DB] Failed to save seedling:", err));
   }, [seedlings]);
 
   // Persist settings to Dexie
   useEffect(() => {
+    if (!hasLoadedFromDB.current) return;
     const repo = getDexieRepository();
-    void repo.saveSettings(settings);
+    repo
+      .saveSettings(settings)
+      .then(flashSaved)
+      .catch((err) => console.error("[DB] Failed to save settings:", err));
   }, [settings]);
 
   const harvestAlerts = suggestions
@@ -407,11 +506,40 @@ export default function App() {
     .filter((a) => a.daysUntilHarvest <= 30)
     .sort((a, b) => a.daysUntilHarvest - b.daysUntilHarvest);
 
-  const AVAILABLE_PLANTS = [...DEFAULT_PLANTS, ...customPlants].map((p) => ({
+  const AVAILABLE_PLANTS = customPlants.map((p) => ({
     ...p,
     isSeed: p.isSeed ?? false,
     amount: p.amount ?? (p.isSeed ? 25 : 1),
   }));
+
+  // Calculate how many plants of each type are currently planted in the grid
+  const getUsedPlantCount = (plantId: string): number => {
+    let count = 0;
+    areas.forEach((area) => {
+      area.planters.forEach((planter) => {
+        if (planter.squares) {
+          planter.squares.forEach((row) => {
+            row.forEach((square) => {
+              if (square.plantInstance?.plant.id === plantId) {
+                count++;
+              }
+            });
+          });
+        }
+      });
+    });
+    return count;
+  };
+
+  // Get available stock for a plant (total amount - used plants).
+  // Returns Infinity when the plant has no amount limit (amount === undefined).
+  const getAvailableStock = (plantId: string): number => {
+    const plant = AVAILABLE_PLANTS.find((p) => p.id === plantId);
+    if (!plant) return 0;
+    if (plant.amount === undefined) return Infinity; // unlimited
+    const usedCount = getUsedPlantCount(plantId);
+    return Math.max(0, plant.amount - usedCount);
+  };
 
   const handleAddSeedling = (data: SeedlingFormData) => {
     const newSeedling: Seedling = {
@@ -431,7 +559,9 @@ export default function App() {
       date: new Date().toISOString(),
     };
     setEvents((prev) => [sowEvent, ...prev]);
-    void getDexieRepository().saveEvent(sowEvent as unknown as SchemaGardenEvent);
+    void getDexieRepository().saveEvent(
+      sowEvent as unknown as SchemaGardenEvent,
+    );
   };
 
   const handleOpenSowModal = (plant: Plant) => {
@@ -484,7 +614,9 @@ export default function App() {
       date: new Date().toISOString(),
     };
     setEvents((prev) => [sowEvent, ...prev]);
-    void getDexieRepository().saveEvent(sowEvent as unknown as SchemaGardenEvent);
+    void getDexieRepository().saveEvent(
+      sowEvent as unknown as SchemaGardenEvent,
+    );
   };
 
   const handleUpdateSeedlingStatus = (
@@ -511,7 +643,9 @@ export default function App() {
       date: new Date().toISOString(),
     };
     setEvents((prev) => [statusEvent, ...prev]);
-    void getDexieRepository().saveEvent(statusEvent as unknown as SchemaGardenEvent);
+    void getDexieRepository().saveEvent(
+      statusEvent as unknown as SchemaGardenEvent,
+    );
   };
 
   const handlePlantFromBatch = (seedling: Seedling) => {
@@ -599,8 +733,8 @@ export default function App() {
           : [
               ...area.planters,
               {
-                id: `planter-${Date.now()}`,
                 ...config,
+                id: `planter-${Date.now()}`,
               } as Planter,
             ];
 
@@ -673,7 +807,9 @@ export default function App() {
       gardenId: _planterId,
     };
     setEvents((prev) => [eventLog, ...prev]);
-    void getDexieRepository().saveEvent(eventLog as unknown as SchemaGardenEvent);
+    void getDexieRepository().saveEvent(
+      eventLog as unknown as SchemaGardenEvent,
+    );
 
     // Add harvest suggestion
     if (plantInstance.harvestDate) {
@@ -747,7 +883,9 @@ export default function App() {
       date: new Date().toISOString(),
     };
     setEvents((prev) => [completedEvent, ...prev]);
-    void getDexieRepository().saveEvent(completedEvent as unknown as SchemaGardenEvent);
+    void getDexieRepository().saveEvent(
+      completedEvent as unknown as SchemaGardenEvent,
+    );
   };
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
@@ -771,7 +909,9 @@ export default function App() {
         const matchesSearch =
           !plantsSearch.trim() ||
           plant.name.toLowerCase().includes(plantsSearch.toLowerCase()) ||
-          (plant.variety ?? "").toLowerCase().includes(plantsSearch.toLowerCase());
+          (plant.variety ?? "")
+            .toLowerCase()
+            .includes(plantsSearch.toLowerCase());
         return matchesFilter && matchesSearch;
       }),
     [AVAILABLE_PLANTS, plantsFilter, plantsSearch],
@@ -779,6 +919,22 @@ export default function App() {
 
   return (
     <div className="size-full flex flex-col bg-background relative overflow-hidden">
+      {dbError && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white px-4 py-2 text-sm font-semibold flex items-center gap-2">
+          <span>⚠ Database error – data will not persist:</span>
+          <span className="font-mono font-normal">{dbError}</span>
+        </div>
+      )}
+      <div
+        className={`fixed bottom-4 right-4 z-50 bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 transition-all duration-500 ${
+          savedIndicator
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-2 pointer-events-none"
+        }`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
+        Saved
+      </div>
       {/* Decorative background elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-2xl pointer-events-none" />
       <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-2xl pointer-events-none" />
@@ -982,6 +1138,7 @@ export default function App() {
                                   virtualSections={planter.virtualSections}
                                   backgroundColor={planter.backgroundColor}
                                   viewOnly={!isEditMode}
+                                  getAvailableStock={getAvailableStock}
                                   onPlantAdded={handlePlantAdded}
                                   onPlantRemoved={handlePlantRemoved}
                                   onPlantUpdated={handlePlantUpdated}
@@ -1115,7 +1272,10 @@ export default function App() {
                             key: "seeds",
                             label: `🌾 Seeds (${plantTabCounts.seeds})`,
                           },
-                        ] as { key: "all" | "plants" | "seeds"; label: string }[]
+                        ] as {
+                          key: "all" | "plants" | "seeds";
+                          label: string;
+                        }[]
                       ).map(({ key, label }) => (
                         <button
                           key={key}
@@ -1136,15 +1296,20 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
                   {filteredAvailablePlants.length === 0 ? (
                     <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground/50">
-                      <p className="text-sm font-bold uppercase tracking-wider">No results</p>
-                      <p className="text-xs mt-1">Try a different filter or search term</p>
+                      <p className="text-sm font-bold uppercase tracking-wider">
+                        No results
+                      </p>
+                      <p className="text-xs mt-1">
+                        Try a different filter or search term
+                      </p>
                     </div>
                   ) : null}
                   {filteredAvailablePlants.map((plant) => {
                     const isCustom = customPlants.some(
                       (p) => p.id === plant.id,
                     );
-                    const isDepleted = plant.isSeed && plant.amount === 0;
+                    const availableStock = getAvailableStock(plant.id);
+                    const isDepleted = plant.isSeed && availableStock === 0;
 
                     return (
                       <div
@@ -1258,12 +1423,14 @@ export default function App() {
 
                         {/* Actions */}
                         <div className="flex justify-between items-center pt-1.5 border-t border-white/30 mt-auto">
-                          <span className={`text-sm font-black uppercase tracking-wider ${
-                            isDepleted ? "text-red-500" : "text-foreground/60"
-                          }`}>
+                          <span
+                            className={`text-sm font-black uppercase tracking-wider ${
+                              isDepleted ? "text-red-500" : "text-foreground/60"
+                            }`}
+                          >
                             {plant.amount === undefined
                               ? "∞ Unlimited"
-                              : `${plant.amount} ${plant.isSeed ? "seeds" : "qty"}`}
+                              : `${availableStock} ${plant.isSeed ? "seeds" : "qty"}`}
                           </span>
                           <div className="flex gap-1.5">
                             {plant.isSeed && !isDepleted && (
@@ -1366,7 +1533,9 @@ export default function App() {
                               </span>
                               {seedling.method && (
                                 <span className="text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-[0.1em] bg-muted/40 text-muted-foreground">
-                                  {seedling.method === "indoor" ? "🏠 Indoor" : "🌾 Direct"}
+                                  {seedling.method === "indoor"
+                                    ? "🏠 Indoor"
+                                    : "🌾 Direct"}
                                 </span>
                               )}
                               <span
@@ -1385,10 +1554,15 @@ export default function App() {
                               Started
                             </p>
                             <p className="text-[10px] font-bold">
-                              {new Date(seedling.plantedDate).toLocaleDateString(settings.locale || undefined, {
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {new Date(
+                                seedling.plantedDate,
+                              ).toLocaleDateString(
+                                settings.locale || undefined,
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )}
                             </p>
                           </div>
                           <div>
@@ -1397,16 +1571,20 @@ export default function App() {
                             </p>
                             <p className="text-[10px] font-bold">
                               {Math.floor(
-                                (Date.now() - new Date(seedling.plantedDate).getTime()) /
+                                (Date.now() -
+                                  new Date(seedling.plantedDate).getTime()) /
                                   (1000 * 60 * 60 * 24),
-                              )}d
+                              )}
+                              d
                             </p>
                           </div>
                           <div>
                             <p className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-wider">
                               Batch
                             </p>
-                            <p className="text-[10px] font-bold">{seedling.seedCount}×</p>
+                            <p className="text-[10px] font-bold">
+                              {seedling.seedCount}×
+                            </p>
                           </div>
                         </div>
 
@@ -1416,7 +1594,10 @@ export default function App() {
                             {seedling.status === "germinating" && (
                               <Button
                                 onClick={() =>
-                                  handleUpdateSeedlingStatus(seedling.id, "growing")
+                                  handleUpdateSeedlingStatus(
+                                    seedling.id,
+                                    "growing",
+                                  )
                                 }
                                 className="flex-1 h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
                               >
@@ -1426,7 +1607,10 @@ export default function App() {
                             {seedling.status === "growing" && (
                               <Button
                                 onClick={() =>
-                                  handleUpdateSeedlingStatus(seedling.id, "hardening")
+                                  handleUpdateSeedlingStatus(
+                                    seedling.id,
+                                    "hardening",
+                                  )
                                 }
                                 className="flex-1 h-8 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
                               >
@@ -1436,7 +1620,10 @@ export default function App() {
                             {seedling.status === "hardening" && (
                               <Button
                                 onClick={() =>
-                                  handleUpdateSeedlingStatus(seedling.id, "ready")
+                                  handleUpdateSeedlingStatus(
+                                    seedling.id,
+                                    "ready",
+                                  )
                                 }
                                 className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
                               >
@@ -1468,10 +1655,13 @@ export default function App() {
                             );
                             if (!sourcePlant) return null;
                             const canSow =
-                              sourcePlant.amount === undefined || sourcePlant.amount > 0;
+                              sourcePlant.amount === undefined ||
+                              sourcePlant.amount > 0;
                             if (!canSow) return null;
                             const amountLabel =
-                              sourcePlant.amount === undefined ? "∞" : sourcePlant.amount;
+                              sourcePlant.amount === undefined
+                                ? "∞"
+                                : sourcePlant.amount;
                             return (
                               <button
                                 onClick={() => handleOpenSowModal(sourcePlant)}
@@ -1494,63 +1684,233 @@ export default function App() {
                 <h2 className="text-2xl font-black text-foreground tracking-tight uppercase mb-6 leading-none">
                   Settings
                 </h2>
-                <div className="max-w-md space-y-5">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Location
-                    </label>
-                    <input
-                      className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
-                      value={settings.location}
-                      onChange={(e) =>
-                        setSettings({ ...settings, location: e.target.value })
-                      }
-                      placeholder="e.g. London, UK"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Growth Zone
-                    </label>
-                    <select
-                      className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
-                      value={settings.growthZone}
-                      onChange={(e) =>
-                        setSettings({ ...settings, growthZone: e.target.value })
-                      }
-                    >
-                      <option value="1">Zone 1</option>
-                      <option value="2">Zone 2</option>
-                      <option value="3">Zone 3</option>
-                      <option value="4">Zone 4</option>
-                      <option value="5">Zone 5</option>
-                      <option value="6a">Zone 6a</option>
-                      <option value="6b">Zone 6b</option>
-                      <option value="7">Zone 7</option>
-                      <option value="8">Zone 8</option>
-                      <option value="9">Zone 9</option>
-                      <option value="10">Zone 10</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Weather Provider
-                    </label>
-                    <select
-                      className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
-                      value={settings.weatherProvider}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          weatherProvider: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="OpenWeather">OpenWeather</option>
-                      <option value="Weatherbit">Weatherbit</option>
-                      <option value="Visual Crossing">Visual Crossing</option>
-                    </select>
-                  </div>
+                <div className="max-w-lg space-y-8">
+
+                  {/* ── Location & Weather ─────────────────────────────── */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        Location &amp; Weather
+                      </h3>
+                    </div>
+
+                    {/* Location with verify */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                        Location
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            className={`w-full bg-white/50 border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner pr-9 ${
+                              locationStatus === "valid"
+                                ? "border-green-400/60"
+                                : locationStatus === "invalid"
+                                  ? "border-red-400/60"
+                                  : "border-border/40"
+                            }`}
+                            value={locationDraft}
+                            onChange={(e) => {
+                              setLocationDraft(e.target.value);
+                              setLocationStatus("idle");
+                              setLocationError("");
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleVerifyLocation();
+                            }}
+                            placeholder="e.g. London, UK"
+                          />
+                          {locationStatus === "valid" && (
+                            <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500 pointer-events-none" />
+                          )}
+                          {locationStatus === "invalid" && (
+                            <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500 pointer-events-none" />
+                          )}
+                        </div>
+                        <button
+                          disabled={locationStatus === "checking" || !locationDraft.trim()}
+                          onClick={handleVerifyLocation}
+                          className="shrink-0 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-md shadow-primary/20 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                        >
+                          {locationStatus === "checking" ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            "Verify"
+                          )}
+                        </button>
+                      </div>
+                      {locationStatus === "invalid" && locationError && (
+                        <p className="text-[11px] text-red-500 ml-1">{locationError}</p>
+                      )}
+                      {locationStatus === "valid" && settings.lat != null && (
+                        <p className="text-[11px] text-green-600 ml-1">
+                          Verified · {settings.lat.toFixed(4)}°,{" "}
+                          {settings.lng?.toFixed(4)}° · Climate zone auto-set to{" "}
+                          <strong>{settings.growthZone}</strong>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Climate Zone — auto-derived but still overridable */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                        Köppen–Geiger Climate Zone
+                        <span className="ml-2 normal-case font-medium text-muted-foreground/70">(auto-derived from location, or set manually)</span>
+                      </label>
+                      <select
+                        className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
+                        value={settings.growthZone}
+                        onChange={(e) =>
+                          setSettings({ ...settings, growthZone: e.target.value })
+                        }
+                      >
+                        <optgroup label="A — Tropical">
+                          <option value="Af">Af — Tropical Rainforest</option>
+                          <option value="Am">Am — Tropical Monsoon</option>
+                          <option value="Aw">Aw/As — Tropical Savanna</option>
+                        </optgroup>
+                        <optgroup label="B — Arid">
+                          <option value="BWh">BWh — Hot Desert</option>
+                          <option value="BWk">BWk — Cold Desert</option>
+                          <option value="BSh">BSh — Hot Steppe</option>
+                          <option value="BSk">BSk — Cold Steppe</option>
+                        </optgroup>
+                        <optgroup label="C — Temperate">
+                          <option value="Csa">Csa — Mediterranean (Hot Summer)</option>
+                          <option value="Csb">Csb — Mediterranean (Warm Summer)</option>
+                          <option value="Csc">Csc — Mediterranean (Cool Summer)</option>
+                          <option value="Cwa">Cwa — Humid Subtropical (Dry Winter)</option>
+                          <option value="Cwb">Cwb — Subtropical Highland (Dry Winter)</option>
+                          <option value="Cfa">Cfa — Humid Subtropical</option>
+                          <option value="Cfb">Cfb — Temperate Oceanic</option>
+                          <option value="Cfc">Cfc — Subpolar Oceanic</option>
+                        </optgroup>
+                        <optgroup label="D — Continental">
+                          <option value="Dsa">Dsa — Hot-Summer Mediterranean Continental</option>
+                          <option value="Dsb">Dsb — Warm-Summer Mediterranean Continental</option>
+                          <option value="Dwa">Dwa — Monsoon-Influenced Hot-Summer Continental</option>
+                          <option value="Dwb">Dwb — Monsoon-Influenced Warm-Summer Continental</option>
+                          <option value="Dwc">Dwc — Monsoon-Influenced Subarctic</option>
+                          <option value="Dfa">Dfa — Continental (Hot Summer)</option>
+                          <option value="Dfb">Dfb — Continental (Warm Summer)</option>
+                          <option value="Dfc">Dfc — Subarctic</option>
+                          <option value="Dfd">Dfd — Subarctic (Extreme Winter)</option>
+                        </optgroup>
+                        <optgroup label="E — Polar">
+                          <option value="ET">ET — Tundra</option>
+                          <option value="EF">EF — Ice Cap</option>
+                        </optgroup>
+                      </select>
+                    </div>
+
+                  {/* End Location & Weather section */}
+                  </section>
+
+                  {/* ── AI Integration (OpenRouter) ───────────────────── */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Thermometer className="w-4 h-4 text-primary" />
+                      <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        AI Integration
+                      </h3>
+                      {orStatus === "valid" && (
+                        <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3 h-3" /> Enabled
+                        </span>
+                      )}
+                    </div>
+
+                    {/* OpenRouter API key */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                        OpenRouter API Key
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={showOrKey ? "text" : "password"}
+                            className={`w-full bg-white/50 border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner pr-10 font-mono ${
+                              orStatus === "valid"
+                                ? "border-green-400/60"
+                                : orStatus === "invalid"
+                                  ? "border-red-400/60"
+                                  : "border-border/40"
+                            }`}
+                            value={orKeyDraft}
+                            onChange={(e) => {
+                              setOrKeyDraft(e.target.value);
+                              setOrStatus("idle");
+                              setOrError("");
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleValidateOpenRouter();
+                            }}
+                            placeholder="sk-or-…"
+                            autoComplete="off"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowOrKey((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showOrKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                          {orStatus === "valid" && (
+                            <CheckCircle2 className="absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500 pointer-events-none" />
+                          )}
+                          {orStatus === "invalid" && (
+                            <AlertCircle className="absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500 pointer-events-none" />
+                          )}
+                        </div>
+                        <button
+                          disabled={orStatus === "checking" || !orKeyDraft.trim()}
+                          onClick={handleValidateOpenRouter}
+                          className="shrink-0 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-md shadow-primary/20 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                        >
+                          {orStatus === "checking" ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            "Validate"
+                          )}
+                        </button>
+                      </div>
+                      {orStatus === "invalid" && orError && (
+                        <p className="text-[11px] text-red-500 ml-1">{orError}</p>
+                      )}
+                      <p className="text-[11px] text-muted-foreground ml-1">
+                        Required for AI plant lookup.{" "}
+                        <a
+                          href="https://openrouter.ai/keys"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-foreground"
+                        >
+                          Get a free key at openrouter.ai
+                        </a>
+                      </p>
+                    </div>
+
+                    {/* Model */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                        Model
+                      </label>
+                      <input
+                        className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner font-mono"
+                        value={settings.aiModel}
+                        onChange={(e) =>
+                          setSettings({ ...settings, aiModel: e.target.value })
+                        }
+                        placeholder="google/gemini-2.0-flash"
+                      />
+                      <p className="text-[11px] text-muted-foreground ml-1">
+                        Any model available on your OpenRouter account. Default:{" "}
+                        <code className="font-mono">google/gemini-2.0-flash</code>
+                      </p>
+                    </div>
+                  </section>
+
                 </div>
               </div>
             </TabsContent>

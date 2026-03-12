@@ -80,7 +80,9 @@ export function PlantDialog({
   );
   const [isSeed, setIsSeed] = useState(initialPlant?.isSeed ?? defaultIsSeed);
   const [amount, setAmount] = useState(initialPlant?.amount ?? 10);
-  const [infiniteStock, setInfiniteStock] = useState(initialPlant?.amount === undefined);
+  const [infiniteStock, setInfiniteStock] = useState(
+    initialPlant?.amount === undefined,
+  );
   const [spacingCm, setSpacingCm] = useState(initialPlant?.spacingCm || 30);
   const [frostHardy, setFrostHardy] = useState(
     initialPlant?.frostHardy ?? false,
@@ -124,6 +126,41 @@ export function PlantDialog({
       setAntagonists(initialPlant?.antagonists?.join(", ") || "");
     }
   }, [open, initialPlant, defaultIsSeed]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onOpenChange(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    open,
+    name,
+    variety,
+    description,
+    icon,
+    color,
+    daysToHarvest,
+    isSeed,
+    amount,
+    infiniteStock,
+    spacingCm,
+    frostHardy,
+    sowIndoorMonths,
+    sowDirectMonths,
+    sunRequirement,
+    companions,
+    antagonists,
+  ]);
 
   const handleSave = () => {
     if (!name.trim()) {

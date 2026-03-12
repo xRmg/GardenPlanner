@@ -74,6 +74,36 @@ export function EventsBar({
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
+  // Group consecutive touching events of the same type + plant into one entry
+  type EventGroup = {
+    type: GardenEvent["type"];
+    plant?: GardenEvent["plant"];
+    date: string; // most recent in group
+    count: number;
+    key: string;
+  };
+
+  const groupedEvents = sortedEvents.reduce<EventGroup[]>((acc, event) => {
+    const last = acc[acc.length - 1];
+    const sameType = last?.type === event.type;
+    const samePlant =
+      last?.plant?.id !== undefined
+        ? last.plant.id === event.plant?.id
+        : last?.plant === undefined && event.plant === undefined;
+    if (last && sameType && samePlant) {
+      last.count += 1;
+    } else {
+      acc.push({
+        type: event.type,
+        plant: event.plant,
+        date: event.date,
+        count: 1,
+        key: event.id,
+      });
+    }
+    return acc;
+  }, []);
+
   const currentMonth = new Date().toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
@@ -255,13 +285,13 @@ export function EventsBar({
             Garden Journal
           </h3>
           <div className="space-y-1.5 ">
-            {sortedEvents.map((event) => {
-              const IconComponent = eventIcons[event.type].icon;
-              const iconColor = eventIcons[event.type].color;
+            {groupedEvents.map((group) => {
+              const IconComponent = eventIcons[group.type].icon;
+              const iconColor = eventIcons[group.type].color;
 
               return (
                 <div
-                  key={event.id}
+                  key={group.key}
                   className="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/40 transition-colors animate-in fade-in duration-300"
                 >
                   <div
@@ -272,22 +302,29 @@ export function EventsBar({
                   <div className="flex-1 min-w-0 text-xs">
                     <p className="font-semibold text-foreground truncate text-[11px]">
                       <span className="font-black">
-                        {event.type.charAt(0).toUpperCase() +
-                          event.type.slice(1)}
+                        {group.type.charAt(0).toUpperCase() +
+                          group.type.slice(1)}
                       </span>
-                      {event.plant && ` ${event.plant.name}`}
+                      {group.plant && ` ${group.plant.name}`}
                     </p>
                     <div className="flex items-center gap-2 mt-0">
                       <span className="text-[8px] font-medium text-muted-foreground/40">
-                        {formatEventDate(event.date)}
+                        {formatEventDate(group.date)}
                       </span>
                     </div>
                   </div>
-                  {event.plant && (
-                    <span className="text-base opacity-80 shrink-0">
-                      {event.plant.icon}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {group.count > 1 && (
+                      <span className="text-[9px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">
+                        ×{group.count}
+                      </span>
+                    )}
+                    {group.plant && (
+                      <span className="text-base opacity-80">
+                        {group.plant.icon}
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}

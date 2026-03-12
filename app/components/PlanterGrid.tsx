@@ -65,6 +65,7 @@ interface PlanterGridProps {
   virtualSections?: VirtualSection[];
   backgroundColor?: string;
   viewOnly?: boolean;
+  getAvailableStock?: (plantId: string) => number;
   onPlantAdded?: (plantInstance: PlantInstance, planterId: string) => void;
   onPlantRemoved?: (plantInstance: PlantInstance, planterId: string) => void;
   onPlantUpdated?: (plantInstance: PlantInstance, planterId: string) => void;
@@ -85,6 +86,7 @@ export function PlanterGrid({
   virtualSections,
   backgroundColor,
   viewOnly = false,
+  getAvailableStock,
   onPlantAdded,
   onPlantRemoved,
   onPlantUpdated,
@@ -126,9 +128,9 @@ export function PlanterGrid({
 
     return virtualSections.find((vb) => {
       if (vb.type === "rows") {
-        return (rowIndex + 1) >= vb.start && (rowIndex + 1) <= vb.end;
+        return rowIndex + 1 >= vb.start && rowIndex + 1 <= vb.end;
       } else {
-        return (colIndex + 1) >= vb.start && (colIndex + 1) <= vb.end;
+        return colIndex + 1 >= vb.start && colIndex + 1 <= vb.end;
       }
     });
   };
@@ -143,11 +145,11 @@ export function PlanterGrid({
 
     for (const vb of virtualSections) {
       if (vb.type === "rows") {
-        if (side === "top" && (rowIndex + 1) === vb.start) return true;
-        if (side === "bottom" && (rowIndex + 1) === vb.end) return true;
+        if (side === "top" && rowIndex + 1 === vb.start) return true;
+        if (side === "bottom" && rowIndex + 1 === vb.end) return true;
       } else {
-        if (side === "left" && (colIndex + 1) === vb.start) return true;
-        if (side === "right" && (colIndex + 1) === vb.end) return true;
+        if (side === "left" && colIndex + 1 === vb.start) return true;
+        if (side === "right" && colIndex + 1 === vb.end) return true;
       }
     }
 
@@ -167,6 +169,13 @@ export function PlanterGrid({
       setSelectedPlantInstance(currentSquare.plantInstance);
       setDetailsOpen(true);
     } else if (selectedPlant) {
+      // Check if stock is available
+      const availableStock = getAvailableStock?.(selectedPlant.id) ?? 1;
+      if (availableStock <= 0) {
+        // Insufficient stock - do not allow placement
+        return;
+      }
+
       // Add new plant
       const newPlantInstance: PlantInstance = {
         instanceId: `instance-${Date.now()}-${Math.random()}`,
@@ -393,11 +402,20 @@ export function PlanterGrid({
                         ) : (
                           !viewOnly &&
                           selectedPlant && (
-                            <div className="opacity-0 group-hover/square:opacity-20 flex items-center justify-center">
-                              <span className="text-xl grayscale select-none">
-                                {selectedPlant.icon}
-                              </span>
-                            </div>
+                            <>
+                              {(getAvailableStock?.(selectedPlant.id) ?? 1) >
+                              0 ? (
+                                <div className="opacity-0 group-hover/square:opacity-20 flex items-center justify-center">
+                                  <span className="text-xl grayscale select-none">
+                                    {selectedPlant.icon}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="opacity-0 group-hover/square:opacity-100 flex items-center justify-center bg-red-50/80 text-red-600 text-xs font-semibold">
+                                  No stock
+                                </div>
+                              )}
+                            </>
                           )
                         )}
                       </button>

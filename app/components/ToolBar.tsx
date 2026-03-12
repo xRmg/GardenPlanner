@@ -32,7 +32,11 @@ export function ToolBar({
     const nonSeeds = plants.filter((p) => !p.isSeed);
     const list =
       filter === "plants" ? nonSeeds : filter === "seeds" ? seeds : plants;
-    return { filtered: list, seedCount: seeds.length, plantCount: nonSeeds.length };
+    return {
+      filtered: list,
+      seedCount: seeds.length,
+      plantCount: nonSeeds.length,
+    };
   }, [plants, filter]);
 
   return (
@@ -112,26 +116,23 @@ export function ToolBar({
             Add
           </button>
           <div className="w-px h-6 bg-border/20 self-center mx-1 shrink-0" />
-          <button
-            onClick={() => onSelectPlant(null)}
-            className={`h-8 px-4 rounded-lg border transition-all flex-shrink-0 flex items-center gap-1.5 text-xs ${
-              selectedPlant === null
-                ? "border-primary bg-primary/10 text-primary font-bold shadow-inner"
-                : "border-border/40 bg-white hover:border-primary/40 text-muted-foreground"
-            }`}
-          >
-            Clear
-          </button>
 
           {filtered.length === 0 ? (
             <span className="self-center text-[10px] text-muted-foreground/50 italic px-2">
-              No {filter === "seeds" ? "seeds" : filter === "plants" ? "plants" : "items"} yet
+              No{" "}
+              {filter === "seeds"
+                ? "seeds"
+                : filter === "plants"
+                  ? "plants"
+                  : "items"}{" "}
+              yet
             </span>
           ) : (
             filtered.map((plant) => {
               const isSelected = selectedPlant?.id === plant.id;
               const isDepleted = plant.isSeed && plant.amount === 0;
-              const isInfinite = plant.amount === undefined || plant.amount === null;
+              const isInfinite =
+                plant.amount === undefined || plant.amount === null;
               const showBadge = plant.isSeed && !isInfinite;
 
               return (
@@ -157,7 +158,9 @@ export function ToolBar({
                   <span className="text-base drop-shadow-sm">{plant.icon}</span>
                   <span
                     className={`text-xs font-semibold ${
-                      isSelected && !isDepleted ? "text-primary font-bold" : "text-foreground"
+                      isSelected && !isDepleted
+                        ? "text-primary font-bold"
+                        : "text-foreground"
                     }`}
                   >
                     {plant.name}

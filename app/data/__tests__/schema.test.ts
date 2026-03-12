@@ -160,8 +160,7 @@ describe("SettingsSchema", () => {
   it("applies defaults on empty object", () => {
     const result = SettingsSchema.parse({});
     expect(result.location).toBe("");
-    expect(result.growthZone).toBe("6b");
-    expect(result.weatherProvider).toBe("open-meteo");
+    expect(result.growthZone).toBe("Cfb");
     expect(result.locale).toBe("en");
     expect(result.aiProvider).toEqual({ type: "none" });
   });
@@ -252,11 +251,11 @@ describe("parseWithDefaults", () => {
   it("merges partial data with schema defaults", () => {
     const result = parseWithDefaults(SettingsSchema, { location: "Amsterdam" });
     expect(result.location).toBe("Amsterdam");
-    expect(result.growthZone).toBe("6b"); // default
+    expect(result.growthZone).toBe("Cfb"); // default
   });
 
   it("falls back to defaults on completely invalid data", () => {
     const result = parseWithDefaults(SettingsSchema, "not-an-object");
-    expect(result.growthZone).toBe("6b");
+    expect(result.growthZone).toBe("Cfb");
   });
 });

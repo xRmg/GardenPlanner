@@ -60,9 +60,9 @@ function makeSeedling(id = "s1"): Seedling {
 function makeSettings(): Settings {
   return {
     location: "Amsterdam",
-    growthZone: "8b",
-    weatherProvider: "open-meteo",
+    growthZone: "Cfb",
     aiProvider: { type: "none" },
+    aiModel: "google/gemini-2.0-flash",
     locale: "en",
     profileId: "default",
   };
@@ -202,7 +202,7 @@ describe("LocalStorageRepository — settings", () => {
   it("returns schema defaults when nothing stored", async () => {
     const repo = new LocalStorageRepository();
     const settings = await repo.getSettings();
-    expect(settings.growthZone).toBe("6b");
+    expect(settings.growthZone).toBe("Cfb");
     expect(settings.locale).toBe("en");
   });
 

@@ -203,13 +203,18 @@ export const AiProviderSchema = z.discriminatedUnion("type", [
 
 export const SettingsSchema = z.object({
   location: z.string().default(""),
-  growthZone: z.string().default("6b"),
-  /** Resolved to 'open-meteo' by default — no API key needed. */
-  weatherProvider: z.string().default("open-meteo"),
+  /**
+   * Köppen–Geiger climate zone code, e.g. 'Cfb'.
+   * Auto-derived from Open-Meteo climate data during location verification.
+   * Field name kept as `growthZone` for backwards compatibility.
+   */
+  growthZone: z.string().default("Cfb"),
   aiProvider: AiProviderSchema.default({ type: "none" }),
+  /** OpenRouter model identifier, e.g. 'google/gemini-2.0-flash'. */
+  aiModel: z.string().default("google/gemini-2.0-flash"),
   /** BCP 47 locale tag, e.g. 'en', 'nl'. */
   locale: z.string().default("en"),
-  /** Geocoded coordinates for Open-Meteo (derived from `location`). */
+  /** Geocoded coordinates derived from `location` via Open-Meteo Geocoding API. */
   lat: z.number().optional(),
   lng: z.number().optional(),
   /** Forward-compatibility for Tier 1c / Tier 4 multi-profile. */
@@ -284,7 +289,12 @@ export function safeParse<T>(
 ): T | null {
   const result = schema.safeParse(data);
   if (!result.success) {
-    console.warn(`[schema] Failed to parse ${label}:`, result.error.issues);
+    const issues = result.error.issues.map((i) => ({
+      path: i.path.join("."),
+      code: i.code,
+      message: i.message,
+    }));
+    console.warn(`[schema] Failed to parse ${label}:`, JSON.stringify(issues));
     return null;
   }
   return result.data;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +65,23 @@ export function PlanterDialog({
   >("rows");
   const [newVirtualSectionStart, setNewVirtualSectionStart] = useState(1);
   const [newVirtualSectionEnd, setNewVirtualSectionEnd] = useState(2);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onOpenChange(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, name, tagline, backgroundColor, rows, cols, virtualSections]);
 
   const handleSave = () => {
     if (!name.trim()) {

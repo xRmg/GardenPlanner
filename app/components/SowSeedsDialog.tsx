@@ -36,6 +36,23 @@ export function SowSeedsDialog({
     }
   }, [open, plant]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSow();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onOpenChange(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, seedCount, location, plant]);
+
   if (!plant) return null;
 
   const handleSow = () => {

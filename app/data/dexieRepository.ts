@@ -56,6 +56,68 @@ class GardenPlannerDB extends Dexie {
       settings: "key",
       events: "id, date, profileId",
     });
+    // v2: placeholder (upgrade ran before migration was written — no-op)
+    this.version(2).stores({});
+    // v3: migrate virtualSection start/end from 0-based half-open [start, end)
+    //     to 1-based closed [start, end].
+    //     Conversion: new_start = old_start + 1, new_end unchanged.
+    this.version(3).upgrade((trans) => {
+      console.info(
+        "[DB] Running v3 migration: fixing virtualSection start values",
+      );
+      return trans
+        .table("areas")
+        .toCollection()
+        .modify((area: Record<string, unknown>) => {
+          const planters = area.planters as
+            | Array<Record<string, unknown>>
+            | undefined;
+          for (const planter of planters ?? []) {
+            const sections = planter.virtualSections as
+              | Array<Record<string, number>>
+              | undefined;
+            for (const section of sections ?? []) {
+              if (section.start === 0) {
+                section.start = 1;
+              }
+            }
+          }
+        });
+    });
+    // v4: add missing planter ids (planters were saved before id field existed)
+    this.version(4).upgrade((trans) => {
+      console.info("[DB] Running v4 migration: adding missing planter ids");
+      return trans
+        .table("areas")
+        .toCollection()
+        .modify((area: Record<string, unknown>) => {
+          const planters = area.planters as
+            | Array<Record<string, unknown>>
+            | undefined;
+          for (const planter of planters ?? []) {
+            if (!planter.id) {
+              planter.id = crypto.randomUUID();
+            }
+          }
+        });
+    });
+    // v5: fix planters saved with id: undefined (spread-order bug in handleSavePlanter)
+    this.version(5).upgrade((trans) => {
+      console.info("[DB] Running v5 migration: fixing planters with undefined id");
+      return trans
+        .table("areas")
+        .toCollection()
+        .modify((area: Record<string, unknown>) => {
+          const planters = area.planters as
+            | Array<Record<string, unknown>>
+            | undefined;
+          for (const planter of planters ?? []) {
+            if (planter.id === undefined || planter.id === null) {
+              planter.id = crypto.randomUUID();
+            }
+          }
+        });
+    });
   }
 }
 

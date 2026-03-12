@@ -66,6 +66,23 @@ export function AddSeedlingDialog({
     else setLocation("Garden Bed");
   }, [method]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onOpenChange(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, selectedPlant, seedCount, location, plantedDate, method]);
+
   const filteredPlants = plants.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
