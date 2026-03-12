@@ -78,7 +78,11 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
       const name = plantName.trim();
       if (!name || settings.aiProvider.type !== "byok") return;
 
-      if (isDev) console.log("[usePlantAILookup] Starting AI lookup for:", { name, variety });
+      if (isDev)
+        console.log("[usePlantAILookup] Starting AI lookup for:", {
+          name,
+          variety,
+        });
 
       // Cancel any previous request
       abortRef.current?.abort();
@@ -110,16 +114,21 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         // response logging appears in the npm terminal.
         const proxyUrl = API_BASE ? `${API_BASE}/api/ai/chat` : undefined;
         const client = new OpenRouterClient({
-          apiKey: settings.aiProvider.type === "byok" ? settings.aiProvider.key : "",
+          apiKey:
+            settings.aiProvider.type === "byok" ? settings.aiProvider.key : "",
           model: settings.aiModel,
           proxyUrl,
         });
 
         if (isDev) {
           if (proxyUrl) {
-            console.log(`[usePlantAILookup] Using backend proxy: ${proxyUrl} (API key stays server-side; full logs in npm terminal)`);
+            console.log(
+              `[usePlantAILookup] Using backend proxy: ${proxyUrl} (API key stays server-side; full logs in npm terminal)`,
+            );
           } else {
-            console.log("[usePlantAILookup] No backend detected — calling OpenRouter directly from browser");
+            console.log(
+              "[usePlantAILookup] No backend detected — calling OpenRouter directly from browser",
+            );
           }
         }
 
@@ -133,16 +142,24 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         });
 
         if (isDev) {
-          console.log("[usePlantAILookup] ══════════════════════════════════════");
+          console.log(
+            "[usePlantAILookup] ══════════════════════════════════════",
+          );
           console.log("[usePlantAILookup] API Request:");
           console.log("[usePlantAILookup] Model:", settings.aiModel);
           console.log("[usePlantAILookup] Köppen zone:", koeppenZone);
-          console.log("[usePlantAILookup] Coordinates:", settings.lat, settings.lng);
+          console.log(
+            "[usePlantAILookup] Coordinates:",
+            settings.lat,
+            settings.lng,
+          );
           console.log("[usePlantAILookup] ── System Prompt ──");
           console.log(PLANT_LOOKUP_SYSTEM_PROMPT);
           console.log("[usePlantAILookup] ── User Prompt ──");
           console.log(userPrompt);
-          console.log("[usePlantAILookup] ══════════════════════════════════════");
+          console.log(
+            "[usePlantAILookup] ══════════════════════════════════════",
+          );
         }
 
         const { content, model } = await client.chatCompletionWithFallback(
@@ -184,8 +201,13 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           parsed = JSON.parse(content);
         } catch (parseError) {
           if (isDev) {
-            console.error("[usePlantAILookup] ✗ JSON parse failed:", parseError instanceof Error ? parseError.message : parseError);
-            console.log("[usePlantAILookup] Full content that failed to parse:");
+            console.error(
+              "[usePlantAILookup] ✗ JSON parse failed:",
+              parseError instanceof Error ? parseError.message : parseError,
+            );
+            console.log(
+              "[usePlantAILookup] Full content that failed to parse:",
+            );
             console.log(content);
           }
           throw parseError;
@@ -195,26 +217,25 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 
         // 5. Filter out fields below the rejection threshold
         const filtered = filterLowConfidenceFields(parsed);
-        if (isDev) console.log("[usePlantAILookup] ✓ Filtered (low-confidence fields removed):", filtered);
+        if (isDev)
+          console.log(
+            "[usePlantAILookup] ✓ Filtered (low-confidence fields removed):",
+            filtered,
+          );
 
         // 6. Cache result
         if (isDev) console.log("[usePlantAILookup] Caching result…");
-        await cache.set(
-          name,
-          filtered,
-          model,
-          filtered.latinName,
-          koeppenZone,
-        );
-        if (isDev) console.log("[usePlantAILookup] ✓ Cached successfully with model:", model);
+        await cache.set(name, filtered, model, filtered.latinName, koeppenZone);
+        if (isDev)
+          console.log(
+            "[usePlantAILookup] ✓ Cached successfully with model:",
+            model,
+          );
 
         setAiResult(filtered);
         setAiModel(model);
       } catch (error) {
-        if (
-          error instanceof DOMException &&
-          error.name === "AbortError"
-        ) {
+        if (error instanceof DOMException && error.name === "AbortError") {
           // User cancelled — treat as silent, clear loading
           if (isDev) console.log("[usePlantAILookup] Lookup cancelled by user");
           setAiLoading(false);
@@ -250,9 +271,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
  * Zero-out fields whose confidence is below the rejection threshold so they
  * don't accidentally overwrite user data with low-quality AI suggestions.
  */
-function filterLowConfidenceFields(
-  result: PlantAIResponse,
-): PlantAIResponse {
+function filterLowConfidenceFields(result: PlantAIResponse): PlantAIResponse {
   const c = result.confidence;
   return {
     ...result,
@@ -265,16 +284,12 @@ function filterLowConfidenceFields(
         ? result.sowDirectMonths
         : [],
     harvestMonths:
-      (c.harvestMonths ?? 1) >= CONFIDENCE.REJECT
-        ? result.harvestMonths
-        : [],
+      (c.harvestMonths ?? 1) >= CONFIDENCE.REJECT ? result.harvestMonths : [],
     companions:
       (c.companions ?? 1) >= CONFIDENCE.REJECT ? result.companions : [],
     antagonists:
       (c.antagonists ?? 1) >= CONFIDENCE.REJECT ? result.antagonists : [],
-    icon:
-      (c.icon ?? 0) >= CONFIDENCE.HIGH ? result.icon : undefined,
-    color:
-      (c.color ?? 0) >= CONFIDENCE.HIGH ? result.color : undefined,
+    icon: (c.icon ?? 0) >= CONFIDENCE.HIGH ? result.icon : undefined,
+    color: (c.color ?? 0) >= CONFIDENCE.HIGH ? result.color : undefined,
   };
 }

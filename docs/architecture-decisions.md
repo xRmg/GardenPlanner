@@ -47,32 +47,39 @@
 
 ---
 
-## AI Provider: BYOK → Proxy Path
+## AI Provider: BYOK Key, Server-Side Proxy
 
-**Decision**: Start with user-supplied OpenRouter key (BYOK); move to server-side proxy in Phase 3.
+**Decision**: User supplies their own OpenRouter key (BYOK) via the Settings UI, but all AI *inference* calls are routed through the backend proxy. The key leaves the browser only for initial entry validation (see exceptions below).
 
-| Phase | Approach                                         | Notes                        |
-| ----- | ------------------------------------------------ | ---------------------------- |
-| 1     | BYOK — key stored in Dexie `settings`            | User controls spend          |
-| 3     | Cloudflare Worker proxy — key in env secrets     | No user key needed           |
+| Phase | Approach                                         | Notes                                  |
+| ----- | ------------------------------------------------ | -------------------------------------- |
+| 1     | User enters key in Settings → synced to backend SQLite → used via `/api/ai/chat` proxy | Key stored server-side |
+| 3     | Cloudflare Worker proxy — key in env secrets     | Same pattern, different host           |
 
-**BYOK security rules (Phase 1)**:
-- Never use `import.meta.env.VITE_OPENROUTER_KEY` — compiled into bundle
-- Never include key in AI call logs, error reports, or JSON exports
-- Validate key on entry via `GET /api/v1/models`; show green ✓ or red ✗ in Settings
+**How it works**:
+1. User enters OpenRouter key in Settings UI; validated client-side against `openrouter.ai/api/v1/auth/key`.
+2. Key saved as `aiProvider: { type: "byok", key }` in Dexie and synced to backend SQLite via `POST /api/garden/sync`.
+3. For every AI call (plant lookup or suggestion engine), the frontend POSTs to `${VITE_API_BASE}/api/ai/chat` — **no key in the request body**.
+4. The backend reads the key from its own SQLite settings row and forwards to OpenRouter server-side.
+5. Full request + response is logged in the backend terminal for debugging.
+6. If `VITE_API_BASE` is not set, the suggestion engine silently skips AI (falls back to rules).
+
+**Security rules**:
+- Never use `import.meta.env.VITE_OPENROUTER_KEY` — anything starting with `VITE_` is compiled into the bundle
+- Never include the API key in error reports, JSON exports, or browser-visible logs
+- The `OpenRouterClient` with `proxyUrl` set does **not** send `apiKey` in the proxied request body
+- Validate key on entry via `GET openrouter.ai/api/v1/auth/key`; show green ✓ or red ✗ in Settings
+
+**Exceptions — key does leave the browser in these cases** (all intentional):
+1. **Key validation** (`useOpenRouterSettings`) — `GET openrouter.ai/api/v1/auth/key` is called from the browser to give the user immediate ✓/✗ feedback; the key is never stored anywhere during this call.
+2. **usePlantAILookup fallback** (⚠️ bug — see `todo.md` AI-1/AI-2) — when `VITE_API_BASE` is unset, the plant lookup hook falls back to a direct browser call. This is a known issue to be fixed.
+
 
 **Docker self-hosted key injection** (for deployers):
 ```bash
-# .env (gitignored)
-OPENROUTER_KEY=sk-or-...
-# nginx entrypoint writes {"openrouterKey": "$OPENROUTER_KEY"} → /config.json
-# App fetches /config.json on load; Settings UI hidden when key is pre-injected
+# Alternatively, pre-seed the key via the backend's own init mechanism
+# or have the user enter it in the Settings UI after first run
 ```
-
-**Phase 3 backend secret rules**:
-- Never use `ENV` in `Dockerfile` for secrets (visible via `docker history`)
-- Cloudflare Workers: `wrangler secret put OPENROUTER_KEY`
-- CI/CD: use repository secrets, never hardcode in workflow YAML
 
 **Model selection**:
 - Primary: `google/gemini-2.0-flash` ($0.10/M in, $0.40/M out)

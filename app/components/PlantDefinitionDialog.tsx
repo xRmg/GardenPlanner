@@ -41,10 +41,30 @@ const COLORS = [
 ];
 
 const EMOJIS = [
-  "🌱", "🍅", "🥕", "🥬", "🌶️", "🥦",
-  "🥒", "🌽", "🎃", "🍆", "🍓", "🍇",
-  "🍉", "🍋", "🍌", "🍍", "🥭", "🍎",
-  "🍐", "🍑", "🍒", "🌻", "🌼", "🌿",
+  "🌱",
+  "🍅",
+  "🥕",
+  "🥬",
+  "🌶️",
+  "🥦",
+  "🥒",
+  "🌽",
+  "🎃",
+  "🍆",
+  "🍓",
+  "🍇",
+  "🍉",
+  "🍋",
+  "🍌",
+  "🍍",
+  "🥭",
+  "🍎",
+  "🍐",
+  "🍑",
+  "🍒",
+  "🌻",
+  "🌼",
+  "🌿",
 ];
 
 // ---------------------------------------------------------------------------
@@ -93,23 +113,41 @@ export function PlantDialog({
   const [name, setName] = useState(initialPlant?.name || "");
   const [latinName, setLatinName] = useState(initialPlant?.latinName || "");
   const [variety, setVariety] = useState(initialPlant?.variety || "");
-  const [description, setDescription] = useState(initialPlant?.description || "");
+  const [description, setDescription] = useState(
+    initialPlant?.description || "",
+  );
   const [icon, setIcon] = useState(initialPlant?.icon || EMOJIS[0]);
   const [color, setColor] = useState(initialPlant?.color || COLORS[0]);
-  const [daysToHarvest, setDaysToHarvest] = useState(initialPlant?.daysToHarvest || 60);
+  const [daysToHarvest, setDaysToHarvest] = useState(
+    initialPlant?.daysToHarvest || 60,
+  );
   const [isSeed, setIsSeed] = useState(initialPlant?.isSeed ?? defaultIsSeed);
   const [amount, setAmount] = useState(initialPlant?.amount ?? 10);
-  const [infiniteStock, setInfiniteStock] = useState(initialPlant?.amount === undefined);
-  const [spacingCm, setSpacingCm] = useState(initialPlant?.spacingCm || 30);
-  const [frostHardy, setFrostHardy] = useState(initialPlant?.frostHardy ?? false);
-  const [sowIndoorMonths, setSowIndoorMonths] = useState<number[]>(initialPlant?.sowIndoorMonths || []);
-  const [sowDirectMonths, setSowDirectMonths] = useState<number[]>(initialPlant?.sowDirectMonths || []);
-  const [harvestMonths, setHarvestMonths] = useState<number[]>(initialPlant?.harvestMonths || []);
-  const [sunRequirement, setSunRequirement] = useState<"full" | "partial" | "shade">(
-    initialPlant?.sunRequirement || "full",
+  const [infiniteStock, setInfiniteStock] = useState(
+    initialPlant?.amount === undefined,
   );
-  const [companions, setCompanions] = useState(initialPlant?.companions?.join(", ") || "");
-  const [antagonists, setAntagonists] = useState(initialPlant?.antagonists?.join(", ") || "");
+  const [spacingCm, setSpacingCm] = useState(initialPlant?.spacingCm || 30);
+  const [frostHardy, setFrostHardy] = useState(
+    initialPlant?.frostHardy ?? false,
+  );
+  const [sowIndoorMonths, setSowIndoorMonths] = useState<number[]>(
+    initialPlant?.sowIndoorMonths || [],
+  );
+  const [sowDirectMonths, setSowDirectMonths] = useState<number[]>(
+    initialPlant?.sowDirectMonths || [],
+  );
+  const [harvestMonths, setHarvestMonths] = useState<number[]>(
+    initialPlant?.harvestMonths || [],
+  );
+  const [sunRequirement, setSunRequirement] = useState<
+    "full" | "partial" | "shade"
+  >(initialPlant?.sunRequirement || "full");
+  const [companions, setCompanions] = useState(
+    initialPlant?.companions?.join(", ") || "",
+  );
+  const [antagonists, setAntagonists] = useState(
+    initialPlant?.antagonists?.join(", ") || "",
+  );
 
   // Track which fields were overridden by the user after an AI fill
   const [userOverrides, setUserOverrides] = useState<Set<string>>(new Set());
@@ -154,19 +192,29 @@ export function PlantDialog({
   useEffect(() => {
     if (!aiResult) return;
     const overrides = userOverrides;
-    if (!overrides.has("latinName") && aiResult.latinName) setLatinName(aiResult.latinName);
-    if (!overrides.has("description") && aiResult.description) setDescription(aiResult.description);
-    if (!overrides.has("daysToHarvest") && aiResult.daysToHarvest) setDaysToHarvest(aiResult.daysToHarvest);
-    if (!overrides.has("spacingCm") && aiResult.spacingCm) setSpacingCm(aiResult.spacingCm);
-    if (!overrides.has("sunRequirement") && aiResult.sunRequirement) setSunRequirement(aiResult.sunRequirement);
-    if (!overrides.has("sowIndoorMonths")) setSowIndoorMonths(aiResult.sowIndoorMonths ?? []);
-    if (!overrides.has("sowDirectMonths")) setSowDirectMonths(aiResult.sowDirectMonths ?? []);
-    if (!overrides.has("harvestMonths")) setHarvestMonths(aiResult.harvestMonths ?? []);
-    if (!overrides.has("companions")) setCompanions((aiResult.companions ?? []).join(", "));
-    if (!overrides.has("antagonists")) setAntagonists((aiResult.antagonists ?? []).join(", "));
+    if (!overrides.has("latinName") && aiResult.latinName)
+      setLatinName(aiResult.latinName);
+    if (!overrides.has("description") && aiResult.description)
+      setDescription(aiResult.description);
+    if (!overrides.has("daysToHarvest") && aiResult.daysToHarvest)
+      setDaysToHarvest(aiResult.daysToHarvest);
+    if (!overrides.has("spacingCm") && aiResult.spacingCm)
+      setSpacingCm(aiResult.spacingCm);
+    if (!overrides.has("sunRequirement") && aiResult.sunRequirement)
+      setSunRequirement(aiResult.sunRequirement);
+    if (!overrides.has("sowIndoorMonths"))
+      setSowIndoorMonths(aiResult.sowIndoorMonths ?? []);
+    if (!overrides.has("sowDirectMonths"))
+      setSowDirectMonths(aiResult.sowDirectMonths ?? []);
+    if (!overrides.has("harvestMonths"))
+      setHarvestMonths(aiResult.harvestMonths ?? []);
+    if (!overrides.has("companions"))
+      setCompanions((aiResult.companions ?? []).join(", "));
+    if (!overrides.has("antagonists"))
+      setAntagonists((aiResult.antagonists ?? []).join(", "));
     if (!overrides.has("icon") && aiResult.icon) setIcon(aiResult.icon);
     if (!overrides.has("color") && aiResult.color) setColor(aiResult.color);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiResult, userOverrides]);
 
   // Keyboard shortcuts
@@ -184,9 +232,25 @@ export function PlantDialog({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
-    open, name, latinName, variety, description, icon, color, daysToHarvest,
-    isSeed, amount, infiniteStock, spacingCm, frostHardy, sowIndoorMonths,
-    sowDirectMonths, harvestMonths, sunRequirement, companions, antagonists,
+    open,
+    name,
+    latinName,
+    variety,
+    description,
+    icon,
+    color,
+    daysToHarvest,
+    isSeed,
+    amount,
+    infiniteStock,
+    spacingCm,
+    frostHardy,
+    sowIndoorMonths,
+    sowDirectMonths,
+    harvestMonths,
+    sunRequirement,
+    companions,
+    antagonists,
   ]);
 
   const markOverride = (field: string) => {
@@ -199,7 +263,10 @@ export function PlantDialog({
       return;
     }
     const splitTrimmed = (s: string) =>
-      s.split(",").map((x) => x.trim()).filter(Boolean);
+      s
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
 
     onSave({
       id: initialPlant?.id || `plant-${Date.now()}`,
@@ -218,8 +285,12 @@ export function PlantDialog({
       sowDirectMonths: sowDirectMonths.length ? sowDirectMonths : undefined,
       harvestMonths: harvestMonths.length ? harvestMonths : undefined,
       sunRequirement,
-      companions: splitTrimmed(companions).length ? splitTrimmed(companions) : undefined,
-      antagonists: splitTrimmed(antagonists).length ? splitTrimmed(antagonists) : undefined,
+      companions: splitTrimmed(companions).length
+        ? splitTrimmed(companions)
+        : undefined,
+      antagonists: splitTrimmed(antagonists).length
+        ? splitTrimmed(antagonists)
+        : undefined,
     });
     onOpenChange(false);
   };
@@ -232,8 +303,12 @@ export function PlantDialog({
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">
             {initialPlant
-              ? isSeed ? "Edit Seed Packet" : "Edit Plant Catalog"
-              : isSeed ? "Add New Seeds" : "Add New Plant"}
+              ? isSeed
+                ? "Edit Seed Packet"
+                : "Edit Plant Catalog"
+              : isSeed
+                ? "Add New Seeds"
+                : "Add New Plant"}
           </DialogTitle>
           <DialogDescription>
             {isSeed
@@ -252,7 +327,10 @@ export function PlantDialog({
               className="data-[state=checked]:bg-primary"
             />
             <div className="flex flex-col">
-              <Label htmlFor="is-seed" className="text-sm font-bold text-foreground">
+              <Label
+                htmlFor="is-seed"
+                className="text-sm font-bold text-foreground"
+              >
                 Seed Packet
               </Label>
               <span className="text-sm text-muted-foreground font-medium">
@@ -337,7 +415,12 @@ export function PlantDialog({
                   <span className="text-sm text-primary font-medium truncate">
                     Looking up {name}…
                   </span>
-                  <Button size="sm" variant="ghost" onClick={cancelAiLookup} className="ml-auto shrink-0">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={cancelAiLookup}
+                    className="ml-auto shrink-0"
+                  >
                     Cancel
                   </Button>
                 </>
@@ -376,7 +459,10 @@ export function PlantDialog({
               <button
                 key={e}
                 type="button"
-                onClick={() => { setIcon(e); markOverride("icon"); }}
+                onClick={() => {
+                  setIcon(e);
+                  markOverride("icon");
+                }}
                 className={`w-10 h-10 flex items-center justify-center text-xl rounded-lg transition-all hover:bg-white/80 active:scale-95 ${icon === e ? "bg-white shadow-md ring-2 ring-primary/20" : ""}`}
                 title="Select icon"
               >
@@ -395,7 +481,10 @@ export function PlantDialog({
                 <button
                   key={c}
                   type="button"
-                  onClick={() => { setColor(c); markOverride("color"); }}
+                  onClick={() => {
+                    setColor(c);
+                    markOverride("color");
+                  }}
                   className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-90 ${color === c ? "border-primary ring-2 ring-primary/20" : "border-white"}`}
                   style={{ backgroundColor: c }}
                   title="Select color"
@@ -413,7 +502,10 @@ export function PlantDialog({
             <input
               type="text"
               value={latinName}
-              onChange={(e) => { setLatinName(e.target.value); markOverride("latinName"); }}
+              onChange={(e) => {
+                setLatinName(e.target.value);
+                markOverride("latinName");
+              }}
               placeholder="e.g., Solanum lycopersicum"
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner italic"
             />
@@ -441,7 +533,10 @@ export function PlantDialog({
               <input
                 type="number"
                 value={daysToHarvest}
-                onChange={(e) => { setDaysToHarvest(parseInt(e.target.value) || 0); markOverride("daysToHarvest"); }}
+                onChange={(e) => {
+                  setDaysToHarvest(parseInt(e.target.value) || 0);
+                  markOverride("daysToHarvest");
+                }}
                 className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
               />
             </div>
@@ -454,7 +549,10 @@ export function PlantDialog({
                 type="number"
                 min={1}
                 value={spacingCm}
-                onChange={(e) => { setSpacingCm(parseInt(e.target.value) || 1); markOverride("spacingCm"); }}
+                onChange={(e) => {
+                  setSpacingCm(parseInt(e.target.value) || 1);
+                  markOverride("spacingCm");
+                }}
                 className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
               />
             </div>
@@ -469,7 +567,10 @@ export function PlantDialog({
               className="data-[state=checked]:bg-primary"
             />
             <div className="flex flex-col">
-              <Label htmlFor="frost-hardy" className="text-sm font-bold text-foreground">
+              <Label
+                htmlFor="frost-hardy"
+                className="text-sm font-bold text-foreground"
+              >
                 Frost Hardy
               </Label>
               <span className="text-sm text-muted-foreground font-medium">
@@ -489,14 +590,21 @@ export function PlantDialog({
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => { setSunRequirement(opt); markOverride("sunRequirement"); }}
+                  onClick={() => {
+                    setSunRequirement(opt);
+                    markOverride("sunRequirement");
+                  }}
                   className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
                     sunRequirement === opt
                       ? "bg-primary text-white border-primary shadow-md"
                       : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"
                   }`}
                 >
-                  {opt === "full" ? "☀ Full" : opt === "partial" ? "⛅ Partial" : "🌥 Shade"}
+                  {opt === "full"
+                    ? "☀ Full"
+                    : opt === "partial"
+                      ? "⛅ Partial"
+                      : "🌥 Shade"}
                 </button>
               ))}
             </div>
@@ -509,23 +617,29 @@ export function PlantDialog({
               <ConfidenceBadge confidence={confidence?.sowIndoorMonths} />
             </label>
             <div className="flex flex-wrap gap-1">
-              {["J","F","M","A","M","J","J","A","S","O","N","D"].map((m, i) => {
-                const month = i + 1;
-                const active = sowIndoorMonths.includes(month);
-                return (
-                  <button
-                    key={month}
-                    type="button"
-                    onClick={() => {
-                      setSowIndoorMonths((prev) => active ? prev.filter((x) => x !== month) : [...prev, month]);
-                      markOverride("sowIndoorMonths");
-                    }}
-                    className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-green-500 text-white border-green-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
-                  >
-                    {m}
-                  </button>
-                );
-              })}
+              {["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(
+                (m, i) => {
+                  const month = i + 1;
+                  const active = sowIndoorMonths.includes(month);
+                  return (
+                    <button
+                      key={month}
+                      type="button"
+                      onClick={() => {
+                        setSowIndoorMonths((prev) =>
+                          active
+                            ? prev.filter((x) => x !== month)
+                            : [...prev, month],
+                        );
+                        markOverride("sowIndoorMonths");
+                      }}
+                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-green-500 text-white border-green-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                    >
+                      {m}
+                    </button>
+                  );
+                },
+              )}
             </div>
           </div>
 
@@ -536,23 +650,29 @@ export function PlantDialog({
               <ConfidenceBadge confidence={confidence?.sowDirectMonths} />
             </label>
             <div className="flex flex-wrap gap-1">
-              {["J","F","M","A","M","J","J","A","S","O","N","D"].map((m, i) => {
-                const month = i + 1;
-                const active = sowDirectMonths.includes(month);
-                return (
-                  <button
-                    key={month}
-                    type="button"
-                    onClick={() => {
-                      setSowDirectMonths((prev) => active ? prev.filter((x) => x !== month) : [...prev, month]);
-                      markOverride("sowDirectMonths");
-                    }}
-                    className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-emerald-600 text-white border-emerald-600 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
-                  >
-                    {m}
-                  </button>
-                );
-              })}
+              {["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(
+                (m, i) => {
+                  const month = i + 1;
+                  const active = sowDirectMonths.includes(month);
+                  return (
+                    <button
+                      key={month}
+                      type="button"
+                      onClick={() => {
+                        setSowDirectMonths((prev) =>
+                          active
+                            ? prev.filter((x) => x !== month)
+                            : [...prev, month],
+                        );
+                        markOverride("sowDirectMonths");
+                      }}
+                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-emerald-600 text-white border-emerald-600 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                    >
+                      {m}
+                    </button>
+                  );
+                },
+              )}
             </div>
           </div>
 
@@ -563,23 +683,29 @@ export function PlantDialog({
               <ConfidenceBadge confidence={confidence?.harvestMonths} />
             </label>
             <div className="flex flex-wrap gap-1">
-              {["J","F","M","A","M","J","J","A","S","O","N","D"].map((m, i) => {
-                const month = i + 1;
-                const active = harvestMonths.includes(month);
-                return (
-                  <button
-                    key={month}
-                    type="button"
-                    onClick={() => {
-                      setHarvestMonths((prev) => active ? prev.filter((x) => x !== month) : [...prev, month]);
-                      markOverride("harvestMonths");
-                    }}
-                    className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-amber-500 text-white border-amber-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
-                  >
-                    {m}
-                  </button>
-                );
-              })}
+              {["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(
+                (m, i) => {
+                  const month = i + 1;
+                  const active = harvestMonths.includes(month);
+                  return (
+                    <button
+                      key={month}
+                      type="button"
+                      onClick={() => {
+                        setHarvestMonths((prev) =>
+                          active
+                            ? prev.filter((x) => x !== month)
+                            : [...prev, month],
+                        );
+                        markOverride("harvestMonths");
+                      }}
+                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-amber-500 text-white border-amber-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                    >
+                      {m}
+                    </button>
+                  );
+                },
+              )}
             </div>
           </div>
 
@@ -593,7 +719,10 @@ export function PlantDialog({
               <input
                 type="text"
                 value={companions}
-                onChange={(e) => { setCompanions(e.target.value); markOverride("companions"); }}
+                onChange={(e) => {
+                  setCompanions(e.target.value);
+                  markOverride("companions");
+                }}
                 placeholder="basil, carrot, onion"
                 className="w-full px-3 py-2 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner text-sm"
               />
@@ -606,7 +735,10 @@ export function PlantDialog({
               <input
                 type="text"
                 value={antagonists}
-                onChange={(e) => { setAntagonists(e.target.value); markOverride("antagonists"); }}
+                onChange={(e) => {
+                  setAntagonists(e.target.value);
+                  markOverride("antagonists");
+                }}
                 placeholder="fennel, potato"
                 className="w-full px-3 py-2 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner text-sm"
               />
@@ -621,7 +753,10 @@ export function PlantDialog({
             </label>
             <textarea
               value={description}
-              onChange={(e) => { setDescription(e.target.value); markOverride("description"); }}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                markOverride("description");
+              }}
               placeholder="Tell us about this plant..."
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-[80px] text-sm"
             />
@@ -629,10 +764,17 @@ export function PlantDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl">
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            className="rounded-xl"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSave} className="rounded-xl px-8 shadow-lg shadow-primary/20">
+          <Button
+            onClick={handleSave}
+            className="rounded-xl px-8 shadow-lg shadow-primary/20"
+          >
             Save Plant
           </Button>
         </DialogFooter>

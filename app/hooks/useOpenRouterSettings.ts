@@ -4,6 +4,10 @@
  * Manages OpenRouter API-key draft state, show/hide toggle, and
  * the validate-against-API flow. Syncs the key draft once when
  * settings are first loaded from the database.
+ *
+ * The key entered here is synced to the backend SQLite via
+ * POST /api/garden/sync. The backend proxy (/api/ai/chat) reads
+ * it server-side for all AI calls — the key never leaves the server.
  */
 
 import { useState, useEffect, useRef } from "react";

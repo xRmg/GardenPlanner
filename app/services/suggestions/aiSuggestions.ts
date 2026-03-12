@@ -13,10 +13,18 @@
 
 import { OpenRouterClient, MODEL_CHAIN } from "../ai/openrouter";
 import { RateLimiter } from "../ai/rateLimiter";
-import type { RuleContext, AISuggestionContext, AISuggestionResult, RawAISuggestion } from "./types";
+import type {
+  RuleContext,
+  AISuggestionContext,
+  AISuggestionResult,
+  RawAISuggestion,
+} from "./types";
 import { getCachedAISuggestions, cacheAISuggestions } from "./suggestionsCache";
 import type { Plant, Settings, SuggestionType } from "../../data/schema";
 import type { SuggestionResult } from "./types";
+
+// Backend proxy URL — all AI calls are routed server-side (key never in browser)
+const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
 
 // ---------------------------------------------------------------------------
 // Rate limiter: max 3 calls per 10 minutes (per the spec)
@@ -44,7 +52,7 @@ const AI_ALLOWED_TYPES: SuggestionType[] = [
   "sow",
 ];
 
-const AI_CONFIDENCE_THRESHOLD = 0.40;
+const AI_CONFIDENCE_THRESHOLD = 0.4;
 
 // ---------------------------------------------------------------------------
 // System prompt
@@ -130,12 +138,20 @@ export function buildAISuggestionContext(
     const futureDays = ctx.weather.daily.filter((d) => d.date >= todayStr);
 
     weatherSummary = {
-      todayTempMaxC: Math.round((todayData?.tempMaxC ?? ctx.weather.current.tempC) * 10) / 10,
-      todayPrecipMm: Math.round((todayData?.precipSumMm ?? ctx.weather.current.precipMm) * 10) / 10,
+      todayTempMaxC:
+        Math.round((todayData?.tempMaxC ?? ctx.weather.current.tempC) * 10) /
+        10,
+      todayPrecipMm:
+        Math.round(
+          (todayData?.precipSumMm ?? ctx.weather.current.precipMm) * 10,
+        ) / 10,
       next7DaysMaxTempC: Math.max(...futureDays.map((d) => d.tempMaxC)),
       next7DaysMinTempC: Math.min(...futureDays.map((d) => d.tempMinC)),
-      next7DaysTotalPrecipMm: Math.round(futureDays.reduce((s, d) => s + d.precipSumMm, 0) * 10) / 10,
-      next7DaysPrecipProbMax: Math.max(...futureDays.map((d) => d.precipProbabilityMax)),
+      next7DaysTotalPrecipMm:
+        Math.round(futureDays.reduce((s, d) => s + d.precipSumMm, 0) * 10) / 10,
+      next7DaysPrecipProbMax: Math.max(
+        ...futureDays.map((d) => d.precipProbabilityMax),
+      ),
     };
   }
 
@@ -144,7 +160,8 @@ export function buildAISuggestionContext(
     let plantedDaysAgo: number | undefined;
     if (p.plantingDate) {
       plantedDaysAgo = Math.floor(
-        (today.getTime() - new Date(p.plantingDate).getTime()) / (1000 * 60 * 60 * 24),
+        (today.getTime() - new Date(p.plantingDate).getTime()) /
+          (1000 * 60 * 60 * 24),
       );
     }
     return {
@@ -165,7 +182,8 @@ export function buildAISuggestionContext(
     name: s.plant.name,
     status: s.status,
     daysSinceSeeded: Math.floor(
-      (today.getTime() - new Date(s.plantedDate).getTime()) / (1000 * 60 * 60 * 24),
+      (today.getTime() - new Date(s.plantedDate).getTime()) /
+        (1000 * 60 * 60 * 24),
     ),
   }));
 
@@ -176,10 +194,14 @@ export function buildAISuggestionContext(
     typeMap.forEach((date, type) => {
       if (date.getTime() >= cutoff) {
         const [planterId] = key.split(":");
-        const planterName = ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName;
+        const planterName = ctx.placedPlants.find(
+          (p) => p.planterId === planterId,
+        )?.planterName;
         recentEvents.push({
           type,
-          daysAgo: Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)),
+          daysAgo: Math.floor(
+            (today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+          ),
           planterName,
         });
       }
@@ -219,7 +241,11 @@ function parseAIResponse(
 
   for (const item of suggestions as RawAISuggestion[]) {
     // Confidence gate
-    if (typeof item.confidence !== "number" || item.confidence < AI_CONFIDENCE_THRESHOLD) continue;
+    if (
+      typeof item.confidence !== "number" ||
+      item.confidence < AI_CONFIDENCE_THRESHOLD
+    )
+      continue;
 
     // Type validation
     const type = item.type as SuggestionType;
@@ -295,6 +321,12 @@ export async function getAISuggestions(
 ): Promise<AISuggestionResult[]> {
   if (settings.aiProvider.type === "none") return [];
   if (!settings.lat || !settings.lng) return [];
+  if (!API_BASE) {
+    console.warn(
+      "[aiSuggestions] No backend configured (VITE_API_BASE not set) — AI suggestions skipped",
+    );
+    return [];
+  }
 
   const aiContext = buildAISuggestionContext(ctx, ruleResults);
 
@@ -312,13 +344,13 @@ export async function getAISuggestions(
     return [];
   }
 
-  // Build API client
-  const apiKey = settings.aiProvider.type === "byok" ? settings.aiProvider.key : "";
+  // Build API client — always route through the backend proxy (key stays server-side)
   const client = new OpenRouterClient({
-    apiKey,
+    apiKey: "",
     siteUrl: "https://gardenplanner.app",
     siteName: "Garden Planner",
     model: settings.aiModel,
+    proxyUrl: `${API_BASE}/api/ai/chat`,
   });
 
   const userMessage = JSON.stringify(aiContext, null, 0);
@@ -326,7 +358,10 @@ export async function getAISuggestions(
   try {
     // Try primary model, then fall through the fallback chain
     let lastError: unknown;
-    for (const model of [settings.aiModel, ...MODEL_CHAIN.filter((m) => m !== settings.aiModel)]) {
+    for (const model of [
+      settings.aiModel,
+      ...MODEL_CHAIN.filter((m) => m !== settings.aiModel),
+    ]) {
       try {
         const response = await client.chatCompletion(
           model,
@@ -336,7 +371,7 @@ export async function getAISuggestions(
           ],
           {
             temperature: 0.3,
-            maxTokens: 512,
+            maxTokens: 8192,
             responseFormat: { type: "json_object" },
             signal,
           },

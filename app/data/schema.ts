@@ -209,8 +209,9 @@ export const AiProviderSchema = z.discriminatedUnion("type", [
     type: z.literal("byok"),
     /**
      * User-supplied OpenRouter API key.
-     * Docker: injected via /config.json at runtime (never in the bundle).
-     * Browser: entered in Settings UI, stored in Dexie, never exported.
+     * Entered in the Settings UI, synced to the backend SQLite DB via
+     * POST /api/garden/sync. The backend reads it server-side for all
+     * AI calls via the /api/ai/chat proxy — the key never leaves the server.
      */
     key: z.string().min(1),
   }),
@@ -293,10 +294,10 @@ export type PlantSource = z.infer<typeof PlantSourceSchema>;
 
 /** Which tier of suggestion quality is active. */
 export type SuggestionMode =
-  | "ai+weather"    // Tier 1: AI + live weather
+  | "ai+weather" // Tier 1: AI + live weather
   | "rules+weather" // Tier 2: rules engine + live weather
-  | "rules"         // Tier 3: rules engine, offline
-  | "static";       // Tier 4: bundled tips, empty garden
+  | "rules" // Tier 3: rules engine, offline
+  | "static"; // Tier 4: bundled tips, empty garden
 
 export type VirtualSection = z.infer<typeof VirtualSectionSchema>;
 export type Plant = z.infer<typeof PlantSchema>;

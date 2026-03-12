@@ -39,7 +39,6 @@ import { useSeedlingManager } from "./hooks/useSeedlingManager";
 import { useGardenEvents } from "./hooks/useGardenEvents";
 import { useSuggestions } from "./hooks/useSuggestions";
 
-
 const MONTH_ABBR = [
   "Jan",
   "Feb",
@@ -77,12 +76,15 @@ export default function App() {
     events,
     setEvents,
     repositoryRef,
+    hasLoadedFromDB,
   } = useGardenData();
 
   // ── UI-only state kept in App as orchestration layer ──────────────────────
   const [activeTab, setActiveTab] = useState("areas");
   const [isEditMode, setIsEditMode] = useState(true);
-  const [selectedPlant, setSelectedPlant] = useState<PlantInstance["plant"] | null>(null);
+  const [selectedPlant, setSelectedPlant] = useState<
+    PlantInstance["plant"] | null
+  >(null);
 
   // ── Settings sub-hooks ────────────────────────────────────────────────────
   const {
@@ -955,7 +957,6 @@ export default function App() {
                   Settings
                 </h2>
                 <div className="max-w-lg space-y-8">
-
                   {/* ── Location & Weather ─────────────────────────────── */}
                   <section className="space-y-4">
                     <div className="flex items-center gap-2 mb-1">
@@ -999,7 +1000,10 @@ export default function App() {
                           )}
                         </div>
                         <button
-                          disabled={locationStatus === "checking" || !locationDraft.trim()}
+                          disabled={
+                            locationStatus === "checking" ||
+                            !locationDraft.trim()
+                          }
                           onClick={handleVerifyLocation}
                           className="shrink-0 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-md shadow-primary/20 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                         >
@@ -1011,7 +1015,9 @@ export default function App() {
                         </button>
                       </div>
                       {locationStatus === "invalid" && locationError && (
-                        <p className="text-[11px] text-red-500 ml-1">{locationError}</p>
+                        <p className="text-[11px] text-red-500 ml-1">
+                          {locationError}
+                        </p>
                       )}
                       {locationStatus === "valid" && settings.lat != null && (
                         <p className="text-[11px] text-green-600 ml-1">
@@ -1026,13 +1032,18 @@ export default function App() {
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         Köppen–Geiger Climate Zone
-                        <span className="ml-2 normal-case font-medium text-muted-foreground/70">(auto-derived from location, or set manually)</span>
+                        <span className="ml-2 normal-case font-medium text-muted-foreground/70">
+                          (auto-derived from location, or set manually)
+                        </span>
                       </label>
                       <select
                         className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
                         value={settings.growthZone}
                         onChange={(e) =>
-                          setSettings({ ...settings, growthZone: e.target.value })
+                          setSettings({
+                            ...settings,
+                            growthZone: e.target.value,
+                          })
                         }
                       >
                         <optgroup label="A — Tropical">
@@ -1047,25 +1058,51 @@ export default function App() {
                           <option value="BSk">BSk — Cold Steppe</option>
                         </optgroup>
                         <optgroup label="C — Temperate">
-                          <option value="Csa">Csa — Mediterranean (Hot Summer)</option>
-                          <option value="Csb">Csb — Mediterranean (Warm Summer)</option>
-                          <option value="Csc">Csc — Mediterranean (Cool Summer)</option>
-                          <option value="Cwa">Cwa — Humid Subtropical (Dry Winter)</option>
-                          <option value="Cwb">Cwb — Subtropical Highland (Dry Winter)</option>
+                          <option value="Csa">
+                            Csa — Mediterranean (Hot Summer)
+                          </option>
+                          <option value="Csb">
+                            Csb — Mediterranean (Warm Summer)
+                          </option>
+                          <option value="Csc">
+                            Csc — Mediterranean (Cool Summer)
+                          </option>
+                          <option value="Cwa">
+                            Cwa — Humid Subtropical (Dry Winter)
+                          </option>
+                          <option value="Cwb">
+                            Cwb — Subtropical Highland (Dry Winter)
+                          </option>
                           <option value="Cfa">Cfa — Humid Subtropical</option>
                           <option value="Cfb">Cfb — Temperate Oceanic</option>
                           <option value="Cfc">Cfc — Subpolar Oceanic</option>
                         </optgroup>
                         <optgroup label="D — Continental">
-                          <option value="Dsa">Dsa — Hot-Summer Mediterranean Continental</option>
-                          <option value="Dsb">Dsb — Warm-Summer Mediterranean Continental</option>
-                          <option value="Dwa">Dwa — Monsoon-Influenced Hot-Summer Continental</option>
-                          <option value="Dwb">Dwb — Monsoon-Influenced Warm-Summer Continental</option>
-                          <option value="Dwc">Dwc — Monsoon-Influenced Subarctic</option>
-                          <option value="Dfa">Dfa — Continental (Hot Summer)</option>
-                          <option value="Dfb">Dfb — Continental (Warm Summer)</option>
+                          <option value="Dsa">
+                            Dsa — Hot-Summer Mediterranean Continental
+                          </option>
+                          <option value="Dsb">
+                            Dsb — Warm-Summer Mediterranean Continental
+                          </option>
+                          <option value="Dwa">
+                            Dwa — Monsoon-Influenced Hot-Summer Continental
+                          </option>
+                          <option value="Dwb">
+                            Dwb — Monsoon-Influenced Warm-Summer Continental
+                          </option>
+                          <option value="Dwc">
+                            Dwc — Monsoon-Influenced Subarctic
+                          </option>
+                          <option value="Dfa">
+                            Dfa — Continental (Hot Summer)
+                          </option>
+                          <option value="Dfb">
+                            Dfb — Continental (Warm Summer)
+                          </option>
                           <option value="Dfc">Dfc — Subarctic</option>
-                          <option value="Dfd">Dfd — Subarctic (Extreme Winter)</option>
+                          <option value="Dfd">
+                            Dfd — Subarctic (Extreme Winter)
+                          </option>
                         </optgroup>
                         <optgroup label="E — Polar">
                           <option value="ET">ET — Tundra</option>
@@ -1074,7 +1111,7 @@ export default function App() {
                       </select>
                     </div>
 
-                  {/* End Location & Weather section */}
+                    {/* End Location & Weather section */}
                   </section>
 
                   {/* ── AI Integration (OpenRouter) ───────────────────── */}
@@ -1124,7 +1161,11 @@ export default function App() {
                             onClick={() => setShowOrKey((v) => !v)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                           >
-                            {showOrKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showOrKey ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
                           </button>
                           {orStatus === "valid" && (
                             <CheckCircle2 className="absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500 pointer-events-none" />
@@ -1134,7 +1175,9 @@ export default function App() {
                           )}
                         </div>
                         <button
-                          disabled={orStatus === "checking" || !orKeyDraft.trim()}
+                          disabled={
+                            orStatus === "checking" || !orKeyDraft.trim()
+                          }
                           onClick={handleValidateOpenRouter}
                           className="shrink-0 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest shadow-md shadow-primary/20 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                         >
@@ -1146,10 +1189,14 @@ export default function App() {
                         </button>
                       </div>
                       {orStatus === "invalid" && orError && (
-                        <p className="text-[11px] text-red-500 ml-1">{orError}</p>
+                        <p className="text-[11px] text-red-500 ml-1">
+                          {orError}
+                        </p>
                       )}
                       <p className="text-[11px] text-muted-foreground ml-1">
-                        Required for AI plant lookup.{" "}
+                        Required for AI plant lookup and suggestions. The key is
+                        stored server-side and never used directly from the
+                        browser.{" "}
                         <a
                           href="https://openrouter.ai/keys"
                           target="_blank"
@@ -1176,11 +1223,12 @@ export default function App() {
                       />
                       <p className="text-[11px] text-muted-foreground ml-1">
                         Any model available on your OpenRouter account. Default:{" "}
-                        <code className="font-mono">google/gemini-2.0-flash</code>
+                        <code className="font-mono">
+                          google/gemini-2.0-flash
+                        </code>
                       </p>
                     </div>
                   </section>
-
                 </div>
               </div>
             </TabsContent>
@@ -1191,7 +1239,9 @@ export default function App() {
         <div className="w-72 h-full flex flex-col drop-shadow-xl">
           <EventsBar
             events={events}
-            suggestions={suggestions as unknown as import("./components/EventsBar").Suggestion[]}
+            suggestions={
+              suggestions as unknown as import("./components/EventsBar").Suggestion[]
+            }
             harvestAlerts={harvestAlerts}
             onCompleteSuggestion={handleCompleteSuggestion}
             suggestionsMode={suggestionsMode}

@@ -3,6 +3,7 @@
 ## Project Overview
 
 Garden Planner is a client-side React + TypeScript single-page application for planning and managing a home garden. Users can:
+
 - Define plant species/varieties in a catalogue (with companion planting data, sowing windows, etc.)
 - Create **Areas** containing one or more **Planters** (raised beds, containers, rows)
 - Place plants in a grid-based planter layout
@@ -16,17 +17,17 @@ All data is stored in **IndexedDB via Dexie v4**, accessed through the `GardenRe
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | React 19 + TypeScript 5.7 |
-| Build | Vite 6 |
-| Styling | Tailwind CSS v4 (`@tailwindcss/vite`) |
-| UI components | Radix UI primitives + shadcn/ui (see `components.json`) |
-| Icons | Lucide React |
-| Schema & validation | Zod v4 |
-| Forms | react-hook-form + `@hookform/resolvers/zod` |
-| Persistence | **Dexie v4** (IndexedDB) — auto-migrates from `localStorage` on first load |
-| Testing | **Vitest** — unit tests in `app/data/__tests__/` |
+| Layer               | Technology                                                                 |
+| ------------------- | -------------------------------------------------------------------------- |
+| Framework           | React 19 + TypeScript 5.7                                                  |
+| Build               | Vite 6                                                                     |
+| Styling             | Tailwind CSS v4 (`@tailwindcss/vite`)                                      |
+| UI components       | Radix UI primitives + shadcn/ui (see `components.json`)                    |
+| Icons               | Lucide React                                                               |
+| Schema & validation | Zod v4                                                                     |
+| Forms               | react-hook-form + `@hookform/resolvers/zod`                                |
+| Persistence         | **Dexie v4** (IndexedDB) — auto-migrates from `localStorage` on first load |
+| Testing             | **Vitest** — unit tests in `app/data/__tests__/`                           |
 
 ---
 
@@ -76,6 +77,7 @@ All data is stored in **IndexedDB via Dexie v4**, accessed through the `GardenRe
 All types live in `app/data/schema.ts` as Zod schemas with inferred TypeScript types. **Do not create separate interface files** — always derive types from schemas.
 
 Key types:
+
 - **`Plant`** — a species/variety in the catalogue (name, icon, color, sowing months, companions, etc.)
 - **`PlantInstance`** — a `Plant` placed in a specific grid cell, with planting date and pest log
 - **`Planter`** — a raised bed or container (rows × cols grid of `PlanterSquare[][]`)
@@ -104,23 +106,28 @@ Tests use **Vitest** (`npx vitest run`). Test files live in `app/data/__tests__/
 ## Architecture Patterns
 
 ### State Management
+
 Top-level state lives in `App.tsx` using `useState`/`useEffect`. State is passed down as props to dialogs and components. There is no global state library (no Redux, Zustand, etc.).
 
 ### Repository Pattern
+
 Data access goes through the `GardenRepository` interface (`app/data/repository.ts`). The active implementation is `DexieRepository` (IndexedDB via Dexie v4). `LocalStorageRepository` is kept as a bridge for testing and fallback. When adding new persistence logic, add methods to the interface and implement them in `dexieRepository.ts`.
 
 On first load, `migration.ts` auto-migrates any existing `localStorage` data into Dexie — safe to call on every startup (idempotent).
 
 ### Path Alias
+
 The `@` alias resolves to the project root. Use `@/app/...`, `@/styles/...`, etc. for imports.
 
 ### Component Conventions
+
 - Feature dialogs are in `app/components/` and control their own open/close state via props
 - shadcn/ui base components live in `app/components/ui/` — do not modify these unless necessary
 - Use Tailwind utility classes for all styling; avoid inline styles
 - Use Radix UI primitives (via shadcn/ui) for interactive widgets (dialogs, dropdowns, tabs, etc.)
 
 ### Zod Usage
+
 - Validate all external/persisted data through the Zod schemas in `schema.ts`
 - Use `safeParse` for data that may be missing or corrupt (e.g., loading from localStorage)
 - Use `parseWithDefaults` for `Settings` so partial/corrupt data is merged with defaults
@@ -130,6 +137,7 @@ The `@` alias resolves to the project root. Use `@/app/...`, `@/styles/...`, etc
 ## Feature Status (see `todo.md` for full roadmap)
 
 **Working now**
+
 - Garden areas, planters, grid-based plant placement — all saved to IndexedDB
 - Event logging (planted, watered, harvested, etc.)
 - Seedling batch tracking
@@ -137,13 +145,15 @@ The `@` alias resolves to the project root. Use `@/app/...`, `@/styles/...`, etc
 - Settings (location, growth zone, AI provider)
 
 **Immediate next — Phase 1 remaining**
+
 - **State refactoring** ⚠️ BLOCKER — decompose `App.tsx` into custom hooks before starting AI work (task 1.6)
 - **JSON export/import** — data portability safety net (task 1.5)
-- **AI plant lookup** — OpenRouter BYOK, "Ask AI ✨" in `PlantDefinitionDialog` (tasks 1.7–1.8); see `docs/ai-integration-design.md`
+- **AI plant lookup** — "Ask AI ✨" in `PlantDefinitionDialog` (tasks 1.7–1.8); user enters OpenRouter key → stored in backend SQLite → all AI inference routed via `POST /api/ai/chat` backend proxy; see `docs/ai-integration-design.md`
 - **Rules engine + weather** — frost alerts, harvest reminders, Open-Meteo (tasks 1.9–1.10)
 - **i18n infrastructure** — react-i18next, string extraction (tasks 1.13–1.15); see `docs/i18n-and-plant-library-architecture.md`
 
 **Future phases**
+
 - Shared community plant library (Phase 2 — Hono backend + Cloudflare D1)
 - Multi-user / family sharing with per-area roles (Phase 3 — Supabase auth + sync)
 - Dutch (nl) translations (Phase 3)
