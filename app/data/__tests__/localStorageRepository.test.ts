@@ -65,6 +65,7 @@ function makeSettings(): Settings {
     aiModel: "google/gemini-2.0-flash",
     locale: "en",
     profileId: "default",
+    isEditMode: false,
   };
 }
 

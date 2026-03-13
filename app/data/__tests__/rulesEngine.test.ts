@@ -1147,6 +1147,7 @@ describe("buildRuleContext", () => {
       lat: 52.3,
       lng: 4.9,
       profileId: "default",
+      isEditMode: false,
     };
 
     const ctx = buildRuleContext({
@@ -1205,6 +1206,7 @@ describe("buildRuleContext", () => {
       aiModel: "google/gemini-2.0-flash",
       locale: "en",
       profileId: "default",
+      isEditMode: false,
     };
 
     const ctx = buildRuleContext({

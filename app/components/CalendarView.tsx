@@ -846,3 +846,4 @@ function DayDetailPanel({
       </SheetContent>
     </Sheet>
   );
+}
