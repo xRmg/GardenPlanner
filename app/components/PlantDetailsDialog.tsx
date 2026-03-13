@@ -43,21 +43,6 @@ function formatDate(dateString: string) {
   });
 }
 
-/**
- * Returns the translated sunlight label for the given requirement.
- * Accepts a pre-translated labels object instead of TFunction to avoid
- * TypeScript's strict TFunction generic constraints.
- */
-function formatSunlight(
-  sunRequirement: "full" | "partial" | "shade" | undefined,
-  labels: { full: string; partial: string; shade: string; unknown: string },
-) {
-  if (sunRequirement === "full") return labels.full;
-  if (sunRequirement === "partial") return labels.partial;
-  if (sunRequirement === "shade") return labels.shade;
-  return labels.unknown;
-}
-
 export function PlantDetailsDialog({
   open,
   onOpenChange,
@@ -234,12 +219,13 @@ export function PlantDetailsDialog({
                 <div>
                   <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.sunlight")}</div>
                   <div className="text-sm">
-                    {formatSunlight(mergedPlant.sunRequirement, {
-                      full: t("dialogs.plantDetailsDialog.sunFull"),
-                      partial: t("dialogs.plantDetailsDialog.sunPartial"),
-                      shade: t("dialogs.plantDetailsDialog.sunShade"),
-                      unknown: t("dialogs.plantDetailsDialog.notRecorded"),
-                    })}
+                    {mergedPlant.sunRequirement === "full"
+                      ? t("dialogs.plantDetailsDialog.sunFull")
+                      : mergedPlant.sunRequirement === "partial"
+                        ? t("dialogs.plantDetailsDialog.sunPartial")
+                        : mergedPlant.sunRequirement === "shade"
+                          ? t("dialogs.plantDetailsDialog.sunShade")
+                          : t("dialogs.plantDetailsDialog.notRecorded")}
                   </div>
                 </div>
               </div>

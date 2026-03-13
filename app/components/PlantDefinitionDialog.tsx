@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -127,7 +127,11 @@ export function PlantDialog({
   settings,
 }: PlantDialogProps) {
   const { t } = useTranslation();
-  const monthLabels = Array.from({ length: 12 }, (_, i) => formatMonthNarrow(i + 1));
+  const monthLabels = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => formatMonthNarrow(i + 1)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t],
+  );
   const [name, setName] = useState(initialPlant?.name || "");
   const [latinName, setLatinName] = useState(initialPlant?.latinName || "");
   const [variety, setVariety] = useState(initialPlant?.variety || "");

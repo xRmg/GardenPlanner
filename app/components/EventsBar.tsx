@@ -164,26 +164,11 @@ const suggestionBg: Record<string, string> = {
   prune: "bg-violet-50",
 };
 
-const MODE_BADGES: Record<
-  SuggestionMode,
-  { labelKey: string; className: string }
-> = {
-  "ai+weather": {
-    labelKey: "eventsBar.modeBadges.aiWeather",
-    className: "bg-violet-50 text-violet-600 border border-violet-200",
-  },
-  "rules+weather": {
-    labelKey: "eventsBar.modeBadges.rulesWeather",
-    className: "bg-sky-50 text-sky-600 border border-sky-200",
-  },
-  rules: {
-    labelKey: "eventsBar.modeBadges.rules",
-    className: "bg-emerald-50 text-emerald-600 border border-emerald-200",
-  },
-  static: {
-    labelKey: "eventsBar.modeBadges.static",
-    className: "bg-gray-50 text-gray-500 border border-gray-200",
-  },
+const MODE_BADGE_CLASSES: Record<SuggestionMode, string> = {
+  "ai+weather": "bg-violet-50 text-violet-600 border border-violet-200",
+  "rules+weather": "bg-sky-50 text-sky-600 border border-sky-200",
+  rules: "bg-emerald-50 text-emerald-600 border border-emerald-200",
+  static: "bg-gray-50 text-gray-500 border border-gray-200",
 };
 
 export function EventsBar({
@@ -345,14 +330,14 @@ export function EventsBar({
               )}
               {suggestionsMode && !suggestionsLoading && (
                 <span
-                  className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${MODE_BADGES[suggestionsMode].className}`}
+                  className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${MODE_BADGE_CLASSES[suggestionsMode]}`}
                 >
-                  {t(`eventsBar.modeBadges.${
-                    suggestionsMode === "ai+weather" ? "aiWeather"
-                    : suggestionsMode === "rules+weather" ? "rulesWeather"
-                    : suggestionsMode === "rules" ? "rules"
-                    : "static"
-                  }` as "eventsBar.modeBadges.aiWeather")}
+                  {t(
+                    suggestionsMode === "ai+weather" ? "eventsBar.modeBadges.aiWeather"
+                    : suggestionsMode === "rules+weather" ? "eventsBar.modeBadges.rulesWeather"
+                    : suggestionsMode === "rules" ? "eventsBar.modeBadges.rules"
+                    : "eventsBar.modeBadges.static"
+                  )}
                 </span>
               )}
             </div>

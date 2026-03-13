@@ -1109,7 +1109,12 @@ export default function App() {
                             </div>
                             {featured ? (
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {group.map((seedling) => (
+                                {group.map((seedling) => {
+                                  const daysOld = Math.floor(
+                                    (Date.now() - new Date(seedling.plantedDate).getTime()) /
+                                      (1000 * 60 * 60 * 24),
+                                  );
+                                  return (
                                   <div
                                     key={seedling.id}
                                     className="flex gap-4 items-start p-4 rounded-xl border border-primary/20 bg-primary/5 hover:border-primary/40 transition-[border-color]"
@@ -1123,13 +1128,7 @@ export default function App() {
                                       </h3>
                                       <div className="flex gap-3 mt-1">
                                         <span className="text-[10px] font-bold text-muted-foreground">
-                                          {t("seedlings.daysOld", { count: Math.floor(
-                                            (Date.now() -
-                                              new Date(
-                                                seedling.plantedDate,
-                                              ).getTime()) /
-                                              (1000 * 60 * 60 * 24),
-                                          ) })}
+                                          {t("seedlings.daysOld", { count: daysOld })}
                                         </span>
                                         <span className="text-[10px] font-bold text-muted-foreground">
                                           {t("seedlings.batchCount", { count: seedling.seedCount })}
@@ -1157,7 +1156,7 @@ export default function App() {
                                       </div>
                                     </div>
                                   </div>
-                                ))}
+                                ); })}
                               </div>
                             ) : (
                               <div className="space-y-1.5">
