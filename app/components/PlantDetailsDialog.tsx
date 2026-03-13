@@ -20,6 +20,7 @@ import {
   Heart,
 } from "lucide-react";
 import { PlantInstance } from "./PlanterGrid";
+import { cn } from "./ui/utils";
 import { getBundledPlantByMatch } from "../data/bundledPlants";
 import { deriveGrowthStage } from "../services/plantGrowthStage";
 import type { GrowthStage, HealthState } from "../data/schema";
@@ -29,6 +30,8 @@ interface PlantDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
   plantInstance: PlantInstance | null;
   onUpdate: (updated: PlantInstance) => void;
+  groupSize?: number;
+  singleCellMode?: boolean;
 }
 
 interface PestEvent {
@@ -60,6 +63,8 @@ export function PlantDetailsDialog({
   onOpenChange,
   plantInstance,
   onUpdate,
+  groupSize,
+  singleCellMode,
 }: PlantDetailsDialogProps) {
   if (!plantInstance) return null;
 
@@ -203,6 +208,23 @@ export function PlantDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Metaplant group banner */}
+          {groupSize && groupSize > 1 && (
+            <div className={cn(
+              "flex items-center gap-2 rounded-xl px-4 py-2.5 border text-sm font-medium",
+              singleCellMode
+                ? "bg-amber-50 border-amber-200 text-amber-800"
+                : "bg-primary/5 border-primary/20 text-primary",
+            )}>
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: singleCellMode ? "#f59e0b" : "var(--primary)" }}
+              />
+              {singleCellMode
+                ? `Single-plant mode — changes apply to this plant only`
+                : `Part of a group of ${groupSize} ${plantInstance.plant.name} plants — pest events will apply to all`}
+            </div>
+          )}
           {/* Plant Description */}
           {mergedPlant.description && (
             <div className="bg-accent/30 rounded-xl p-4 border border-accent">
