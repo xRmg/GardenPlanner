@@ -1,0 +1,9 @@
+{
+  "loadFailed": "Kan tuingegevens niet laden",
+  "saveFailed": "Opslaan mislukt",
+  "locationInvalid": "Locatie niet gevonden. Probeer een andere plaatsnaam.",
+  "locationVerifyFailed": "Kan locatie niet verifiëren",
+  "aiKeyInvalid": "Ongeldige API-sleutel",
+  "aiKeyVerifyFailed": "Kan API-sleutel niet verifiëren",
+  "genericError": "Er is iets misgegaan"
+}

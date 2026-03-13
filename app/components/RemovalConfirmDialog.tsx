@@ -8,6 +8,7 @@ import {
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { PlantInstance } from "./PlanterGrid";
+import { useTranslation } from "react-i18next";
 
 interface RemovalConfirmDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function RemovalConfirmDialog({
   plantInstance,
   onConfirm,
 }: RemovalConfirmDialogProps) {
+  const { t } = useTranslation();
   const handleHarvested = () => {
     onConfirm("harvested");
     onOpenChange(false);
@@ -40,14 +42,14 @@ export function RemovalConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Remove {plantInstance?.plant.name}?</DialogTitle>
+          <DialogTitle>{t("dialogs.removalConfirmDialog.title", { name: plantInstance?.plant.name })}</DialogTitle>
           <DialogDescription>
-            How do you want to log this removal?
+            {t("dialogs.removalConfirmDialog.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Choose how to record this plant removal in your garden journal:
+            {t("dialogs.removalConfirmDialog.chooseHow")}
           </p>
           <div className="space-y-3">
             <Button
@@ -55,9 +57,9 @@ export function RemovalConfirmDialog({
               className="w-full justify-start"
               variant="outline"
             >
-              <span className="text-base">✓ Mark as Harvested</span>
+              <span className="text-base">{t("dialogs.removalConfirmDialog.markHarvested")}</span>
               <span className="text-xs text-muted-foreground ml-2 block text-left">
-                Plant reached maturity and was harvested
+                {t("dialogs.removalConfirmDialog.harvestedHint")}
               </span>
             </Button>
             <Button
@@ -65,16 +67,16 @@ export function RemovalConfirmDialog({
               className="w-full justify-start"
               variant="outline"
             >
-              <span className="text-base">✗ Remove</span>
+              <span className="text-base">{t("dialogs.removalConfirmDialog.remove")}</span>
               <span className="text-xs text-muted-foreground ml-2 block text-left">
-                Plant died, was discarded, or removed early
+                {t("dialogs.removalConfirmDialog.removeHint")}
               </span>
             </Button>
           </div>
         </div>
         <DialogFooter>
           <Button onClick={handleCancel} variant="ghost">
-            Cancel
+            {t("common.cancel")}
           </Button>
         </DialogFooter>
       </DialogContent>

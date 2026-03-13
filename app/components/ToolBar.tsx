@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Map as MapIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Plant } from "./PlanterGrid";
 
 interface ToolBarProps {
@@ -27,6 +28,8 @@ export function ToolBar({
 }: ToolBarProps) {
   const [filter, setFilter] = useState<PlantFilter>("all");
 
+  const { t } = useTranslation();
+
   const { filtered, seedCount, plantCount } = useMemo(() => {
     const seeds = plants.filter((p) => p.isSeed);
     const nonSeeds = plants.filter((p) => !p.isSeed);
@@ -44,7 +47,7 @@ export function ToolBar({
       {/* Left: Garden organisation */}
       <div className="flex flex-col gap-1.5 pl-2 shrink-0">
         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-          Garden
+          {t("toolbar.garden")}
         </label>
         <div className="flex gap-1.5">
           <button
@@ -52,7 +55,7 @@ export function ToolBar({
             className="h-8 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-[background-color,transform] flex items-center gap-1.5 shadow-md shadow-primary/10 hover:scale-105 active:scale-95 text-sm"
           >
             <MapIcon className="w-3.5 h-3.5" />
-            <span className="font-medium whitespace-nowrap">New Area</span>
+            <span className="font-medium whitespace-nowrap">{t("toolbar.newArea")}</span>
           </button>
           {onShowSeedlings && (
             <button
@@ -81,14 +84,14 @@ export function ToolBar({
         {/* Filter tabs row */}
         <div className="flex items-center gap-2">
           <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 shrink-0">
-            Plot Plant
+            {t("toolbar.plotPlant")}
           </label>
           <div className="flex gap-0.5 bg-muted/30 rounded-md p-0.5">
             {(
               [
-                { key: "all", label: `All (${plants.length})` },
-                { key: "plants", label: `🌿 ${plantCount}` },
-                { key: "seeds", label: `🌾 ${seedCount}` },
+                { key: "all", label: t("toolbar.allCount", { count: plants.length }) },
+                { key: "plants", label: t("toolbar.plantsCount", { count: plantCount }) },
+                { key: "seeds", label: t("toolbar.seedsCount", { count: seedCount }) },
               ] as { key: PlantFilter; label: string }[]
             ).map(({ key, label }) => (
               <button
@@ -113,19 +116,17 @@ export function ToolBar({
             className="h-8 px-3 rounded-lg border border-dashed border-primary text-primary hover:bg-primary/5 transition-[background-color] shrink-0 flex items-center gap-1.5 text-xs font-bold"
           >
             <Plus className="w-3.5 h-3.5" />
-            Add
+            {t("toolbar.add")}
           </button>
           <div className="w-px h-6 bg-border/20 self-center mx-1 shrink-0" />
 
           {filtered.length === 0 ? (
             <span className="self-center text-[10px] text-muted-foreground/50 italic px-2">
-              No{" "}
               {filter === "seeds"
-                ? "seeds"
+                ? t("toolbar.noSeedsYet")
                 : filter === "plants"
-                  ? "plants"
-                  : "items"}{" "}
-              yet
+                  ? t("toolbar.noPlantsYet")
+                  : t("toolbar.noItemsYet")}
             </span>
           ) : (
             filtered.map((plant) => {
@@ -142,9 +143,11 @@ export function ToolBar({
                   disabled={isDepleted}
                   title={
                     isDepleted
-                      ? `${plant.name} – out of seeds`
+                      ? t("toolbar.outOfSeeds", { name: plant.name })
                       : plant.isSeed
-                        ? `${plant.name} (${isInfinite ? "∞" : plant.amount} seeds)`
+                        ? isInfinite
+                          ? t("toolbar.infiniteSeeds", { name: plant.name })
+                          : t("toolbar.seedsAvailable", { name: plant.name, count: plant.amount })
                         : plant.name
                   }
                   className={`h-8 px-3 rounded-lg border transition-[background-color,border-color,box-shadow] flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in duration-300 relative ${
@@ -184,7 +187,7 @@ export function ToolBar({
                   )}
                   {isDepleted && (
                     <span className="text-[7px] font-black px-1 py-px rounded leading-none bg-red-100 text-red-600 uppercase">
-                      Empty
+                      {t("common.empty")}
                     </span>
                   )}
                 </button>

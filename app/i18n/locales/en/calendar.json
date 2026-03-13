@@ -1,0 +1,14 @@
+{
+  "weekdays": {
+    "short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  },
+  "nav": {
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today"
+  },
+  "emptyMonth": "This month has no dated activity yet. Use the summary panel for harvest context, and switch back to the current month for suggestions.",
+  "undatedNote": "Undated suggestions stay pinned to the current month so they're always visible.",
+  "noUndated": "No pending suggestions.",
+  "harvestEmpty": "No planted crops land in a harvest window for this month."
+}

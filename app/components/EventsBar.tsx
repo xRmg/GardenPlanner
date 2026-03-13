@@ -15,6 +15,7 @@ import {
   Loader2,
   CloudRain,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Plant } from "./PlanterGrid";
 import type { SuggestionMode } from "../data/schema";
 import { Button } from "./ui/button";
@@ -165,22 +166,22 @@ const suggestionBg: Record<string, string> = {
 
 const MODE_BADGES: Record<
   SuggestionMode,
-  { label: string; className: string }
+  { labelKey: string; className: string }
 > = {
   "ai+weather": {
-    label: "✨ AI",
+    labelKey: "eventsBar.modeBadges.aiWeather",
     className: "bg-violet-50 text-violet-600 border border-violet-200",
   },
   "rules+weather": {
-    label: "🌤 Weather",
+    labelKey: "eventsBar.modeBadges.rulesWeather",
     className: "bg-sky-50 text-sky-600 border border-sky-200",
   },
   rules: {
-    label: "📅 Rules",
+    labelKey: "eventsBar.modeBadges.rules",
     className: "bg-emerald-50 text-emerald-600 border border-emerald-200",
   },
   static: {
-    label: "📋 Tips",
+    labelKey: "eventsBar.modeBadges.static",
     className: "bg-gray-50 text-gray-500 border border-gray-200",
   },
 };
@@ -194,6 +195,7 @@ export function EventsBar({
   suggestionsMode,
   suggestionsLoading = false,
 }: EventsBarProps) {
+  const { t, i18n } = useTranslation();
   const sortedEvents = [...events].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
@@ -231,7 +233,7 @@ export function EventsBar({
     return acc;
   }, []);
 
-  const currentMonth = new Date().toLocaleDateString("en-US", {
+  const currentMonth = new Date().toLocaleDateString(i18n.language, {
     month: "long",
     year: "numeric",
   });
@@ -243,15 +245,15 @@ export function EventsBar({
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return `${Math.abs(diffDays)} days ago`;
+      return t("eventsBar.daysAgo", { count: Math.abs(diffDays) });
     } else if (diffDays === 0) {
-      return "Today";
+      return t("eventsBar.today");
     } else if (diffDays === 1) {
-      return "Tomorrow";
+      return t("eventsBar.tomorrow");
     } else if (diffDays < 7) {
-      return `In ${diffDays} days`;
+      return t("eventsBar.inDays", { count: diffDays });
     } else {
-      return date.toLocaleDateString("en-US", {
+      return date.toLocaleDateString(i18n.language, {
         month: "short",
         day: "numeric",
       });
@@ -265,13 +267,13 @@ export function EventsBar({
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-      return "Today";
+      return t("eventsBar.today");
     } else if (diffDays === 1) {
-      return "Yesterday";
+      return t("eventsBar.yesterday");
     } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
+      return t("eventsBar.daysAgo", { count: diffDays });
     } else {
-      return date.toLocaleDateString("en-US", {
+      return date.toLocaleDateString(i18n.language, {
         month: "short",
         day: "numeric",
       });
@@ -294,7 +296,7 @@ export function EventsBar({
         {harvestAlerts.length > 0 && (
           <div>
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3 px-1">
-              Harvest Soon
+              {t("eventsBar.harvestSoon")}
             </h3>
             <div className="space-y-1.5 mb-2">
               {harvestAlerts.slice(0, 5).map((alert, i) => (
@@ -322,8 +324,8 @@ export function EventsBar({
                     }`}
                   >
                     {alert.daysUntilHarvest <= 0
-                      ? "Now!"
-                      : `${alert.daysUntilHarvest}d`}
+                      ? t("eventsBar.now")
+                      : t("eventsBar.daysUntil", { count: alert.daysUntilHarvest })}
                   </span>
                 </div>
               ))}
@@ -335,7 +337,7 @@ export function EventsBar({
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60">
-              Next Steps
+              {t("eventsBar.nextSteps")}
             </h3>
             <div className="flex items-center gap-1.5">
               {suggestionsLoading && (
@@ -345,7 +347,12 @@ export function EventsBar({
                 <span
                   className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${MODE_BADGES[suggestionsMode].className}`}
                 >
-                  {MODE_BADGES[suggestionsMode].label}
+                  {t(`eventsBar.modeBadges.${
+                    suggestionsMode === "ai+weather" ? "aiWeather"
+                    : suggestionsMode === "rules+weather" ? "rulesWeather"
+                    : suggestionsMode === "rules" ? "rules"
+                    : "static"
+                  }` as "eventsBar.modeBadges.aiWeather")}
                 </span>
               )}
             </div>
@@ -444,14 +451,14 @@ export function EventsBar({
                               onOpenTreatmentSuggestion?.(suggestion)
                             }
                           >
-                            Options
+                            {t("eventsBar.options")}
                           </Button>
                         ) : (
                           <button
                             onClick={() => onCompleteSuggestion?.(suggestion)}
                             className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 hover:scale-110 active:scale-95 transition-[color,background-color,transform] duration-150 mt-0.5"
-                            title="Mark done"
-                            aria-label="Mark suggestion as done"
+                            title={t("eventsBar.markDone")}
+                            aria-label={t("eventsBar.markSuggestionDone")}
                           >
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
@@ -464,7 +471,7 @@ export function EventsBar({
                 <div className="text-center py-6 px-4 text-muted-foreground/40 bg-muted/20 rounded-2xl border border-dashed border-border/40">
                 <div className="text-lg mb-0.5 animate-float-gentle">✨</div>
                 <p className="text-xs font-black uppercase tracking-widest">
-                  All caught up!
+                  {t("eventsBar.allCaughtUp")}
                 </p>
               </div>
             )}
@@ -474,7 +481,7 @@ export function EventsBar({
         {/* Garden Journal Section */}
         <div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3 px-1">
-            Garden Journal
+            {t("eventsBar.gardenJournal")}
           </h3>
           <div className="space-y-1.5 ">
               {groupedEvents.map((group, groupIdx) => {
@@ -529,10 +536,10 @@ export function EventsBar({
             {events.length === 0 && (
               <div className="text-center py-5 px-2">
                 <p className="text-muted-foreground/30 text-[10px] font-bold uppercase tracking-widest">
-                  No logs yet
+                  {t("eventsBar.noLogsYet")}
                 </p>
                 <p className="text-muted-foreground/20 text-xs mt-1 normal-case font-medium">
-                  Water, harvest, or treat a plant to see entries here.
+                  {t("eventsBar.noLogsHint")}
                 </p>
               </div>
             )}

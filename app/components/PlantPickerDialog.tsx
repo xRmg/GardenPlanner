@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Plant } from "./PlanterGrid";
+import { useTranslation } from "react-i18next";
 
 interface PlantPickerDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ export function PlantPickerDialog({
   mode,
   onSelect,
 }: PlantPickerDialogProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
 
   // Filter by mode: direct-sow shows seeds, transplant shows plants
@@ -60,8 +62,8 @@ export function PlantPickerDialog({
         <DialogHeader>
           <DialogTitle className="text-lg font-black tracking-tight uppercase">
             {mode === "transplant"
-              ? "Select Plant to Transplant"
-              : "Select Seed to Direct Sow"}
+              ? t("dialogs.plantPickerDialog.titleTransplant")
+              : t("dialogs.plantPickerDialog.titleDirectSow")}
           </DialogTitle>
         </DialogHeader>
 
@@ -71,7 +73,7 @@ export function PlantPickerDialog({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={
-              mode === "direct-sow" ? "Search seeds…" : "Search plants…"
+              mode === "direct-sow" ? t("dialogs.plantPickerDialog.searchSeeds") : t("dialogs.plantPickerDialog.searchPlants")
             }
             className="w-full px-3 py-2 bg-muted/20 border border-white/30 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
           />
@@ -79,8 +81,8 @@ export function PlantPickerDialog({
           {filtered.length === 0 ? (
             <div className="py-10 text-center text-muted-foreground/40 text-xs font-black uppercase tracking-widest">
               {mode === "direct-sow"
-                ? "No seeds in library. Add them in My Plants & Seeds."
-                : "No plants found."}
+                ? t("dialogs.plantPickerDialog.noSeeds")
+                : t("dialogs.plantPickerDialog.noPlants")}
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto custom-scrollbar pr-1">
@@ -103,7 +105,7 @@ export function PlantPickerDialog({
                   )}
                   {plant.isSeed && (
                     <span className="text-xs font-black text-blue-500 mt-0.5">
-                      {plant.amount === undefined ? '∞ seeds' : `${plant.amount} seeds`}
+                      {plant.amount === undefined ? t("dialogs.plantPickerDialog.infiniteSeeds") : t("dialogs.plantPickerDialog.seedCount", { count: plant.amount })}
                     </span>
                   )}
                 </button>

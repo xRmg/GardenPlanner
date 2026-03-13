@@ -1,0 +1,9 @@
+{
+  "loadFailed": "Failed to load garden data",
+  "saveFailed": "Failed to save",
+  "locationInvalid": "Location not found. Try a different city name.",
+  "locationVerifyFailed": "Could not verify location",
+  "aiKeyInvalid": "Invalid API key",
+  "aiKeyVerifyFailed": "Could not verify API key",
+  "genericError": "Something went wrong"
+}

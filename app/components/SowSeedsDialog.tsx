@@ -12,6 +12,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Plant } from "./PlanterGrid";
 import { Sprout } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface SowSeedsDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ export function SowSeedsDialog({
   plant,
   onSow,
 }: SowSeedsDialogProps) {
+  const { t } = useTranslation();
   const [seedCount, setSeedCount] = useState(1);
   const [location, setLocation] = useState("Indoor Tray");
 
@@ -70,10 +72,10 @@ export function SowSeedsDialog({
             </div>
             <div>
               <DialogTitle className="text-xl font-black tracking-tight">
-                Sow {plant.name}
+                {t("dialogs.sowSeedsDialog.title", { name: plant.name })}
               </DialogTitle>
               <DialogDescription className="text-xs uppercase font-bold tracking-widest text-muted-foreground/60">
-                Start a new seedling batch
+                {t("dialogs.sowSeedsDialog.description")}
               </DialogDescription>
             </div>
           </div>
@@ -83,7 +85,7 @@ export function SowSeedsDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Seeds to Sow
+                {t("dialogs.sowSeedsDialog.seedsToSow")}
               </Label>
               <div className="relative">
                 <Input
@@ -95,18 +97,18 @@ export function SowSeedsDialog({
                   className="bg-muted/30 border-white/20 rounded-xl px-4 py-6 font-bold text-lg shadow-inner"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-muted-foreground/40">
-                  of {plant.amount}
+                  {t("dialogs.sowSeedsDialog.of", { count: plant.amount })}
                 </span>
               </div>
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Location
+                {t("dialogs.sowSeedsDialog.location")}
               </Label>
               <Input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. Propagator"
+                placeholder={t("dialogs.sowSeedsDialog.locationPlaceholder")}
                 className="bg-muted/30 border-white/20 rounded-xl px-4 py-6 font-bold text-sm shadow-inner"
               />
             </div>
@@ -118,11 +120,10 @@ export function SowSeedsDialog({
             </div>
             <div>
               <p className="text-xs font-bold text-primary/80 uppercase tracking-wide leading-snug">
-                Sowing {seedCount} seeds will create a single "Seedling Batch"
-                in your nursery.
+                {t("dialogs.sowSeedsDialog.infoMessage", { count: seedCount })}
               </p>
               <p className="text-[10px] text-muted-foreground mt-1">
-                You can plant these out individually later when they are ready.
+                {t("dialogs.sowSeedsDialog.infoHint")}
               </p>
             </div>
           </div>
@@ -134,13 +135,13 @@ export function SowSeedsDialog({
             onClick={() => onOpenChange(false)}
             className="rounded-xl"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSow}
             className="rounded-xl px-8 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 font-bold uppercase tracking-widest text-xs"
           >
-            Sow Seeds
+            {t("dialogs.sowSeedsDialog.sowSeeds")}
           </Button>
         </DialogFooter>
       </DialogContent>

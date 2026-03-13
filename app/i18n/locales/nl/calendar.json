@@ -1,0 +1,14 @@
+{
+  "weekdays": {
+    "short": ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"]
+  },
+  "nav": {
+    "prevMonth": "Vorige maand",
+    "nextMonth": "Volgende maand",
+    "today": "Vandaag"
+  },
+  "emptyMonth": "Deze maand heeft nog geen gedateerde activiteit. Gebruik het overzichtsvenster voor oogstcontext en schakel terug naar de huidige maand voor suggesties.",
+  "undatedNote": "Niet-gedateerde suggesties blijven vastgepind aan de huidige maand zodat ze altijd zichtbaar zijn.",
+  "noUndated": "Geen openstaande suggesties.",
+  "harvestEmpty": "Geen geplante gewassen vallen in een oogstvenster voor deze maand."
+}

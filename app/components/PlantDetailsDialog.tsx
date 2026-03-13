@@ -43,6 +43,11 @@ function formatDate(dateString: string) {
   });
 }
 
+/**
+ * Returns the translated sunlight label for the given requirement.
+ * Accepts a pre-translated labels object instead of TFunction to avoid
+ * TypeScript's strict TFunction generic constraints.
+ */
 function formatSunlight(
   sunRequirement: "full" | "partial" | "shade" | undefined,
   labels: { full: string; partial: string; shade: string; unknown: string },

@@ -10,6 +10,7 @@ import {
 import { Button } from "./ui/button";
 import { Plant } from "./PlanterGrid";
 import { Sprout, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export interface SeedlingFormData {
   plant: Plant;
@@ -35,6 +36,7 @@ export function AddSeedlingDialog({
   onAdd,
   defaultPlant,
 }: AddSeedlingDialogProps) {
+  const { t } = useTranslation();
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(
     defaultPlant ?? null,
   );
@@ -107,10 +109,10 @@ export function AddSeedlingDialog({
       <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl border-white/40 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-black tracking-tight uppercase flex items-center gap-2">
-            <Sprout className="w-5 h-5 text-primary" /> Add Seedling Batch
+            <Sprout className="w-5 h-5 text-primary" /> {t("dialogs.addSeedlingDialog.title")}
           </DialogTitle>
           <DialogDescription className="text-xs uppercase tracking-wider font-bold text-muted-foreground/60">
-            Track seeds you've started — indoors or straight in the ground.
+            {t("dialogs.addSeedlingDialog.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -118,7 +120,7 @@ export function AddSeedlingDialog({
           {/* Plant selector */}
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 block mb-1.5">
-              Plant or Seed *
+              {t("dialogs.addSeedlingDialog.plantOrSeed")}
             </label>
             {!showPicker && selectedPlant ? (
               <button
@@ -137,7 +139,7 @@ export function AddSeedlingDialog({
                   )}
                 </div>
                 <span className="text-[10px] font-black text-primary uppercase tracking-wider">
-                  Change
+                  {t("dialogs.addSeedlingDialog.change")}
                 </span>
               </button>
             ) : (
@@ -148,7 +150,7 @@ export function AddSeedlingDialog({
                     autoFocus
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search plants and seeds…"
+                    placeholder={t("dialogs.addSeedlingDialog.searchPlaceholder")}
                     className="w-full pl-9 pr-3 py-2 bg-muted/20 border border-white/30 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                   />
                 </div>
@@ -180,7 +182,7 @@ export function AddSeedlingDialog({
               {/* Method */}
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 block mb-1.5">
-                  Sowing Method
+                  {t("dialogs.addSeedlingDialog.sowingMethod")}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {(["indoor", "direct-sow"] as const).map((m) => (
@@ -193,14 +195,14 @@ export function AddSeedlingDialog({
                           : "bg-white/60 text-muted-foreground border-border/30 hover:border-primary/30"
                       }`}
                     >
-                      {m === "indoor" ? "🌱 Indoor Start" : "🌾 Direct Sow"}
+                      {m === "indoor" ? t("dialogs.addSeedlingDialog.indoorStart") : t("dialogs.addSeedlingDialog.directSow")}
                     </button>
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground/50 mt-1.5 ml-1 font-medium">
                   {method === "indoor"
-                    ? "Seeds started in trays/pots indoors before transplanting out."
-                    : "Seeds sown directly into the outdoor growing bed."}
+                    ? t("dialogs.addSeedlingDialog.indoorHint")
+                    : t("dialogs.addSeedlingDialog.directSowHint")}
                 </p>
               </div>
 
@@ -208,7 +210,7 @@ export function AddSeedlingDialog({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 block mb-1.5">
-                    Seed / Plant Count
+                    {t("dialogs.addSeedlingDialog.seedCount")}
                   </label>
                   <input
                     type="number"
@@ -222,12 +224,12 @@ export function AddSeedlingDialog({
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 block mb-1.5">
-                    Location
+                    {t("dialogs.addSeedlingDialog.location")}
                   </label>
                   <input
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder="e.g. Propagator"
+                    placeholder={t("dialogs.addSeedlingDialog.locationPlaceholder")}
                     className="w-full px-3 py-2.5 bg-muted/30 border border-white/20 rounded-xl font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                   />
                 </div>
@@ -236,7 +238,7 @@ export function AddSeedlingDialog({
               {/* Start Date */}
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 block mb-1.5">
-                  Start Date
+                  {t("dialogs.addSeedlingDialog.startDate")}
                 </label>
                 <input
                   type="date"
@@ -255,14 +257,14 @@ export function AddSeedlingDialog({
             onClick={() => onOpenChange(false)}
             className="rounded-xl"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSave}
             disabled={!selectedPlant}
             className="rounded-xl px-6 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 font-black uppercase tracking-wider text-xs"
           >
-            Add Seedling
+            {t("dialogs.addSeedlingDialog.addSeedling")}
           </Button>
         </DialogFooter>
       </DialogContent>
