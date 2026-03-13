@@ -1,8 +1,8 @@
 # Garden Planner — TODO
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 complete — 1.1–1.14 ✅ · Phase 1B queued
-> **Current sprint**: Phase 1B — metaplants, plant state, view persistence, prompt hardening
+> **Status**: Phase 1 complete — 1.1–1.14 ✅ · Phase 1B complete ✅ · Phase 2 queued
+> **Current sprint**: Phase 2 — Internationalization (i18next, en + nl)
 > **Purpose**: Active implementation roadmap. Architecture decisions → `docs/architecture-decisions.md`. Product vision → `docs/product-vision.md`.
 
 ---
@@ -12,7 +12,7 @@
 | Phase  | Focus                                           | Status         |
 | ------ | ----------------------------------------------- | -------------- |
 | **1**  | Foundation + smart suggestions (local-first)    | ✅ Complete    |
-| **1B** | Plant intelligence & garden UX polish           | ⬜ Next        |
+| **1B** | Plant intelligence & garden UX polish           | ✅ Complete    |
 | **2**  | Internationalization (i18next, en + nl)         | ⬜ Queued      |
 | **3**  | Backend, intelligence proxy & multi-user auth   | ⬜ Future      |
 
@@ -47,29 +47,21 @@
 
 **Goal**: Metaplant grouping for smart multi-cell suggestions, plant lifecycle and health states, persistent view modes, and prompt injection hardening.
 
-- [ ] **1B.1 — Metaplant grouping**  
-  Adjacent cells sharing the same **plant name** (8-connected, diagonal included) are treated as a single metaplant at runtime — no schema storage needed. Metaplant identity is computed via flood-fill on the grid each time it is needed. When a pest, treatment, or care event is logged on any cell in a metaplant group, it is automatically propagated to all cells in that group. Variety differences do not break grouping (a named variety is a distinct plant entry in the catalogue, so will naturally not group with the base species). Display: highlight all grouped cells when one is selected.  
-  **Selection model**: left-click (or tap) selects the entire metaplant group — all cells highlight and any logged event applies to all. Right-click (or long-press on touch, via `onContextMenu`) selects a single cell only, bypassing the group — useful for recording an event or health state on one individual plant within a larger patch. A subtle visual distinction (e.g. single-cell highlight vs. full-group highlight) makes the two modes obvious.
+### ✅ Phase 1B Complete
 
-- [ ] **1B.2 — Plant growth stage (auto-derive + manual override)**  
-  Add `growthStage: 'sprouting' | 'vegetative' | 'flowering' | 'fruiting' | 'dormant' | null` to `PlantInstance` in `schema.ts`. Auto-derive from planting date + new optional `Plant` schema fields `daysToFlower` and `daysToFruit` (both `number | null`). Store a manual override flag `growthStageOverride: boolean` so the rules engine knows whether the stage was user-set. Manual override via a picker in `PlantDetailsDialog`. Stage feeds the rules engine: `dormant` suppresses watering and fertilising suggestions; `fruiting` triggers harvest-window reminders. Applies per-cell and per-metaplant.
+- [x] **1B.1 — Metaplant grouping** — Flood-fill BFS (8-connected) finds same-name cell groups; left-click highlights group with green ring + propagates pest events to all members; right-click selects single cell with amber ring; pre-click group indicator dot on multi-cell groups.
 
-- [ ] **1B.3 — Plant health state**  
-  Add `healthState: 'healthy' | 'stressed' | 'damaged' | 'diseased' | 'dead' | null` to `PlantInstance`. Changing health state **auto-creates a `GardenEvent`** journal entry (e.g. event type `observation`, note auto-populated as "Health state changed to: damaged") so there is always a timestamped record. UI: quick-set health picker in `PlantDetailsDialog`; visual indicator on grid cell (coloured dot or desaturated cell). Health state feeds the rules engine: `damaged` or `diseased` escalates pest and treatment suggestion priority; `dead` suppresses all suggestions and marks the cell visually as inactive.
+- [x] **1B.2 — Plant growth stage** — `growthStage` / `growthStageOverride` / `daysToFlower` / `daysToFruit` added to schema; `plantGrowthStage.ts` auto-derives stage from planting date + plant timeline; manual override picker in `PlantDetailsDialog`; rules engine skips dormant/dead plants for watering/fertilising.
 
-- [ ] **1B.4 — View mode persistence (view vs. edit layout)**  
-  Area planner has two explicit modes: **View** (interact with plants — click to log events, see details) and **Edit Layout** (structural changes — add/remove/resize planters, reorder). Mode toggle is a persistent setting in `Settings` (Dexie), defaulting to View. Additionally persist `lastSelectedAreaId` and `lastSelectedPlanterId` to `Settings` so the user returns to exactly where they left off after a page reload.
+- [x] **1B.3 — Plant health state** — `healthState` added to schema; auto-creates `observation` GardenEvent on change; health picker in `PlantDetailsDialog`; coloured dot indicator on grid cells; dead cells desaturated; rules engine escalates damaged/diseased to `high` priority, suppresses suggestions for dead plants.
 
-- [ ] **1B.5 — Prompt injection hardening**  
-  Three-layer defence:
-  1. **Input layer** — Add `maxlength` HTML attributes and Zod `.max()` refinements in `schema.ts`: plant name ≤ 80 chars, variety ≤ 80 chars, pest name ≤ 120 chars, free-text notes/tips ≤ 500 chars.
-  2. **AI call site** (`app/services/ai/`) — Truncate all user-sourced strings to their respective max lengths before inserting into any prompt template. Log a warning if truncation occurs.
-  3. **Backend** (`backend/src/routes.ts`) — Add `z.string().max()` to all string fields in the `/api/ai/chat` Zod request schema. Reject oversized payloads with HTTP 400 before they reach OpenRouter. This prevents users who call the API directly from bypassing client-side limits.
+- [x] **1B.4 — View mode persistence** — `isEditMode`, `lastSelectedAreaId`, `lastSelectedPlanterId` added to Settings schema; persisted to Dexie automatically; `isEditMode` defaults to View (false); scroll-to-last-selected-area on page reload; area divs get `id="area-{id}"` for scroll targeting.
 
-- [ ] **1B.6 — Calendar day detail panel**  
-  Clicking a day in `CalendarView` opens a detail popover/sheet showing the full log for that day: all `GardenEvent` entries (type, plant, note), active suggestions that were generated for that date, and any harvest-window crops. Empty days show a friendly empty state. The popover is dismissible via Escape or clicking outside and includes a quick-add shortcut to log a new event directly for that day.
+- [x] **1B.5 — Prompt injection hardening** — Three-layer defence: Zod `.max()` on all user-input fields (name 80, variety 80, notes 500, location 200); `truncate()` helper in `prompts.ts`; `buildAISuggestionContext` truncates before sending to AI; backend `SettingsPatchRequestSchema` adds `.max(20)` to `growthZone`.
 
-- [ ] **AI-8 fix** — Remove the silent multi-model fallback from `app/services/ai/aiSuggestions.ts`. On AI failure, surface a clear error to the user and stop — do not retry with an alternative model. Aligns with the existing `usePlantAILookup` behaviour and the explicit product decision recorded above.
+- [x] **1B.6 — Calendar day detail panel** — Clicking any day opens a Sheet with full log (events, suggestions, harvests), friendly empty state, and quick-add buttons for common event types (watered, harvested, pest, note).
+
+- [x] **AI-8 fix** — Silent multi-model fallback removed from `aiSuggestions.ts`; single model attempt only; error propagated via `result.aiError` to `useSuggestions`; surfaced to user via toast notification.
 
 ---
 
@@ -91,7 +83,7 @@
 
 - [x] **AI-7** *(resolved)* AI-enabled guards now use the sanitized frontend settings state consistently.
 
-- [ ] **AI-8** *(LOW — resolved in 1B.5 fix)* `aiSuggestions.ts` silent multi-model fallback to be removed in task **1B AI-8 fix** — fail clearly, no alternative model retry. See note below.
+- [x] **AI-8** *(resolved)* `aiSuggestions.ts` silent multi-model fallback removed; single model attempt only; errors surfaced via `result.aiError` and toast notification.
 
 - [x] **AI-9** *(resolved)* The AI design docs now describe the proxy-only flow and the dedicated backend settings endpoints.
 

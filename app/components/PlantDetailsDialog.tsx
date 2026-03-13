@@ -112,6 +112,10 @@ export function PlantDetailsDialog({
           daysToFruit: plantInstance.plant.daysToFruit,
         },
       }),
+    // instanceId covers the whole plant definition changing; plantingDate is
+    // the only runtime-mutable field that affects derivation. Plant timeline
+    // fields (daysToHarvest/Flower/Fruit) are static once a PlantInstance is
+    // created, so omitting them avoids spurious recomputes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [plantInstance.instanceId, plantInstance.plantingDate],
   );

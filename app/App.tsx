@@ -205,7 +205,11 @@ export default function App() {
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
 
-  // Scroll to last-selected area when the DB finishes loading
+  // Scroll to last-selected area when the DB finishes loading.
+  // We fire the effect when `settings.lastSelectedAreaId` changes (which happens
+  // when data loads from DB). We check hasLoadedFromDB.current inside to guard
+  // against firing before persistence is ready, and a one-shot ref to avoid
+  // scrolling again when the user navigates back to the Areas tab.
   const scrolledToLastSelected = useRef(false);
   useEffect(() => {
     if (!hasLoadedFromDB.current || scrolledToLastSelected.current) return;
@@ -217,7 +221,7 @@ export default function App() {
       const el = document.getElementById(`area-${areaId}`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 150);
-  }, [settings.lastSelectedAreaId, hasLoadedFromDB.current]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [settings.lastSelectedAreaId]); // hasLoadedFromDB is a ref; check its .current inside
 
   const getLatestTreatmentContext = (pestEvents: PestEvent[]) => {
     const sorted = [...pestEvents].sort(
@@ -670,12 +674,19 @@ export default function App() {
                 suggestionsMode={suggestionsMode}
                 suggestionsLoading={suggestionsLoading}
                 onAddEvent={(partialEvent) => {
-                  const newEvent: import("./data/schema").GardenEvent = {
+                  const newEvent = {
                     ...partialEvent,
                     id: crypto.randomUUID(),
                   };
-                  setEvents((prev) => [...prev, newEvent as unknown as (typeof prev)[number]]);
-                  void repositoryRef.current.saveEvent(newEvent as unknown as import("./data/schema").GardenEvent);
+                  // EventsBar uses its own GardenEvent interface (subset of schema);
+                  // the schema type is a superset so this cast is safe.
+                  setEvents((prev) => [
+                    ...prev,
+                    newEvent as (typeof prev)[number],
+                  ]);
+                  void repositoryRef.current.saveEvent(
+                    newEvent as unknown as import("./data/schema").GardenEvent,
+                  );
                 }}
               />
             </TabsContent>
