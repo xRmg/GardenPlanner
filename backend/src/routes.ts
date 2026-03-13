@@ -36,6 +36,10 @@ interface GardenData {
  */
 router.get("/garden", (req: Request, res: Response) => {
   console.log("[API:GET /garden] Fetching complete garden state...");
+  // Prevent proxies from caching API responses
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
   try {
     const db = getDb();
 
@@ -155,7 +159,7 @@ router.get("/garden", (req: Request, res: Response) => {
       lng: settingsRow.lng || undefined,
       profileId: settingsRow.profileId || "default",
     };
-    console.log("[DB] ✓ Loaded settings");
+    console.log(`[DB] ✓ Loaded settings: location="${settings.location}", aiProvider=${rawAiProvider.type}, model=${settings.aiModel}`);
 
     const gardenData: GardenData = {
       areas,
@@ -334,9 +338,12 @@ router.post("/garden/sync", (req: Request, res: Response) => {
             const existing = JSON.parse(existingRow.aiProvider || '{"type":"none"}');
             if (existing.type === 'byok' && existing.key) {
               aiProviderToStore = existing;
+              console.log("[DB] Preserved existing API key (masked round-trip)");
             }
           }
         }
+
+        console.log(`[DB] Syncing settings: location="${settings.location || ""}", aiProvider=${aiProviderToStore.type}, model=${settings.aiModel || "default"}`);
 
         const updateSettings = db.prepare(`
           UPDATE settings

@@ -52,6 +52,11 @@ export function useGardenData(): GardenDataState {
   const hasLoadedFromDB = useRef(false);
   const repositoryRef = useRef<GardenRepository>(createServerRepository());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Skip the first persistence cycle after data is loaded from the DB.
+  // Without this, the loaded data echoes back to the server — harmless when
+  // the server returns correct data, but DESTRUCTIVE if a proxy returned a
+  // stale/cached response (it would overwrite good server data with stale).
+  const skipInitialPersist = useRef(true);
 
   const [dbError, setDbError] = useState<string | null>(null);
   const [savedIndicator, setSavedIndicator] = useState(false);
@@ -109,7 +114,7 @@ export function useGardenData(): GardenDataState {
 
   // Persist areas to Dexie (skip until initial load is done to avoid race)
   useEffect(() => {
-    if (!hasLoadedFromDB.current) return;
+    if (!hasLoadedFromDB.current || skipInitialPersist.current) return;
     const repo = repositoryRef.current;
     console.info(`[DB] Saving ${areas.length} areas`);
     Promise.all(
@@ -121,7 +126,7 @@ export function useGardenData(): GardenDataState {
 
   // Persist custom plants to Dexie
   useEffect(() => {
-    if (!hasLoadedFromDB.current) return;
+    if (!hasLoadedFromDB.current || skipInitialPersist.current) return;
     const repo = repositoryRef.current;
     if (customPlants.length > 0)
       console.info(`[DB] Saving ${customPlants.length} plants`);
@@ -136,7 +141,7 @@ export function useGardenData(): GardenDataState {
 
   // Persist seedlings to Dexie
   useEffect(() => {
-    if (!hasLoadedFromDB.current) return;
+    if (!hasLoadedFromDB.current || skipInitialPersist.current) return;
     const repo = repositoryRef.current;
     Promise.all(
       seedlings.map((seedling) =>
@@ -149,13 +154,22 @@ export function useGardenData(): GardenDataState {
 
   // Persist settings to Dexie
   useEffect(() => {
-    if (!hasLoadedFromDB.current) return;
+    if (!hasLoadedFromDB.current || skipInitialPersist.current) return;
     const repo = repositoryRef.current;
     repo
       .saveSettings(settings)
       .then(flashSaved)
       .catch((err) => console.error("[DB] Failed to save settings:", err));
   }, [settings]);
+
+  // Clear the initial-persist skip flag after the echo cycle completes.
+  // This effect fires AFTER the persistence effects above (source order)
+  // on the same render where hasLoadedFromDB becomes true.
+  useEffect(() => {
+    if (hasLoadedFromDB.current && skipInitialPersist.current) {
+      skipInitialPersist.current = false;
+    }
+  });
 
   return {
     dbError,
