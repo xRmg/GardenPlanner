@@ -138,10 +138,17 @@ router.get("/garden", (req: Request, res: Response) => {
     const settingsRow = db
       .prepare("SELECT * FROM settings WHERE id = 'default'")
       .get() as any;
+    // Mask the API key — never return it to the browser.
+    // The frontend treats { type: 'byok', key: '' } as "key stored".
+    const rawAiProvider = JSON.parse(settingsRow.aiProvider || '{"type":"none"}');
+    const maskedAiProvider =
+      rawAiProvider.type === 'byok'
+        ? { type: 'byok', key: '' }
+        : rawAiProvider;
     const settings = {
       location: settingsRow.location,
       growthZone: settingsRow.growthZone,
-      aiProvider: JSON.parse(settingsRow.aiProvider),
+      aiProvider: maskedAiProvider,
       aiModel: settingsRow.aiModel,
       locale: settingsRow.locale,
       lat: settingsRow.lat || undefined,
@@ -316,6 +323,21 @@ router.post("/garden/sync", (req: Request, res: Response) => {
 
       // Sync settings
       if (settings) {
+        // If the frontend sent a byok aiProvider with an empty key it means the key
+        // is masked ("key stored" placeholder) — preserve the existing key in the DB.
+        let aiProviderToStore = settings.aiProvider || { type: "none" };
+        if (aiProviderToStore.type === 'byok' && !aiProviderToStore.key) {
+          const existingRow = db
+            .prepare("SELECT aiProvider FROM settings WHERE id = 'default'")
+            .get() as any;
+          if (existingRow) {
+            const existing = JSON.parse(existingRow.aiProvider || '{"type":"none"}');
+            if (existing.type === 'byok' && existing.key) {
+              aiProviderToStore = existing;
+            }
+          }
+        }
+
         const updateSettings = db.prepare(`
           UPDATE settings
           SET location = ?, growthZone = ?, aiProvider = ?, aiModel = ?,
@@ -327,7 +349,7 @@ router.post("/garden/sync", (req: Request, res: Response) => {
         updateSettings.run(
           settings.location || "",
           settings.growthZone || "Cfb",
-          JSON.stringify(settings.aiProvider || { type: "none" }),
+          JSON.stringify(aiProviderToStore),
           settings.aiModel || "google/gemini-2.0-flash",
           settings.locale || "en",
           settings.lat || null,

@@ -1156,7 +1156,11 @@ export default function App() {
                             onKeyDown={(e) => {
                               if (e.key === "Enter") handleValidateOpenRouter();
                             }}
-                            placeholder="sk-or-…"
+                            placeholder={
+                              orStatus === "valid" && !orKeyDraft.trim()
+                                ? "API key stored — enter a new key to replace"
+                                : "sk-or-…"
+                            }
                             autoComplete="off"
                           />
                           <button
