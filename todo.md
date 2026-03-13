@@ -1,8 +1,8 @@
 # Garden Planner — TODO
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 complete — 1.1–1.14 ✅ · Phase 1B complete ✅ · Phase 2 queued
-> **Current sprint**: Phase 2 — Internationalization (i18next, en + nl)
+> **Status**: Phase 1 complete — 1.1–1.14 ✅ · Phase 1B complete ✅ · Phase 2 complete ✅
+> **Current sprint**: Phase 3 — Backend, intelligence proxy & multi-user auth
 > **Purpose**: Active implementation roadmap. Architecture decisions → `docs/architecture-decisions.md`. Product vision → `docs/product-vision.md`.
 
 ---
@@ -12,13 +12,8 @@
 | Phase  | Focus                                           | Status         |
 | ------ | ----------------------------------------------- | -------------- |
 | **1**  | Foundation + smart suggestions (local-first)    | ✅ Complete    |
-<<<<<<< HEAD
-| **1B** | Plant intelligence & garden UX polish           | ⬜ Next        |
-| **2**  | Internationalization (i18next, en + nl)         | ✅ Complete   |
-=======
 | **1B** | Plant intelligence & garden UX polish           | ✅ Complete    |
-| **2**  | Internationalization (i18next, en + nl)         | ⬜ Queued      |
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
+| **2**  | Internationalization (i18next, en + nl)         | ✅ Complete    |
 | **3**  | Backend, intelligence proxy & multi-user auth   | ⬜ Future      |
 
 ---
