@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -86,6 +87,7 @@ export function TreatmentOptionsDialog({
   settings,
   onApplyTreatment,
 }: TreatmentOptionsDialogProps) {
+  const { t } = useTranslation();
   const [result, setResult] = useState<TreatmentOptionsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -195,7 +197,7 @@ export function TreatmentOptionsDialog({
   const applyCustomOption = () => {
     const trimmed = customNote.trim();
     if (!trimmed) {
-      setCustomError("Enter a treatment note first.");
+      setCustomError(t("dialogs.treatmentOptionsDialog.enterNoteFirst"));
       return;
     }
     onApplyTreatment(trimmed);
@@ -208,11 +210,14 @@ export function TreatmentOptionsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Leaf className="w-5 h-5 text-emerald-600" />
-            Treatment Options
+            {t("dialogs.treatmentOptionsDialog.title")}
           </DialogTitle>
           <DialogDescription>
-            {target.plantInstance.plant.name} in {target.planterName},{" "}
-            {target.areaName}
+            {t("dialogs.treatmentOptionsDialog.subtitle", {
+              plant: target.plantInstance.plant.name,
+              planter: target.planterName,
+              area: target.areaName,
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -222,26 +227,25 @@ export function TreatmentOptionsDialog({
               <Bug className="w-4 h-4 mt-0.5 text-amber-700 shrink-0" />
               <div>
                 <div className="text-xs font-black uppercase tracking-wider text-amber-700/80">
-                  Latest Pest Note
+                  {t("dialogs.treatmentOptionsDialog.latestPestNote")}
                 </div>
                 <div className="text-sm text-amber-950 mt-1">
                   {target.latestPest.description}
                 </div>
                 <div className="text-xs text-amber-700/70 mt-1">
-                  Logged {formatEventDate(target.latestPest.date)}
+                  {t("dialogs.treatmentOptionsDialog.logged", { date: formatEventDate(target.latestPest.date) })}
                 </div>
               </div>
             </div>
             {target.latestTreatment && (
               <div className="mt-3 border-t border-amber-200 pt-3 text-xs text-amber-800">
-                Last treatment note: {target.latestTreatment.description}
+                {t("dialogs.treatmentOptionsDialog.lastTreatmentNote", { note: target.latestTreatment.description })}
               </div>
             )}
           </div>
 
           <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
-            Biological and low-toxicity options are shown first. Synthetic
-            options, if any, are last-resort only.
+            {t("dialogs.treatmentOptionsDialog.disclaimer")}
           </div>
 
           {loading && (
@@ -249,10 +253,10 @@ export function TreatmentOptionsDialog({
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
               <div>
                 <div className="text-sm font-semibold">
-                  Generating treatment options
+                  {t("dialogs.treatmentOptionsDialog.generating")}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Using a short plant and pest snapshot only.
+                  {t("dialogs.treatmentOptionsDialog.generatingNote")}
                 </div>
               </div>
             </div>
@@ -264,7 +268,7 @@ export function TreatmentOptionsDialog({
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                 <div>
                   <div className="text-sm font-semibold">
-                    Could not load AI treatment options
+                    {t("dialogs.treatmentOptionsDialog.loadFailed")}
                   </div>
                   <div className="text-xs text-red-700/80 mt-1">{error}</div>
                 </div>
@@ -279,7 +283,7 @@ export function TreatmentOptionsDialog({
                   setRetryNonce((value) => value + 1);
                 }}
               >
-                Retry
+                {t("common.retry")}
               </Button>
             </div>
           )}
@@ -294,7 +298,7 @@ export function TreatmentOptionsDialog({
                       {result.summary}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Confidence: {Math.round(result.confidence * 100)}%
+                      {t("dialogs.treatmentOptionsDialog.confidence", { percent: Math.round(result.confidence * 100) })}
                     </div>
                   </div>
                 </div>
@@ -302,8 +306,7 @@ export function TreatmentOptionsDialog({
 
               {result.verifyFirst && (
                 <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
-                  Verify the pest identification before applying stronger
-                  treatments.
+                  {t("dialogs.treatmentOptionsDialog.verifyPest")}
                 </div>
               )}
 
@@ -324,7 +327,7 @@ export function TreatmentOptionsDialog({
                     <span
                       className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${METHOD_BADGES[option.methodType]}`}
                     >
-                      {METHOD_LABELS[option.methodType]}
+                      {t(`dialogs.treatmentOptionsDialog.categoryLabels.${option.methodType}`)}
                     </span>
                   </div>
 
@@ -344,13 +347,12 @@ export function TreatmentOptionsDialog({
 
                   {option.caution && (
                     <div className="mt-3 text-xs text-muted-foreground">
-                      Caution: {option.caution}
+                      {t("dialogs.treatmentOptionsDialog.caution", { text: option.caution })}
                     </div>
                   )}
                   {typeof option.followUpDays === "number" && (
                     <div className="mt-1 text-xs text-muted-foreground">
-                      Recheck in {option.followUpDays} day
-                      {option.followUpDays === 1 ? "" : "s"}.
+                      {t(option.followUpDays === 1 ? "dialogs.treatmentOptionsDialog.recheckIn" : "dialogs.treatmentOptionsDialog.recheckInPlural", { count: option.followUpDays })}
                     </div>
                   )}
 
@@ -360,7 +362,7 @@ export function TreatmentOptionsDialog({
                       size="sm"
                       onClick={() => applySuggestedOption(option)}
                     >
-                      Apply This Treatment
+                      {t("dialogs.treatmentOptionsDialog.applyTreatment")}
                     </Button>
                   </div>
                 </div>
@@ -370,19 +372,17 @@ export function TreatmentOptionsDialog({
 
           {!hasAi && (
             <div className="rounded-xl border border-border/60 bg-white/80 p-4 text-sm text-muted-foreground">
-              AI treatment suggestions are unavailable because AI is not
-              configured. You can still log a custom treatment below.
+              {t("dialogs.treatmentOptionsDialog.noAIConfigured")}
             </div>
           )}
 
           <div className="rounded-xl border border-border/60 bg-white/80 p-4 space-y-3">
             <div>
               <div className="text-sm font-semibold text-foreground">
-                Custom Treatment
+                {t("dialogs.treatmentOptionsDialog.customTreatment")}
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                Always available if you want to record your own treatment
-                choice.
+                {t("dialogs.treatmentOptionsDialog.customTreatmentHint")}
               </div>
             </div>
             <textarea
@@ -393,12 +393,12 @@ export function TreatmentOptionsDialog({
                 );
                 if (customError) setCustomError("");
               }}
-              placeholder="e.g. Added beneficial nematodes and replaced the mulch around affected plants"
+              placeholder={t("dialogs.treatmentOptionsDialog.customPlaceholder")}
               className="w-full min-h-24 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <div className="flex items-center justify-between gap-3">
               <div className="text-xs text-muted-foreground">
-                {customNote.trim().length}/{CUSTOM_NOTE_MAX_LENGTH}
+                {t("dialogs.treatmentOptionsDialog.charCount", { count: customNote.trim().length, max: CUSTOM_NOTE_MAX_LENGTH })}
               </div>
               <Button
                 type="button"
@@ -406,7 +406,7 @@ export function TreatmentOptionsDialog({
                 variant="secondary"
                 onClick={applyCustomOption}
               >
-                Apply Custom Treatment
+                {t("dialogs.treatmentOptionsDialog.applyCustom")}
               </Button>
             </div>
             {customError && (

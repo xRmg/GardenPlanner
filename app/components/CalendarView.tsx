@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -177,6 +178,7 @@ function formatWindow(item: CalendarHarvestItem, locale: string): string {
 }
 
 function DayCounts({ day }: { day: CalendarDayCell }) {
+  const { t } = useTranslation();
   const eventCount = day.events.length;
   const suggestionCount = day.suggestions.length;
   const harvestCount = day.harvests.length;
@@ -190,7 +192,7 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
             PRIORITY_STYLES[day.suggestions[0].priority].count,
           )}
         >
-          {suggestionCount} task{suggestionCount === 1 ? "" : "s"}
+          {t("calendarView.taskCount", { count: suggestionCount })}
         </span>
       )}
       {eventCount > 0 && (
@@ -200,12 +202,12 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
             EVENT_STYLES[day.events[0].type].count,
           )}
         >
-          {eventCount} log{eventCount === 1 ? "" : "s"}
+          {t("calendarView.logCount", { count: eventCount })}
         </span>
       )}
       {harvestCount > 0 && (
         <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-emerald-700">
-          {harvestCount} harvest
+          {t("calendarView.harvestCount", { count: harvestCount })}
         </span>
       )}
     </div>
@@ -213,6 +215,7 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
 }
 
 function DayCell({ day }: { day: CalendarDayCell }) {
+  const { t } = useTranslation();
   const harvestPreview = day.harvests[0];
   const suggestionPreview = day.suggestions[0];
   const eventPreview = day.events[0];
@@ -257,8 +260,8 @@ function DayCell({ day }: { day: CalendarDayCell }) {
             <span className="text-xs">{harvestPreview.plantIcon}</span>
             <span className="truncate">
               {day.harvests.length === 1
-                ? `${harvestPreview.plantName} harvest`
-                : `${day.harvests.length} harvest windows`}
+                ? t("calendarView.harvestSingle", { name: harvestPreview.plantName })
+                : t("calendarView.harvestWindowTitle", { count: day.harvests.length })}
             </span>
           </div>
         </div>
@@ -304,7 +307,7 @@ function DayCell({ day }: { day: CalendarDayCell }) {
 
       {overflowCount > 0 && (
         <p className="mt-auto text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-          +{overflowCount} more
+          {t("calendarView.overflowMore", { count: overflowCount })}
         </p>
       )}
     </div>
@@ -319,6 +322,7 @@ export function CalendarView({
   suggestionsMode,
   suggestionsLoading = false,
 }: CalendarViewProps) {
+  const { t } = useTranslation();
   const locale = settings.locale || "en-US";
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfCalendarMonth(new Date()),
@@ -356,11 +360,10 @@ export function CalendarView({
           <div>
             <h1 className="text-xl font-black text-foreground tracking-tight uppercase flex items-center gap-2">
               <CalendarIcon className="w-5 h-5 text-primary" />
-              Calendar Planner
+              {t("calendarView.title")}
             </h1>
             <p className="text-muted-foreground mt-0.5 text-[10px] uppercase font-bold tracking-wider opacity-60">
-              Navigate month by month to review journal entries, due suggestions,
-              and crop harvest windows.
+              {t("calendarView.subtitle")}
             </p>
           </div>
 
@@ -378,7 +381,7 @@ export function CalendarView({
               )}
               {suggestionsLoading && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-border/20 bg-muted/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Refreshing
+                  <Loader2 className="h-3 w-3 animate-spin" /> {t("calendarView.refreshing")}
                 </span>
               )}
             </div>
@@ -396,11 +399,11 @@ export function CalendarView({
                 }
               >
                 <ChevronLeft className="h-4 w-4" />
-                Prev
+                {t("calendarView.prev")}
               </Button>
               <div className="min-w-44 rounded-xl border border-border/20 bg-card px-4 py-2 text-center">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
-                  Viewing
+                  {t("calendarView.viewing")}
                 </p>
                 <p className="text-sm font-black text-foreground">{monthLabel}</p>
               </div>
@@ -415,7 +418,7 @@ export function CalendarView({
                   )
                 }
               >
-                Next
+                {t("calendarView.next")}
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <Button
@@ -426,7 +429,7 @@ export function CalendarView({
                 onClick={() => setVisibleMonth(startOfCalendarMonth(new Date()))}
                 disabled={model.isCurrentMonth}
               >
-                Today
+                {t("calendarView.today")}
               </Button>
             </div>
           </div>
@@ -434,13 +437,13 @@ export function CalendarView({
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-muted/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-border/20">
-            {model.counts.events} journal
+            {t("calendarView.journalCount", { count: model.counts.events })}
           </span>
           <span className="rounded-full bg-muted/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-border/20">
-            {model.counts.datedSuggestions + model.counts.undatedSuggestions} suggestions
+            {t("calendarView.suggestionsCount", { count: model.counts.datedSuggestions + model.counts.undatedSuggestions })}
           </span>
           <span className="rounded-full bg-muted/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-border/20">
-            {model.counts.harvests} harvest windows
+            {t("calendarView.harvestWindowsCount", { count: model.counts.harvests })}
           </span>
         </div>
 
@@ -448,9 +451,7 @@ export function CalendarView({
           <section className="min-w-0 space-y-3">
             {isQuietMonth && (
               <div className="rounded-2xl border border-dashed border-border/30 bg-muted/20 px-4 py-3 text-sm font-medium text-muted-foreground">
-                This month has no dated activity yet. Use the summary panel for
-                harvest context, and switch back to the current month for
-                unscheduled suggestions.
+                {t("calendarView.quietMonth")}
               </div>
             )}
 
@@ -477,7 +478,7 @@ export function CalendarView({
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
-                  Unscheduled Suggestions
+                  {t("calendarView.unscheduledSuggestions")}
                 </h2>
                 {model.isCurrentMonth && model.undatedSuggestions.length > 0 && (
                   <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground border border-border/50">
@@ -489,14 +490,13 @@ export function CalendarView({
               <div className="mt-3 space-y-2.5">
                 {!model.isCurrentMonth && (
                   <p className="text-sm text-muted-foreground">
-                    Undated suggestions stay pinned to the current month so they
-                    do not get assigned to arbitrary dates in the future or past.
+                    {t("calendarView.undatedNote")}
                   </p>
                 )}
 
                 {model.isCurrentMonth && model.undatedSuggestions.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    All active suggestions already have a specific date.
+                    {t("calendarView.noUndated")}
                   </p>
                 )}
 
@@ -536,7 +536,7 @@ export function CalendarView({
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
                   <Leaf className="h-4 w-4 text-emerald-600" />
-                  Harvest Outlook
+                  {t("calendarView.harvestOutlook")}
                 </h2>
                 {harvestItems.length > 0 && (
                   <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground border border-border/50">
@@ -548,7 +548,7 @@ export function CalendarView({
               <div className="mt-3 space-y-2.5">
                 {harvestItems.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    No planted crops land in a harvest window for this month.
+                    {t("calendarView.harvestEmpty")}
                   </p>
                 )}
 

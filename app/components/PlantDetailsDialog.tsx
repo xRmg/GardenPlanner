@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -44,11 +45,12 @@ function formatDate(dateString: string) {
 
 function formatSunlight(
   sunRequirement: "full" | "partial" | "shade" | undefined,
+  labels: { full: string; partial: string; shade: string; unknown: string },
 ) {
-  if (sunRequirement === "full") return "Full sun";
-  if (sunRequirement === "partial") return "Partial sun";
-  if (sunRequirement === "shade") return "Shade";
-  return "Not recorded";
+  if (sunRequirement === "full") return labels.full;
+  if (sunRequirement === "partial") return labels.partial;
+  if (sunRequirement === "shade") return labels.shade;
+  return labels.unknown;
 }
 
 export function PlantDetailsDialog({
@@ -57,6 +59,7 @@ export function PlantDetailsDialog({
   plantInstance,
   onUpdate,
 }: PlantDetailsDialogProps) {
+  const { t } = useTranslation();
   if (!plantInstance) return null;
 
   const [variety, setVariety] = useState(plantInstance?.variety || "");
@@ -161,7 +164,7 @@ export function PlantDetailsDialog({
             </div>
           </DialogTitle>
           <DialogDescription>
-            View and manage details for this plant
+            {t("dialogs.plantDetailsDialog.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -169,34 +172,34 @@ export function PlantDetailsDialog({
           {/* Plant Description */}
           {mergedPlant.description && (
             <div className="bg-accent/30 rounded-xl p-4 border border-accent">
-              <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-2">Description</h3>
+              <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-2">{t("dialogs.plantDetailsDialog.descriptionSection")}</h3>
               <p className="text-sm text-foreground/80">{mergedPlant.description}</p>
             </div>
           )}
 
           {/* Specific Plant Instance Info */}
           <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
-            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">Your Plant Details</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">{t("dialogs.plantDetailsDialog.yourPlantDetails")}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-start gap-2">
                 <Calendar className="w-4 h-4 mt-0.5 text-primary" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Planted</div>
+                  <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.planted")}</div>
                   <div className="text-sm font-medium">
                     {plantInstance.plantingDate
                       ? formatDate(plantInstance.plantingDate)
-                      : "Not recorded"}
+                      : t("dialogs.plantDetailsDialog.notRecorded")}
                   </div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 mt-0.5 text-green-600" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Expected Harvest</div>
+                  <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.expectedHarvest")}</div>
                   <div className="text-sm font-medium">
                     {plantInstance.harvestDate
                       ? formatDate(plantInstance.harvestDate)
-                      : "Not set"}
+                      : t("dialogs.plantDetailsDialog.notSet")}
                   </div>
                 </div>
               </div>
@@ -204,14 +207,14 @@ export function PlantDetailsDialog({
 
             <div className="mt-4">
               <label htmlFor="variety-input" className="text-xs font-bold text-muted-foreground block mb-1">
-                Variety (optional)
+                {t("dialogs.plantDetailsDialog.varietyOptional")}
               </label>
               <input
                 id="variety-input"
                 type="text"
                 value={variety}
                 onChange={(e) => setVariety(e.target.value)}
-                placeholder="e.g., Cherry, Beefsteak, Roma..."
+                placeholder={t("dialogs.plantDetailsDialog.varietyPlaceholder")}
                 className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
               />
             </div>
@@ -219,53 +222,58 @@ export function PlantDetailsDialog({
 
           {/* Generic Plant Care Information */}
           <div className="bg-muted/20 rounded-xl p-4 border border-white/30">
-            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">Growing Information</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">{t("dialogs.plantDetailsDialog.growingInformation")}</h3>
             <div className="space-y-3">
               <div className="flex items-start gap-2">
                 <Sun className="w-4 h-4 mt-0.5 text-yellow-600" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Sunlight</div>
+                  <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.sunlight")}</div>
                   <div className="text-sm">
-                    {formatSunlight(mergedPlant.sunRequirement)}
+                    {formatSunlight(mergedPlant.sunRequirement, {
+                      full: t("dialogs.plantDetailsDialog.sunFull"),
+                      partial: t("dialogs.plantDetailsDialog.sunPartial"),
+                      shade: t("dialogs.plantDetailsDialog.sunShade"),
+                      unknown: t("dialogs.plantDetailsDialog.notRecorded"),
+                    })}
                   </div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Droplets className="w-4 h-4 mt-0.5 text-blue-600" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Watering</div>
+                  <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.watering")}</div>
                   <div className="text-sm">
-                    {mergedPlant.watering || "Not recorded"}
+                    {mergedPlant.watering || t("dialogs.plantDetailsDialog.notRecorded")}
                   </div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Ruler className="w-4 h-4 mt-0.5 text-gray-600" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Spacing</div>
+                  <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.spacing")}</div>
                   <div className="text-sm">
                     {mergedPlant.spacingCm
-                      ? `${mergedPlant.spacingCm} cm minimum between plants`
-                      : "Not recorded"}
+                      ? t("dialogs.plantDetailsDialog.spacingValue", { count: mergedPlant.spacingCm })
+                      : t("dialogs.plantDetailsDialog.notRecorded")}
                   </div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 mt-0.5 text-green-600" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Days to Harvest</div>
+                  <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.daysToHarvest")}</div>
                   <div className="text-sm">
                     {mergedPlant.daysToHarvest
-                      ? `${mergedPlant.daysToHarvest} days`
-                      : "Not recorded"}
+                      ? t("dialogs.plantDetailsDialog.daysToHarvestValue", { count: mergedPlant.daysToHarvest })
+                      : t("dialogs.plantDetailsDialog.notRecorded")}
                   </div>
                 </div>
               </div>
             </div>
             <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
-              <div className="text-xs font-bold text-muted-foreground mb-1">💡 Growing Tips</div>
+              <div className="text-xs font-bold text-muted-foreground mb-1">{t("dialogs.plantDetailsDialog.growingTips")}</div>
               <div className="text-sm">
-                {mergedPlant.growingTips || "No specific tips recorded yet."}
+                {mergedPlant.growingTips || t("dialogs.plantDetailsDialog.noTips")}
               </div>
             </div>
           </div>
@@ -274,7 +282,7 @@ export function PlantDetailsDialog({
           <div className="bg-muted/20 rounded-xl p-4 border border-white/30">
             <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3 flex items-center gap-2">
               <Bug className="w-4 h-4" />
-              Pest &amp; Treatment Log
+              {t("dialogs.plantDetailsDialog.pestLog")}
             </h3>
 
             {/* Add new event */}
@@ -287,14 +295,14 @@ export function PlantDetailsDialog({
                   }
                   className="bg-white/50 border border-border/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                 >
-                  <option value="pest">🐛 Pest Spotted</option>
-                  <option value="treatment">💊 Treatment Applied</option>
+                  <option value="pest">{t("dialogs.plantDetailsDialog.pestSpotted")}</option>
+                  <option value="treatment">{t("dialogs.plantDetailsDialog.treatmentApplied")}</option>
                 </select>
                 <input
                   type="text"
                   value={newEventDescription}
                   onChange={(e) => setNewEventDescription(e.target.value)}
-                  placeholder="Describe what happened..."
+                  placeholder={t("dialogs.plantDetailsDialog.eventPlaceholder")}
                   className="flex-1 bg-white/50 border border-border/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleAddEvent();
@@ -303,7 +311,7 @@ export function PlantDetailsDialog({
                 <button
                   onClick={handleAddEvent}
                   className="px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                  aria-label="Add event"
+                  aria-label={t("dialogs.plantDetailsDialog.addEvent")}
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -314,7 +322,7 @@ export function PlantDetailsDialog({
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {sortedPestEvents.length === 0 ? (
                 <div className="text-center text-muted-foreground/40 py-4 text-sm">
-                  No pest or treatment events logged yet
+                  {t("dialogs.plantDetailsDialog.noEvents")}
                 </div>
               ) : (
                 sortedPestEvents.map((event) => (
@@ -351,13 +359,13 @@ export function PlantDetailsDialog({
               onClick={() => onOpenChange(false)}
               className="px-4 py-2 border border-border rounded-lg hover:bg-muted/40 transition-colors text-sm font-bold"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               onClick={handleSave}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-bold shadow-md shadow-primary/20"
             >
-              Save Changes
+              {t("dialogs.plantDetailsDialog.saveChanges")}
             </button>
           </div>
         </div>
