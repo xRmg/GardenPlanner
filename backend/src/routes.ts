@@ -1,7 +1,24 @@
 import { Router, Request, Response } from "express";
+import { z } from "zod";
 import { getDb } from "./db.js";
 
 const router = Router();
+
+// ---------------------------------------------------------------------------
+// Validation schemas
+// ---------------------------------------------------------------------------
+
+const ChatMessageSchema = z.object({
+  role: z.enum(["system", "user", "assistant"]),
+  content: z.string().min(1).max(32_000),
+});
+
+const AiChatRequestSchema = z.object({
+  messages: z.array(ChatMessageSchema).min(1).max(50),
+  model: z.string().max(200).optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().int().min(1).max(32_768).optional(),
+});
 
 /**
  * API route types matching frontend expectations
@@ -396,6 +413,16 @@ router.post("/ai/chat", async (req: Request, res: Response) => {
   console.log(`[AI Proxy] Incoming request at ${new Date().toISOString()}`);
 
   try {
+    // ── Validate request body ─────────────────────────────────────────────
+    const parseResult = AiChatRequestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      const issues = parseResult.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+      console.error(`[AI Proxy] ✗ Invalid request body: ${issues}`);
+      res.status(400).json({ error: `Invalid request: ${issues}` });
+      return;
+    }
+    const { messages, model, temperature = 0.3, maxTokens = 1024 } = parseResult.data;
+
     const db = getDb();
 
     // Read API key and model from settings DB — key never leaves the server
@@ -413,13 +440,12 @@ router.post("/ai/chat", async (req: Request, res: Response) => {
       settingsRow.aiProvider || '{"type":"none"}',
     ) as
       | { type: "none" }
-      | { type: "server" }
-      | { type: "byok"; key: string }
-      | { type: "proxy"; proxyUrl: string; token?: string };
+      | { type: "byok"; key: string };
 
     console.log(`[AI Proxy] AI provider type: ${aiProvider.type}`);
 
-    // Accept both "byok" (legacy stored key) and "server" (new default) as long as a key exists in the DB
+    // The DB always stores keys with type "byok". Any other type means AI
+    // has not been configured — return a 400 so the frontend can inform the user.
     const apiKey = aiProvider.type === "byok" ? aiProvider.key : null;
     if (!apiKey) {
       console.error(
@@ -435,17 +461,6 @@ router.post("/ai/chat", async (req: Request, res: Response) => {
     }
 
     const dbModel = settingsRow.aiModel || "google/gemini-2.0-flash";
-    const {
-      messages,
-      model,
-      temperature = 0.3,
-      maxTokens = 1024,
-    } = req.body as {
-      messages: Array<{ role: string; content: string }>;
-      model?: string;
-      temperature?: number;
-      maxTokens?: number;
-    };
 
     const resolvedModel = model || dbModel;
 
