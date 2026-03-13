@@ -131,7 +131,6 @@ export function PlantDialog({
   const { t } = useTranslation();
   const monthLabels = useMemo(
     () => Array.from({ length: 12 }, (_, i) => formatMonthNarrow(i + 1)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [i18n.language],
   );
   const [name, setName] = useState(initialPlant?.name || "");
