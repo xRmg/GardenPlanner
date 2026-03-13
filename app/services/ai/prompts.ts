@@ -17,6 +17,8 @@ export interface PlantAIResponse {
   daysToHarvest: number;
   spacingCm: number;
   sunRequirement: "full" | "partial" | "shade";
+  watering?: string;
+  growingTips?: string;
   sowIndoorMonths: number[];
   sowDirectMonths: number[];
   harvestMonths: number[];
@@ -32,6 +34,8 @@ export interface PlantAIResponse {
     daysToHarvest: number;
     spacingCm: number;
     sunRequirement: number;
+    watering: number;
+    growingTips: number;
     sowIndoorMonths: number;
     sowDirectMonths: number;
     harvestMonths: number;
@@ -69,6 +73,8 @@ Rules:
 - companions and antagonists are lowercase plant names
 - daysToHarvest is from transplant/direct sow to first harvest
 - sunRequirement is one of: "full", "partial", "shade"
+- watering should be a short practical watering note focused on frequency or soil moisture
+- growingTips should be 1-2 concise practical sentences
 - description should be 1-2 practical growing sentences, not marketing copy
 - icon and color are optional convenience fields; only include them when confidence is high
 - Include a confidence object with a score (0-1) for each AI-managed field
@@ -82,6 +88,8 @@ Return ONLY valid JSON with EXACTLY these field names:
   "daysToHarvest": number,
   "spacingCm": number,
   "sunRequirement": "full" | "partial" | "shade",
+  "watering": string,
+  "growingTips": string,
   "sowIndoorMonths": number[],
   "sowDirectMonths": number[],
   "harvestMonths": number[],
@@ -95,6 +103,8 @@ Return ONLY valid JSON with EXACTLY these field names:
     "daysToHarvest": number,
     "spacingCm": number,
     "sunRequirement": number,
+    "watering": number,
+    "growingTips": number,
     "sowIndoorMonths": number,
     "sowDirectMonths": number,
     "harvestMonths": number,
@@ -117,6 +127,8 @@ export const PLANT_LOOKUP_SCHEMA = {
     daysToHarvest: { type: "number" },
     spacingCm: { type: "number" },
     sunRequirement: { type: "string", enum: ["full", "partial", "shade"] },
+    watering: { type: "string", maxLength: 160 },
+    growingTips: { type: "string", maxLength: 240 },
     sowIndoorMonths: {
       type: "array",
       items: { type: "number", minimum: 1, maximum: 12 },
@@ -141,6 +153,8 @@ export const PLANT_LOOKUP_SCHEMA = {
         daysToHarvest: { type: "number" },
         spacingCm: { type: "number" },
         sunRequirement: { type: "number" },
+        watering: { type: "number" },
+        growingTips: { type: "number" },
         sowIndoorMonths: { type: "number" },
         sowDirectMonths: { type: "number" },
         harvestMonths: { type: "number" },
@@ -158,6 +172,8 @@ export const PLANT_LOOKUP_SCHEMA = {
     "daysToHarvest",
     "spacingCm",
     "sunRequirement",
+    "watering",
+    "growingTips",
     "sowIndoorMonths",
     "sowDirectMonths",
     "harvestMonths",

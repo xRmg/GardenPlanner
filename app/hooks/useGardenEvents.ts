@@ -34,6 +34,7 @@ export interface GardenEventsState {
   ) => void;
   handlePlantUpdated: (
     plantInstance: PlantInstance,
+    previousPlantInstance: PlantInstance | null,
     planterId: string,
   ) => void;
   handleCompleteSuggestion: (suggestion: Suggestion) => void;
@@ -89,10 +90,36 @@ export function useGardenEvents({
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handlePlantUpdated = (
-    _plantInstance: PlantInstance,
-    _planterId: string,
+    plantInstance: PlantInstance,
+    previousPlantInstance: PlantInstance | null,
+    planterId: string,
   ) => {
-    // No-op: suggestion updates are handled by the rules engine in useSuggestions
+    const previousEventIds = new Set(
+      (previousPlantInstance?.pestEvents ?? []).map((event) => event.id),
+    );
+    const addedPestEvents = (plantInstance.pestEvents ?? []).filter(
+      (event) => !previousEventIds.has(event.id),
+    );
+
+    if (addedPestEvents.length === 0) return;
+
+    const journalEntries: GardenEvent[] = addedPestEvents.map((event) => ({
+      id: `${event.type}-${event.id}`,
+      type: event.type,
+      plant: plantInstance.plant,
+      date: event.date,
+      gardenId: planterId,
+      note: event.description,
+    }));
+
+    setEvents((prev) => [...journalEntries, ...prev]);
+    void Promise.all(
+      journalEntries.map((entry) =>
+        repositoryRef.current.saveEvent(entry as unknown as SchemaGardenEvent),
+      ),
+    ).catch((error) =>
+      console.error("[Events] Failed to save pest journal entries:", error),
+    );
   };
 
   const handleCompleteSuggestion = (suggestion: Suggestion) => {
@@ -102,6 +129,8 @@ export function useGardenEvents({
         ? "watered"
         : suggestion.type === "harvest"
           ? "harvested"
+          : suggestion.type === "treatment"
+            ? "treatment"
           : suggestion.type === "fertilize" || suggestion.type === "compost"
             ? "composted"
             : suggestion.type === "weed"
@@ -116,6 +145,8 @@ export function useGardenEvents({
       plant: suggestion.plant,
       date: new Date().toISOString(),
       gardenId: suggestion.planterId,
+      note:
+        suggestion.type === "treatment" ? suggestion.description : undefined,
     };
     setEvents((prev) => [completedEvent, ...prev]);
     void repositoryRef.current.saveEvent(

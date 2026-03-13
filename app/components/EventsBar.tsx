@@ -11,11 +11,13 @@ import {
   Sun,
   Snowflake,
   Bug,
+  Sparkles,
   Loader2,
   CloudRain,
 } from "lucide-react";
 import { Plant } from "./PlanterGrid";
 import type { SuggestionMode } from "../data/schema";
+import { Button } from "./ui/button";
 
 export interface GardenEvent {
   id: string;
@@ -27,7 +29,9 @@ export interface GardenEvent {
     | "harvested"
     | "sown"
     | "sprouted"
-    | "removed";
+    | "removed"
+    | "pest"
+    | "treatment";
   plant?: Plant;
   date: string;
   gardenId?: string;
@@ -44,6 +48,7 @@ export interface Suggestion {
     | "weed"
     | "sow"
     | "fertilize"
+    | "treatment"
     | "no_water"
     | "frost_protect"
     | "thin_seedlings"
@@ -60,6 +65,7 @@ export interface Suggestion {
   description: string;
   dueDate?: string;
   planterId?: string;
+  instanceId?: string;
   expiresAt?: string;
   source?: "rules" | "ai" | "static";
 }
@@ -74,6 +80,7 @@ interface EventsBarProps {
     areaName: string;
   }>;
   onCompleteSuggestion?: (suggestion: Suggestion) => void;
+  onOpenTreatmentSuggestion?: (suggestion: Suggestion) => void;
   suggestionsMode?: SuggestionMode;
   suggestionsLoading?: boolean;
 }
@@ -87,6 +94,8 @@ const eventIcons = {
   sown: { icon: Sprout, color: "text-blue-400" },
   sprouted: { icon: Sprout, color: "text-emerald-400" },
   removed: { icon: Trash2, color: "text-red-600" },
+  pest: { icon: Bug, color: "text-red-600" },
+  treatment: { icon: Sparkles, color: "text-emerald-600" },
 };
 
 const suggestionIcons: Record<string, { icon: React.ElementType; color: string }> = {
@@ -97,6 +106,7 @@ const suggestionIcons: Record<string, { icon: React.ElementType; color: string }
   weed: { icon: Scissors, color: "text-orange-600" },
   sow: { icon: Sprout, color: "text-emerald-600" },
   fertilize: { icon: Package, color: "text-yellow-600" },
+  treatment: { icon: Sparkles, color: "text-emerald-600" },
   no_water: { icon: CloudRain, color: "text-sky-500" },
   frost_protect: { icon: Snowflake, color: "text-cyan-600" },
   thin_seedlings: { icon: Sprout, color: "text-lime-600" },
@@ -136,6 +146,7 @@ export function EventsBar({
   suggestions,
   harvestAlerts = [],
   onCompleteSuggestion,
+  onOpenTreatmentSuggestion,
   suggestionsMode,
   suggestionsLoading = false,
 }: EventsBarProps) {
@@ -149,6 +160,7 @@ export function EventsBar({
     plant?: GardenEvent["plant"];
     date: string; // most recent in group
     count: number;
+    note?: string;
     key: string;
   };
 
@@ -159,7 +171,8 @@ export function EventsBar({
       last?.plant?.id !== undefined
         ? last.plant.id === event.plant?.id
         : last?.plant === undefined && event.plant === undefined;
-    if (last && sameType && samePlant) {
+    const sameNote = last?.note === event.note;
+    if (last && sameType && samePlant && sameNote) {
       last.count += 1;
     } else {
       acc.push({
@@ -167,6 +180,7 @@ export function EventsBar({
         plant: event.plant,
         date: event.date,
         count: 1,
+        note: event.note,
         key: event.id,
       });
     }
@@ -361,13 +375,25 @@ export function EventsBar({
                           </div>
                         )}
                       </div>
-                      <button
-                        onClick={() => onCompleteSuggestion?.(suggestion)}
-                        className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 transition-all mt-0.5"
-                        title="Mark done"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
+                      {suggestion.type === "treatment" ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="mt-0.5 h-7 rounded-lg px-2.5 text-[10px] font-black uppercase tracking-wider"
+                          onClick={() => onOpenTreatmentSuggestion?.(suggestion)}
+                        >
+                          Options
+                        </Button>
+                      ) : (
+                        <button
+                          onClick={() => onCompleteSuggestion?.(suggestion)}
+                          className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 transition-all mt-0.5"
+                          title="Mark done"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -412,6 +438,11 @@ export function EventsBar({
                       </span>
                       {group.plant && ` ${group.plant.name}`}
                     </p>
+                    {group.note && (
+                      <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">
+                        {group.note}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 mt-0">
                       <span className="text-[8px] font-medium text-muted-foreground/40">
                         {formatEventDate(group.date)}

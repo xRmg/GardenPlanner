@@ -22,7 +22,7 @@ interface PlantDialogProps {
   onSave: (plant: Plant) => void;
   initialPlant?: Plant;
   defaultIsSeed?: boolean;
-  /** When provided, the "Ask AI ✨" button is shown for BYOK providers. */
+  /** When provided, the "Ask AI ✨" button is shown for server-configured AI. */
   settings?: Settings;
 }
 
@@ -130,6 +130,10 @@ export function PlantDialog({
   const [frostHardy, setFrostHardy] = useState(
     initialPlant?.frostHardy ?? false,
   );
+  const [watering, setWatering] = useState(initialPlant?.watering || "");
+  const [growingTips, setGrowingTips] = useState(
+    initialPlant?.growingTips || "",
+  );
   const [sowIndoorMonths, setSowIndoorMonths] = useState<number[]>(
     initialPlant?.sowIndoorMonths || [],
   );
@@ -177,6 +181,8 @@ export function PlantDialog({
       setAmount(initialPlant?.amount ?? 10);
       setSpacingCm(initialPlant?.spacingCm || 30);
       setFrostHardy(initialPlant?.frostHardy ?? false);
+      setWatering(initialPlant?.watering || "");
+      setGrowingTips(initialPlant?.growingTips || "");
       setSowIndoorMonths(initialPlant?.sowIndoorMonths || []);
       setSowDirectMonths(initialPlant?.sowDirectMonths || []);
       setHarvestMonths(initialPlant?.harvestMonths || []);
@@ -202,6 +208,10 @@ export function PlantDialog({
       setSpacingCm(aiResult.spacingCm);
     if (!overrides.has("sunRequirement") && aiResult.sunRequirement)
       setSunRequirement(aiResult.sunRequirement);
+    if (!overrides.has("watering") && aiResult.watering)
+      setWatering(aiResult.watering);
+    if (!overrides.has("growingTips") && aiResult.growingTips)
+      setGrowingTips(aiResult.growingTips);
     if (!overrides.has("sowIndoorMonths"))
       setSowIndoorMonths(aiResult.sowIndoorMonths ?? []);
     if (!overrides.has("sowDirectMonths"))
@@ -245,6 +255,8 @@ export function PlantDialog({
     infiniteStock,
     spacingCm,
     frostHardy,
+    watering,
+    growingTips,
     sowIndoorMonths,
     sowDirectMonths,
     harvestMonths,
@@ -281,10 +293,17 @@ export function PlantDialog({
       amount: infiniteStock ? undefined : amount,
       spacingCm,
       frostHardy,
+      watering: watering.trim() || undefined,
+      growingTips: growingTips.trim() || undefined,
       sowIndoorMonths: sowIndoorMonths.length ? sowIndoorMonths : undefined,
       sowDirectMonths: sowDirectMonths.length ? sowDirectMonths : undefined,
       harvestMonths: harvestMonths.length ? harvestMonths : undefined,
       sunRequirement,
+      source: initialPlant
+        ? initialPlant.source === "bundled"
+          ? "custom"
+          : (initialPlant.source ?? "custom")
+        : "custom",
       companions: splitTrimmed(companions).length
         ? splitTrimmed(companions)
         : undefined,
@@ -582,7 +601,7 @@ export function PlantDialog({
           {/* Sun Requirement */}
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Sun Requirement
+              Sunlight
               <ConfidenceBadge confidence={confidence?.sunRequirement} />
             </label>
             <div className="flex gap-2">
@@ -608,6 +627,38 @@ export function PlantDialog({
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              Watering
+              <ConfidenceBadge confidence={confidence?.watering} />
+            </label>
+            <textarea
+              value={watering}
+              onChange={(e) => {
+                setWatering(e.target.value);
+                markOverride("watering");
+              }}
+              placeholder="e.g., Water deeply once or twice a week and keep soil evenly moist"
+              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-[72px] text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              Growing Tips
+              <ConfidenceBadge confidence={confidence?.growingTips} />
+            </label>
+            <textarea
+              value={growingTips}
+              onChange={(e) => {
+                setGrowingTips(e.target.value);
+                markOverride("growingTips");
+              }}
+              placeholder="Add practical care notes, pruning guidance, or harvest timing cues"
+              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-[96px] text-sm"
+            />
           </div>
 
           {/* Sow Indoors */}
@@ -758,7 +809,7 @@ export function PlantDialog({
                 markOverride("description");
               }}
               placeholder="Tell us about this plant..."
-              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-[80px] text-sm"
+              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-20 text-sm"
             />
           </div>
         </div>

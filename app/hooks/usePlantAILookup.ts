@@ -273,6 +273,12 @@ function filterLowConfidenceFields(result: PlantAIResponse): PlantAIResponse {
   const c = result.confidence;
   return {
     ...result,
+    watering:
+      (c.watering ?? 1) >= CONFIDENCE.REJECT ? result.watering : undefined,
+    growingTips:
+      (c.growingTips ?? 1) >= CONFIDENCE.REJECT
+        ? result.growingTips
+        : undefined,
     sowIndoorMonths:
       (c.sowIndoorMonths ?? 1) >= CONFIDENCE.REJECT
         ? result.sowIndoorMonths

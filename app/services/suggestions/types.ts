@@ -19,6 +19,12 @@ export interface PlacedPlant {
   plant: Plant;
   plantingDate?: string;
   harvestDate?: string;
+  pestEvents: Array<{
+    id: string;
+    date: string;
+    type: "pest" | "treatment";
+    description: string;
+  }>;
   planterId: string;
   planterName: string;
   areaId: string;
@@ -62,6 +68,7 @@ export interface SuggestionResult {
   type: SuggestionType;
   plant?: Plant;
   planterId?: string;
+  instanceId?: string;
   priority: Priority;
   description: string;
   /** ISO datetime. */
@@ -76,6 +83,7 @@ export interface AISuggestionResult {
   type: SuggestionType;
   plant?: Plant;
   planterId?: string;
+  instanceId?: string;
   priority: Priority;
   description: string;
   dueDate?: string;

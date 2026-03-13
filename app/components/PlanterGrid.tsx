@@ -31,12 +31,16 @@ export interface Plant {
   amount?: number;
   spacingCm?: number;
   frostHardy?: boolean;
+  frostSensitive?: boolean;
+  watering?: string;
+  growingTips?: string;
   companions?: string[];
   antagonists?: string[];
   sowIndoorMonths?: number[];
   sowDirectMonths?: number[];
   harvestMonths?: number[];
   sunRequirement?: "full" | "partial" | "shade";
+  source?: "bundled" | "synced" | "custom";
 }
 
 export interface PlantInstance {
@@ -70,7 +74,11 @@ interface PlanterGridProps {
   getAvailableStock?: (plantId: string) => number;
   onPlantAdded?: (plantInstance: PlantInstance, planterId: string) => void;
   onPlantRemoved?: (plantInstance: PlantInstance, planterId: string, eventType?: "harvested" | "removed") => void;
-  onPlantUpdated?: (plantInstance: PlantInstance, planterId: string) => void;
+  onPlantUpdated?: (
+    plantInstance: PlantInstance,
+    previousPlantInstance: PlantInstance | null,
+    planterId: string,
+  ) => void;
   onSquaresChange?: (squares: PlanterSquare[][], planterId: string) => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -230,6 +238,12 @@ export function PlanterGrid({
   };
 
   const handleUpdatePlant = (updatedInstance: PlantInstance) => {
+    const previousPlantInstance = squares
+      .flat()
+      .find(
+        (square) =>
+          square.plantInstance?.instanceId === updatedInstance.instanceId,
+      )?.plantInstance;
     const newSquares = squares.map((row) =>
       row.map((square) => {
         if (square.plantInstance?.instanceId === updatedInstance.instanceId) {
@@ -241,7 +255,7 @@ export function PlanterGrid({
     setSquares(newSquares);
     onSquaresChange?.(newSquares, id);
     if (onPlantUpdated) {
-      onPlantUpdated(updatedInstance, id);
+      onPlantUpdated(updatedInstance, previousPlantInstance ?? null, id);
     }
   };
 

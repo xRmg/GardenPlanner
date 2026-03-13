@@ -33,6 +33,7 @@ function ruleResultToSuggestion(result: SuggestionResult): Suggestion {
     type: result.type,
     plant: result.plant,
     planterId: result.planterId,
+    instanceId: result.instanceId,
     priority: result.priority,
     description: result.description,
     dueDate: result.dueDate,
@@ -47,6 +48,7 @@ function aiResultToSuggestion(result: AISuggestionResult, index: number): Sugges
     type: result.type,
     plant: result.plant,
     planterId: result.planterId,
+    instanceId: result.instanceId,
     priority: result.priority,
     description: result.description,
     dueDate: result.dueDate,
@@ -59,7 +61,7 @@ function aiResultToSuggestion(result: AISuggestionResult, index: number): Sugges
 // ---------------------------------------------------------------------------
 
 function dedupeKey(s: Suggestion): string {
-  return `${s.type}:${s.planterId ?? "global"}:${s.plant?.name ?? "no-plant"}`;
+  return `${s.type}:${s.planterId ?? "global"}:${s.instanceId ?? "global"}:${s.plant?.name ?? "no-plant"}`;
 }
 
 // ---------------------------------------------------------------------------

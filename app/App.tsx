@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { PlanterGrid, PlantInstance } from "./components/PlanterGrid";
-import { EventsBar } from "./components/EventsBar";
+import {
+  EventsBar,
+  type Suggestion as SidebarSuggestion,
+} from "./components/EventsBar";
+import {
+  TreatmentOptionsDialog,
+  type TreatmentSuggestionTarget,
+} from "./components/TreatmentOptionsDialog";
 import { ToolBar } from "./components/ToolBar";
 import { PlanterDialog } from "./components/PlanterDialog";
 import { PlantDialog } from "./components/PlantDefinitionDialog";
@@ -34,6 +41,7 @@ import { usePlantCatalog } from "./hooks/usePlantCatalog";
 import { useSeedlingManager } from "./hooks/useSeedlingManager";
 import { useGardenEvents } from "./hooks/useGardenEvents";
 import { useSuggestions } from "./hooks/useSuggestions";
+import type { PestEvent } from "./data/schema";
 
 const MONTH_ABBR = [
   "Jan",
@@ -81,6 +89,9 @@ export default function App() {
   const [selectedPlant, setSelectedPlant] = useState<
     PlantInstance["plant"] | null
   >(null);
+  const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false);
+  const [treatmentTarget, setTreatmentTarget] =
+    useState<TreatmentSuggestionTarget | null>(null);
 
   // ── Settings sub-hooks ────────────────────────────────────────────────────
   const {
@@ -188,6 +199,140 @@ export default function App() {
   });
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
+
+  const getLatestTreatmentContext = (pestEvents: PestEvent[]) => {
+    const sorted = [...pestEvents].sort(
+      (left, right) =>
+        new Date(right.date).getTime() - new Date(left.date).getTime(),
+    );
+
+    const latestPest = sorted.find((event) => event.type === "pest");
+    const latestTreatment = sorted.find((event) => event.type === "treatment");
+
+    return { latestPest, latestTreatment };
+  };
+
+  const resolveTreatmentTarget = (
+    suggestion: SidebarSuggestion,
+  ): TreatmentSuggestionTarget | null => {
+    for (const area of areas) {
+      for (const planter of area.planters) {
+        if (suggestion.planterId && planter.id !== suggestion.planterId) continue;
+
+        for (const row of planter.squares ?? []) {
+          for (const square of row) {
+            const plantInstance = square.plantInstance;
+            if (!plantInstance) continue;
+
+            const matchesInstance = suggestion.instanceId
+              ? plantInstance.instanceId === suggestion.instanceId
+              : suggestion.plant
+                ? plantInstance.plant.id === suggestion.plant.id
+                : false;
+
+            if (!matchesInstance) continue;
+
+            const { latestPest, latestTreatment } = getLatestTreatmentContext(
+              plantInstance.pestEvents ?? [],
+            );
+
+            if (!latestPest) continue;
+            if (
+              latestTreatment &&
+              new Date(latestTreatment.date).getTime() >=
+                new Date(latestPest.date).getTime()
+            ) {
+              continue;
+            }
+
+            return {
+              suggestion,
+              plantInstance,
+              planterId: planter.id,
+              planterName: planter.name,
+              areaName: area.name,
+              latestPest,
+              latestTreatment,
+            };
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const handleOpenTreatmentSuggestion = (suggestion: SidebarSuggestion) => {
+    const resolvedTarget = resolveTreatmentTarget(suggestion);
+    if (!resolvedTarget) return;
+    setTreatmentTarget(resolvedTarget);
+    setTreatmentDialogOpen(true);
+  };
+
+  const handleApplyTreatment = (note: string) => {
+    if (!treatmentTarget) return;
+
+    const trimmedNote = note.trim();
+    if (!trimmedNote) return;
+
+    const newTreatmentEvent: PestEvent = {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString(),
+      type: "treatment",
+      description: trimmedNote,
+    };
+
+    let previousPlantInstance: PlantInstance | null = null;
+    let updatedPlantInstance: PlantInstance | null = null;
+
+    const nextAreas = areas.map((area) => ({
+      ...area,
+      planters: area.planters.map((planter) => {
+        if (planter.id !== treatmentTarget.planterId) return planter;
+
+        return {
+          ...planter,
+          squares: planter.squares?.map((row) =>
+            row.map((square) => {
+              if (
+                square.plantInstance?.instanceId !==
+                treatmentTarget.plantInstance.instanceId
+              ) {
+                return square;
+              }
+
+              previousPlantInstance = square.plantInstance;
+              updatedPlantInstance = {
+                ...square.plantInstance,
+                pestEvents: [
+                  ...(square.plantInstance.pestEvents ?? []),
+                  newTreatmentEvent,
+                ],
+              };
+
+              return {
+                ...square,
+                plantInstance: updatedPlantInstance,
+              };
+            }),
+          ),
+        };
+      }),
+    }));
+
+    setAreas(nextAreas);
+
+    if (updatedPlantInstance && previousPlantInstance) {
+      handlePlantUpdated(
+        updatedPlantInstance,
+        previousPlantInstance,
+        treatmentTarget.planterId,
+      );
+    }
+
+    setTreatmentDialogOpen(false);
+    setTreatmentTarget(null);
+  };
 
   return (
     <div className="size-full flex flex-col bg-background relative overflow-hidden">
@@ -1261,6 +1406,7 @@ export default function App() {
             }
             harvestAlerts={harvestAlerts}
             onCompleteSuggestion={handleCompleteSuggestion}
+            onOpenTreatmentSuggestion={handleOpenTreatmentSuggestion}
             suggestionsMode={suggestionsMode}
             suggestionsLoading={suggestionsLoading}
           />
@@ -1323,6 +1469,17 @@ export default function App() {
         onOpenChange={setShowAddSeedlingModal}
         plants={AVAILABLE_PLANTS}
         onAdd={handleAddSeedling}
+      />
+
+      <TreatmentOptionsDialog
+        open={treatmentDialogOpen}
+        onOpenChange={(open) => {
+          setTreatmentDialogOpen(open);
+          if (!open) setTreatmentTarget(null);
+        }}
+        target={treatmentTarget}
+        settings={settings}
+        onApplyTreatment={handleApplyTreatment}
       />
     </div>
   );

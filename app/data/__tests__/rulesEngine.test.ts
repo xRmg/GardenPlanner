@@ -35,6 +35,7 @@ function makePlacedPlant(overrides: Partial<PlacedPlant> = {}): PlacedPlant {
   return {
     instanceId: "inst-1",
     plant: makePlant(),
+    pestEvents: [],
     planterId: "planter-1",
     planterName: "Raised Bed A",
     areaId: "area-1",
@@ -511,6 +512,65 @@ describe("frost protection rule", () => {
     const results = runRules(ctx);
     const frostResult = results.find((r) => r.type === "frost_protect");
     expect(frostResult).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Treatment rule
+// ---------------------------------------------------------------------------
+
+describe("treatment rule", () => {
+  it("creates a next-step treatment suggestion for an unresolved pest note", () => {
+    const placed = makePlacedPlant({
+      plant: makePlant({ id: "strawberry", name: "Strawberry" }),
+      pestEvents: [
+        {
+          id: "pest-1",
+          date: "2026-05-14T09:00:00.000Z",
+          type: "pest",
+          description: "cabbage fly",
+        },
+      ],
+    });
+
+    const ctx = makeContext({
+      today: new Date("2026-05-15T00:00:00.000Z"),
+      placedPlants: [placed],
+    });
+
+    const results = runRules(ctx);
+    const treatmentResult = results.find((r) => r.type === "treatment");
+    expect(treatmentResult).toBeTruthy();
+    expect(treatmentResult?.plant?.name).toBe("Strawberry");
+    expect(treatmentResult?.priority).toBe("high");
+  });
+
+  it("does not create a treatment suggestion when a later treatment note exists", () => {
+    const placed = makePlacedPlant({
+      pestEvents: [
+        {
+          id: "pest-1",
+          date: "2026-05-10T09:00:00.000Z",
+          type: "pest",
+          description: "aphids",
+        },
+        {
+          id: "treatment-1",
+          date: "2026-05-12T09:00:00.000Z",
+          type: "treatment",
+          description: "sprayed with soap",
+        },
+      ],
+    });
+
+    const ctx = makeContext({
+      today: new Date("2026-05-15T00:00:00.000Z"),
+      placedPlants: [placed],
+    });
+
+    const results = runRules(ctx);
+    const treatmentResult = results.find((r) => r.type === "treatment");
+    expect(treatmentResult).toBeUndefined();
   });
 });
 

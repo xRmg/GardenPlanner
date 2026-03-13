@@ -43,6 +43,7 @@ export function initializeSchema(): void {
       name TEXT NOT NULL,
       color TEXT NOT NULL,
       icon TEXT NOT NULL,
+      latinName TEXT,
       description TEXT,
       variety TEXT,
       daysToHarvest INTEGER,
@@ -50,6 +51,9 @@ export function initializeSchema(): void {
       amount INTEGER DEFAULT 0,
       spacingCm REAL,
       frostHardy INTEGER,
+      frostSensitive INTEGER,
+      watering TEXT,
+      growingTips TEXT,
       companions TEXT DEFAULT '[]',
       antagonists TEXT DEFAULT '[]',
       sowIndoorMonths TEXT DEFAULT '[]',
@@ -61,6 +65,11 @@ export function initializeSchema(): void {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  ensureColumn("plants", "latinName", "TEXT");
+  ensureColumn("plants", "frostSensitive", "INTEGER");
+  ensureColumn("plants", "watering", "TEXT");
+  ensureColumn("plants", "growingTips", "TEXT");
 
   // Areas table
   db.exec(`

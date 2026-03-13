@@ -12,6 +12,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createServerRepository } from "../data/serverRepository";
 import { migrateLocalStorageToDexie } from "../data/migration";
+import { BUNDLED_PLANTS } from "../data/bundledPlants";
 import { parseWithDefaults, SettingsSchema } from "../data/schema";
 import type {
   Settings,
@@ -23,6 +24,7 @@ import type { GardenRepository } from "../data/repository";
 import type { Area, Seedling } from "../types";
 import type { Plant } from "../components/PlanterGrid";
 import type { GardenEvent } from "../components/EventsBar";
+import { getPlantCache } from "../services/ai/plantCache";
 
 export interface GardenDataState {
   /** Non-null when the database failed to open. Data will not persist. */
@@ -95,11 +97,23 @@ export function useGardenData(): GardenDataState {
           repo.getSettings(),
           repo.getEvents(),
         ]);
+
+        let nextPlants = loadedPlants;
+        if (loadedPlants.length === 0) {
+          console.info(
+            `[DB] Plant catalogue empty; seeding ${BUNDLED_PLANTS.length} bundled plants`,
+          );
+          await Promise.all(BUNDLED_PLANTS.map((plant) => repo.savePlant(plant)));
+          nextPlants = BUNDLED_PLANTS;
+        }
+
+        getPlantCache().seedFromPlants(nextPlants);
+
         console.info(
-          `[DB] Loaded: ${loadedAreas.length} areas, ${loadedPlants.length} plants, ${loadedSeedlings.length} seedlings, ${loadedEvents.length} events`,
+          `[DB] Loaded: ${loadedAreas.length} areas, ${nextPlants.length} plants, ${loadedSeedlings.length} seedlings, ${loadedEvents.length} events`,
         );
         setAreas(loadedAreas as unknown as Area[]);
-        setCustomPlants(loadedPlants as unknown as Plant[]);
+        setCustomPlants(nextPlants as unknown as Plant[]);
         setSeedlings(loadedSeedlings as unknown as Seedling[]);
         setSettings(loadedSettings);
         setEvents(loadedEvents as unknown as GardenEvent[]);

@@ -509,6 +509,59 @@ const frostRule = {
 };
 
 // ---------------------------------------------------------------------------
+// Rule: Treatment follow-up for unresolved pest notes
+// ---------------------------------------------------------------------------
+
+const treatmentRule = {
+  id: "treatment",
+  label: "Treatment",
+  cooldownDays: 0,
+  evaluate(ctx: RuleContext): SuggestionResult[] {
+    const results: SuggestionResult[] = [];
+
+    for (const placed of ctx.placedPlants) {
+      if (!placed.pestEvents.length) continue;
+
+      const sortedEvents = [...placed.pestEvents].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
+      const latestPest = sortedEvents.find((event) => event.type === "pest");
+      const latestTreatment = sortedEvents.find(
+        (event) => event.type === "treatment",
+      );
+
+      if (!latestPest) continue;
+      if (
+        latestTreatment &&
+        new Date(latestTreatment.date).getTime() >=
+          new Date(latestPest.date).getTime()
+      ) {
+        continue;
+      }
+
+      const pestAgeDays = daysSince(new Date(latestPest.date), ctx.today);
+      const priority: SuggestionResult["priority"] =
+        pestAgeDays <= 1 ? "high" : pestAgeDays <= 4 ? "medium" : "low";
+
+      results.push({
+        key: `treatment:${placed.planterId}:${placed.instanceId}`,
+        type: "treatment",
+        plant: placed.plant,
+        planterId: placed.planterId,
+        instanceId: placed.instanceId,
+        priority,
+        description: `Review ${placed.plant.name} and apply a treatment for the recent pest issue`,
+        dueDate: latestPest.date,
+        source: "rules",
+        ruleId: this.id,
+      });
+    }
+
+    return results;
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Public runRules function
 // ---------------------------------------------------------------------------
 
@@ -527,6 +580,7 @@ export const RULES: Rule[] = [
   wateringRule as Rule,
   noWaterRule as unknown as Rule,
   frostRule as Rule,
+  treatmentRule as Rule,
 ];
 
 /**
@@ -643,6 +697,7 @@ export function buildRuleContext(params: {
             plant,
             plantingDate,
             harvestDate,
+            pestEvents: cell.plantInstance.pestEvents ?? [],
             planterId: planter.id,
             planterName: planter.name,
             areaId: area.id,

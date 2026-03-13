@@ -45,6 +45,15 @@ describe("PlantSchema", () => {
     expect(result.source).toBe("bundled");
   });
 
+  it("accepts optional care notes", () => {
+    const result = PlantSchema.safeParse({
+      ...validPlant,
+      watering: "Keep evenly moist.",
+      growingTips: "Harvest often.",
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects a plant with an empty name", () => {
     const result = PlantSchema.safeParse({ ...validPlant, name: "" });
     expect(result.success).toBe(false);
@@ -207,6 +216,16 @@ describe("GardenEventSchema", () => {
       id: "e1",
       type: "planted",
       date: new Date().toISOString(),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a pest event with a note", () => {
+    const result = GardenEventSchema.safeParse({
+      id: "e-pest-1",
+      type: "pest",
+      date: new Date().toISOString(),
+      note: "Found aphids on new growth",
     });
     expect(result.success).toBe(true);
   });

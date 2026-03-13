@@ -34,6 +34,8 @@ export const GardenEventTypeSchema = z.enum([
   "sown",
   "sprouted",
   "removed",
+  "pest",
+  "treatment",
 ]);
 export const SuggestionTypeSchema = z.enum([
   // Rules-engine types
@@ -44,6 +46,7 @@ export const SuggestionTypeSchema = z.enum([
   "weed",
   "sow",
   "fertilize",
+  "treatment",
   "no_water",
   "frost_protect",
   // AI-only types
@@ -101,6 +104,8 @@ export const PlantSchema = z.object({
   frostHardy: z.boolean().optional(),
   /** Whether this plant is sensitive to frost (opposite of frostHardy). */
   frostSensitive: z.boolean().optional(),
+  watering: z.string().optional(),
+  growingTips: z.string().optional(),
   companions: z.array(z.string()).default([]),
   antagonists: z.array(z.string()).default([]),
   sowIndoorMonths: z.array(z.number().int().min(1).max(12)).default([]),
@@ -325,6 +330,8 @@ export const SuggestionSchema = z.object({
   dueDate: z.string().datetime({ offset: true }).optional(),
   /** Which planter this suggestion applies to, if plant-specific. */
   planterId: z.string().optional(),
+  /** Which placed plant instance this suggestion applies to, if instance-specific. */
+  instanceId: z.string().optional(),
   /** Automatically dismiss this suggestion after this time. */
   expiresAt: z.string().datetime({ offset: true }).optional(),
   /** Origin of the suggestion — rules engine, AI, or bundled static tips. */

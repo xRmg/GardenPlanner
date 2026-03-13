@@ -1,8 +1,8 @@
 # Garden Planner — TODO
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 in progress — 1.1–1.9, 1.13 ✅ · remaining: 1.10–1.12, 1.14, then Phase 2
-> **Current sprint**: Tasks 1.10–1.12, 1.14 — Plant enrichment, pest events, calendar view, error handling
+> **Status**: Phase 1 in progress — 1.1–1.13 ✅ · remaining: 1.12, 1.14, then Phase 2
+> **Current sprint**: Tasks 1.12, 1.14 — Calendar view, error handling
 > **Purpose**: Active implementation roadmap. Architecture decisions → `docs/architecture-decisions.md`. Product vision → `docs/product-vision.md`.
 
 ---
@@ -27,14 +27,14 @@
 - **1.6** — Decomposed `App.tsx` into 8 custom hooks (`useGardenData`, `usePlantCatalog`, `useSeedlingManager`, `useAreaManager`, `useGardenEvents`, `useOpenRouterSettings`, `useLocationSettings`, `usePlantAILookup`)
 - **1.7–1.8b** — Backend AI proxy settings + "Ask AI ✨" plant lookup with 30-day cache; all AI calls routed via `POST /api/ai/chat` (key server-side) → see [`docs/ai-integration-design.md`](docs/ai-integration-design.md)
 - **1.9** — Dual-mode suggestion engine: weather service (Open-Meteo), rules engine (7 rules + frost), AI suggestions (10 types, 24h cache), merger, `useSuggestions` hook, wired into `EventsBar`, Dexie v7 (`weatherCache` + `aiSuggestionsCache`), full test suite → see [`docs/suggestion-engine-architecture.md`](docs/suggestion-engine-architecture.md)
+- **1.10** — Plant schema enrichment: added richer care fields (`watering`, `growingTips`, spacing/harvest metadata), bundled plant seeding, and `PlantDetailsDialog` care rendering
+- **1.11** — Pest + treatment events: added `pest` + `treatment` event types, plant-local pest history, journal mirroring, instance-aware treatment suggestions, and AI-backed treatment options with a custom fallback
 - **1.12** — Vitest + schema/repository/rules-engine tests
 - **1.13** — Auto-derive `koeppenZone` from lat/lng via Open-Meteo 30-year climate normals; pure `classifyKoppen(T, P, lat)` function; written to `settings.growthZone` when user picks a city in Settings
 - **Bug fixes** — Events + plant placements persisted to Dexie (previously lost on refresh)
 
 ### ⬜ Remaining — Tasks 1.10–1.14
 
-- [ ] **1.10** — Plant schema enrichment: add `sunlight`, `watering`, `spacingCm`, `daysToHarvest`, `growingTips` to `PlantSchema`; populate these fields on all built-in plants seeded into Dexie; display in `PlantDetailsDialog`
-- [ ] **1.11** — Pest + treatment events: extend `GardenEventTypeSchema` with `pest` + `treatment` types; capture in event journal
 - [ ] **1.12** — Calendar view: month-navigable component showing events, suggestions, and harvest periods for planted crops
 - [ ] **1.14** — Error boundaries + Sonner toast notifications for all async failures
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { PlantInstance } from "./PlanterGrid";
+import { getBundledPlantByMatch } from "../data/bundledPlants";
 
 interface PlantDetailsDialogProps {
   open: boolean;
@@ -33,88 +34,22 @@ interface PestEvent {
   description: string;
 }
 
-// Generic plant care information database
-const PLANT_INFO: Record<
-  string,
-  {
-    sunlight: string;
-    water: string;
-    spacing: string;
-    daysToHarvest: string;
-    tips: string;
-  }
-> = {
-  Tomato: {
-    sunlight: "6-8 hours of full sun daily",
-    water: "Water deeply 2-3 times per week",
-    spacing: "24-36 inches apart",
-    daysToHarvest: "60-85 days",
-    tips: "Stake or cage plants for support. Pinch off suckers for larger fruits.",
-  },
-  Carrot: {
-    sunlight: "6-8 hours of full sun",
-    water: "Keep soil consistently moist",
-    spacing: "2-3 inches apart",
-    daysToHarvest: "60-80 days",
-    tips: "Thin seedlings early. Loose soil is essential for straight roots.",
-  },
-  Lettuce: {
-    sunlight: "4-6 hours, tolerates partial shade",
-    water: "Keep soil moist, water daily in heat",
-    spacing: "8-12 inches apart",
-    daysToHarvest: "30-60 days",
-    tips: "Harvest outer leaves first for continuous production.",
-  },
-  Pepper: {
-    sunlight: "6-8 hours of full sun",
-    water: "Water regularly, 1-2 inches per week",
-    spacing: "18-24 inches apart",
-    daysToHarvest: "60-90 days",
-    tips: "Support plants with stakes. Peppers like warm soil.",
-  },
-  Broccoli: {
-    sunlight: "6-8 hours of sun",
-    water: "Keep soil consistently moist",
-    spacing: "18-24 inches apart",
-    daysToHarvest: "55-80 days",
-    tips: "Harvest main head before flowers open. Side shoots will continue.",
-  },
-  Cucumber: {
-    sunlight: "6-8 hours of full sun",
-    water: "Water deeply, keep soil moist",
-    spacing: "12-24 inches apart",
-    daysToHarvest: "50-70 days",
-    tips: "Harvest regularly to encourage more production. Use trellis to save space.",
-  },
-  Corn: {
-    sunlight: "Full sun, 6-8 hours",
-    water: "1-2 inches per week",
-    spacing: "8-12 inches apart",
-    daysToHarvest: "60-100 days",
-    tips: "Plant in blocks for better pollination. Harvest when kernels are plump.",
-  },
-  Pumpkin: {
-    sunlight: "Full sun, 6-8 hours",
-    water: "1-2 inches per week",
-    spacing: "36-60 inches apart",
-    daysToHarvest: "90-120 days",
-    tips: "Needs lots of space. Harvest when skin is hard and color is deep.",
-  },
-  Eggplant: {
-    sunlight: "Full sun, 6-8 hours",
-    water: "Water regularly, keep soil moist",
-    spacing: "24-30 inches apart",
-    daysToHarvest: "65-80 days",
-    tips: "Likes warm weather. Harvest when skin is glossy.",
-  },
-  Radish: {
-    sunlight: "4-6 hours of sun",
-    water: "Keep soil evenly moist",
-    spacing: "1-2 inches apart",
-    daysToHarvest: "25-30 days",
-    tips: "Fast growing! Great for beginners. Harvest promptly to avoid woody texture.",
-  },
-};
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatSunlight(
+  sunRequirement: "full" | "partial" | "shade" | undefined,
+) {
+  if (sunRequirement === "full") return "Full sun";
+  if (sunRequirement === "partial") return "Partial sun";
+  if (sunRequirement === "shade") return "Shade";
+  return "Not recorded";
+}
 
 export function PlantDetailsDialog({
   open,
@@ -131,13 +66,21 @@ export function PlantDetailsDialog({
   const [newEventDescription, setNewEventDescription] = useState("");
   const [newEventType, setNewEventType] = useState<"pest" | "treatment">("pest");
 
-  const plantInfo = PLANT_INFO[plantInstance.plant.name] || {
-    sunlight: "Not available",
-    water: "Not available",
-    spacing: "Not available",
-    daysToHarvest: "Not available",
-    tips: "No specific tips available for this plant.",
-  };
+  const fallbackPlant = useMemo(
+    () => getBundledPlantByMatch(plantInstance.plant),
+    [plantInstance.plant],
+  );
+  const mergedPlant = useMemo(
+    () => ({ ...fallbackPlant, ...plantInstance.plant }),
+    [fallbackPlant, plantInstance.plant],
+  );
+  const sortedPestEvents = useMemo(
+    () =>
+      [...pestEvents].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      ),
+    [pestEvents],
+  );
 
   const handleSave = () => {
     onUpdate({
@@ -149,12 +92,13 @@ export function PlantDetailsDialog({
   };
 
   const handleAddEvent = () => {
-    if (newEventDescription.trim()) {
+    const description = newEventDescription.trim();
+    if (description) {
       const newEvent: PestEvent = {
-        id: `event-${Date.now()}`,
+        id: crypto.randomUUID(),
         date: new Date().toISOString(),
         type: newEventType,
-        description: newEventDescription,
+        description,
       };
       setPestEvents([newEvent, ...pestEvents]);
       setNewEventDescription("");
@@ -164,6 +108,15 @@ export function PlantDetailsDialog({
   const handleDeleteEvent = (id: string) => {
     setPestEvents(pestEvents.filter((e) => e.id !== id));
   };
+
+  useEffect(() => {
+    if (open) {
+      setVariety(plantInstance.variety || "");
+      setPestEvents(plantInstance.pestEvents || []);
+      setNewEventDescription("");
+      setNewEventType("pest");
+    }
+  }, [open, plantInstance]);
 
   useEffect(() => {
     if (!open) return;
@@ -180,14 +133,6 @@ export function PlantDetailsDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, variety, pestEvents]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
@@ -201,6 +146,11 @@ export function PlantDetailsDialog({
             </span>
             <div>
               <div>{plantInstance.plant.name}</div>
+              {mergedPlant.latinName && (
+                <div className="text-sm text-gray-500 font-normal italic mt-1">
+                  {mergedPlant.latinName}
+                </div>
+              )}
               {variety && (
                 <div className="text-sm text-gray-600 font-normal mt-1">
                   Variety: {variety}
@@ -215,10 +165,10 @@ export function PlantDetailsDialog({
 
         <div className="space-y-6">
           {/* Plant Description */}
-          {plantInstance.plant.description && (
+          {mergedPlant.description && (
             <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
               <h3 className="text-sm font-semibold mb-2">Description</h3>
-              <p className="text-sm text-gray-700">{plantInstance.plant.description}</p>
+              <p className="text-sm text-gray-700">{mergedPlant.description}</p>
             </div>
           )}
 
@@ -272,34 +222,44 @@ export function PlantDetailsDialog({
                 <Sun className="w-4 h-4 mt-0.5 text-yellow-600" />
                 <div>
                   <div className="text-xs text-gray-600">Sunlight</div>
-                  <div className="text-sm">{plantInfo.sunlight}</div>
+                  <div className="text-sm">{formatSunlight(mergedPlant.sunRequirement)}</div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Droplets className="w-4 h-4 mt-0.5 text-blue-600" />
                 <div>
                   <div className="text-xs text-gray-600">Watering</div>
-                  <div className="text-sm">{plantInfo.water}</div>
+                  <div className="text-sm">{mergedPlant.watering || "Not recorded"}</div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Ruler className="w-4 h-4 mt-0.5 text-gray-600" />
                 <div>
                   <div className="text-xs text-gray-600">Spacing</div>
-                  <div className="text-sm">{plantInfo.spacing}</div>
+                  <div className="text-sm">
+                    {mergedPlant.spacingCm
+                      ? `${mergedPlant.spacingCm} cm minimum between plants`
+                      : "Not recorded"}
+                  </div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 mt-0.5 text-green-600" />
                 <div>
                   <div className="text-xs text-gray-600">Days to Harvest</div>
-                  <div className="text-sm">{plantInfo.daysToHarvest}</div>
+                  <div className="text-sm">
+                    {mergedPlant.daysToHarvest
+                      ? `${mergedPlant.daysToHarvest} days`
+                      : "Not recorded"}
+                  </div>
                 </div>
               </div>
             </div>
             <div className="mt-3 p-3 bg-green-50 rounded border border-green-100">
               <div className="text-xs text-gray-600 mb-1">💡 Growing Tips</div>
-              <div className="text-sm">{plantInfo.tips}</div>
+              <div className="text-sm">
+                {mergedPlant.growingTips || "No specific tips recorded yet."}
+              </div>
             </div>
           </div>
 
@@ -344,20 +304,20 @@ export function PlantDetailsDialog({
 
             {/* Event list */}
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {pestEvents.length === 0 ? (
+              {sortedPestEvents.length === 0 ? (
                 <div className="text-center text-gray-400 py-4 text-sm">
                   No pest or treatment events logged yet
                 </div>
               ) : (
-                pestEvents.map((event) => (
+                sortedPestEvents.map((event) => (
                   <div
                     key={event.id}
                     className="flex items-start gap-2 p-2 bg-white border rounded hover:bg-gray-50"
                   >
                     {event.type === "pest" ? (
-                      <Bug className="w-4 h-4 mt-0.5 text-red-600 flex-shrink-0" />
+                      <Bug className="w-4 h-4 mt-0.5 text-red-600 shrink-0" />
                     ) : (
-                      <Sparkles className="w-4 h-4 mt-0.5 text-green-600 flex-shrink-0" />
+                      <Sparkles className="w-4 h-4 mt-0.5 text-green-600 shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm">{event.description}</div>
@@ -367,7 +327,7 @@ export function PlantDetailsDialog({
                     </div>
                     <button
                       onClick={() => handleDeleteEvent(event.id)}
-                      className="p-1 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                      className="p-1 hover:bg-red-50 rounded transition-colors shrink-0"
                     >
                       <Trash2 className="w-3 h-3 text-red-600" />
                     </button>

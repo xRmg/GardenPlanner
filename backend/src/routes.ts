@@ -535,6 +535,7 @@ router.get("/garden", (req: Request, res: Response) => {
         name: row.name,
         color: row.color,
         icon: row.icon,
+        latinName: row.latinName || undefined,
         description: row.description || undefined,
         variety: row.variety || undefined,
         daysToHarvest: row.daysToHarvest || undefined,
@@ -542,6 +543,12 @@ router.get("/garden", (req: Request, res: Response) => {
         amount: row.amount === -1 ? undefined : row.amount || 0,
         spacingCm: row.spacingCm || undefined,
         frostHardy: row.frostHardy === 1,
+        frostSensitive:
+          row.frostSensitive === null || row.frostSensitive === undefined
+            ? undefined
+            : row.frostSensitive === 1,
+        watering: row.watering || undefined,
+        growingTips: row.growingTips || undefined,
         companions: JSON.parse(row.companions || "[]"),
         antagonists: JSON.parse(row.antagonists || "[]"),
         sowIndoorMonths: JSON.parse(row.sowIndoorMonths || "[]"),
@@ -665,10 +672,11 @@ router.post("/garden/sync", (req: Request, res: Response) => {
 
         const insertPlant = db.prepare(`
           INSERT INTO plants (
-            id, name, color, icon, description, variety, daysToHarvest,
-            isSeed, amount, spacingCm, frostHardy, companions, antagonists,
+            id, name, color, icon, latinName, description, variety,
+            daysToHarvest, isSeed, amount, spacingCm, frostHardy,
+            frostSensitive, watering, growingTips, companions, antagonists,
             sowIndoorMonths, sowDirectMonths, harvestMonths, sunRequirement, source
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         for (const plant of plants) {
@@ -677,20 +685,28 @@ router.post("/garden/sync", (req: Request, res: Response) => {
             plant.name,
             plant.color,
             plant.icon,
+            plant.latinName ?? null,
             plant.description || null,
             plant.variety || null,
-            plant.daysToHarvest || null,
+            plant.daysToHarvest ?? null,
             plant.isSeed ? 1 : 0,
             plant.amount === undefined ? -1 : plant.amount,
-            plant.spacingCm || null,
+            plant.spacingCm ?? null,
             plant.frostHardy ? 1 : 0,
+            plant.frostSensitive === undefined
+              ? null
+              : plant.frostSensitive
+                ? 1
+                : 0,
+            plant.watering ?? null,
+            plant.growingTips ?? null,
             JSON.stringify(plant.companions || []),
             JSON.stringify(plant.antagonists || []),
             JSON.stringify(plant.sowIndoorMonths || []),
             JSON.stringify(plant.sowDirectMonths || []),
             JSON.stringify(plant.harvestMonths || []),
-            plant.sunRequirement || null,
-            plant.source || "custom",
+            plant.sunRequirement ?? null,
+            plant.source ?? "custom",
           );
         }
       }
