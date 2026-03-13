@@ -7,6 +7,7 @@ import {
   DialogDescription,
 } from "./ui/dialog";
 import { Plus, Trash2, Minus } from "lucide-react";
+import { Button } from "./ui/button";
 
 export interface VirtualSection {
   id: string;
@@ -65,6 +66,9 @@ export function PlanterDialog({
   >("rows");
   const [newVirtualSectionStart, setNewVirtualSectionStart] = useState(1);
   const [newVirtualSectionEnd, setNewVirtualSectionEnd] = useState(2);
+  const [nameError, setNameError] = useState("");
+  const [sectionNameError, setSectionNameError] = useState("");
+  const [sectionRangeError, setSectionRangeError] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -85,9 +89,10 @@ export function PlanterDialog({
 
   const handleSave = () => {
     if (!name.trim()) {
-      alert("Please enter a name for the planter");
+      setNameError("Please enter a name for the planter");
       return;
     }
+    setNameError("");
 
     onSave({
       id: initialConfig?.id,
@@ -103,8 +108,10 @@ export function PlanterDialog({
   };
 
   const handleAddVirtualSection = () => {
+    setSectionNameError("");
+    setSectionRangeError("");
     if (!newVirtualSectionName.trim()) {
-      alert("Please enter a name for the section");
+      setSectionNameError("Please enter a name for the section");
       return;
     }
 
@@ -115,7 +122,7 @@ export function PlanterDialog({
       newVirtualSectionEnd > maxValue ||
       newVirtualSectionStart > newVirtualSectionEnd
     ) {
-      alert(
+      setSectionRangeError(
         `Invalid range. Must be between 1 and ${maxValue}, and start must be ≤ end.`,
       );
       return;
@@ -151,8 +158,7 @@ export function PlanterDialog({
             {initialConfig ? "Edit Planter" : "Create New Planter"}
           </DialogTitle>
           <DialogDescription>
-            Configure your planter with custom dimensions and optional virtual
-            sections
+            Set the size and optionally divide it into named zones.
           </DialogDescription>
         </DialogHeader>
 
@@ -160,23 +166,30 @@ export function PlanterDialog({
           {/* Basic Configuration */}
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-semibold text-foreground block mb-2">
+              <label htmlFor="planter-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 Planter Name *
               </label>
               <input
+                id="planter-name"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => { setName(e.target.value); setNameError(""); }}
                 placeholder="e.g., Raised Bed 1, Herb Pot..."
-                className="w-full px-4 py-3 bg-background border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                aria-describedby={nameError ? "planter-name-error" : undefined}
+                aria-invalid={!!nameError}
+                className={`w-full px-4 py-3 bg-background border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm ${nameError ? "border-destructive" : ""}`}
               />
+              {nameError && (
+                <p id="planter-name-error" className="text-destructive text-xs mt-1 ml-1 animate-error-appear">{nameError}</p>
+              )}
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-foreground block mb-2">
+              <label htmlFor="planter-tagline" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 Short Tag-line
               </label>
               <input
+                id="planter-tagline"
                 type="text"
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
@@ -186,7 +199,7 @@ export function PlanterDialog({
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-foreground block mb-3">
+              <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-3">
                 Background Color
               </label>
               <div className="flex gap-4">
@@ -199,7 +212,7 @@ export function PlanterDialog({
                     key={option.value}
                     type="button"
                     onClick={() => setBackgroundColor(option.value)}
-                    className={`flex-1 p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                    className={`flex-1 p-3 rounded-xl border-2 transition-[background-color,border-color,transform] flex flex-col items-center gap-2 ${
                       backgroundColor === option.value
                         ? "border-primary bg-primary/5 scale-105 shadow-md"
                         : "border-transparent bg-muted/30 hover:bg-muted/50"
@@ -219,17 +232,19 @@ export function PlanterDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-gray-600 block mb-1">
+                <label htmlFor="planter-rows" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                   Number of Rows *
                 </label>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setRows(Math.max(1, rows - 1))}
-                    className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                    aria-label="Decrease rows"
+                    className="px-3 py-2 border border-border/40 rounded-lg hover:bg-muted/40 transition-colors"
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="w-4 h-4" aria-hidden="true" />
                   </button>
                   <input
+                    id="planter-rows"
                     type="number"
                     min="1"
                     max="20"
@@ -237,27 +252,29 @@ export function PlanterDialog({
                     onChange={(e) =>
                       setRows(Math.max(1, parseInt(e.target.value) || 1))
                     }
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 bg-white/50 border border-border/40 rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                   />
                   <button
                     onClick={() => setRows(Math.min(20, rows + 1))}
-                    className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                    aria-label="Increase rows"
+                    className="px-3 py-2 border border-border/40 rounded-lg hover:bg-muted/40 transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm text-gray-600 block mb-1">
+                <label htmlFor="planter-cols" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                   Number of Columns *
                 </label>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCols(Math.max(1, cols - 1))}
-                    className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                    aria-label="Decrease columns"
+                    className="px-3 py-2 border border-border/40 rounded-lg hover:bg-muted/40 transition-colors"
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="w-4 h-4" aria-hidden="true" />
                   </button>
                   <input
                     type="number"
@@ -267,51 +284,60 @@ export function PlanterDialog({
                     onChange={(e) =>
                       setCols(Math.max(1, parseInt(e.target.value) || 1))
                     }
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    id="planter-cols"
+                    className="flex-1 bg-white/50 border border-border/40 rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                   />
                   <button
                     onClick={() => setCols(Math.min(20, cols + 1))}
-                    className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                    aria-label="Increase columns"
+                    className="px-3 py-2 border border-border/40 rounded-lg hover:bg-muted/40 transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="p-3 bg-gray-50 rounded text-sm text-gray-600">
+            <div className="p-3 bg-muted/30 rounded-xl text-sm font-medium text-muted-foreground">
               Total squares: {rows} × {cols} = {rows * cols}
             </div>
           </div>
 
           {/* Virtual Sections Section */}
           <div className="border-t pt-6">
-            <h3 className="text-sm mb-3">Virtual Sections (Optional)</h3>
-            <p className="text-xs text-gray-500 mb-4">
+            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">Virtual Sections <span className="font-medium normal-case tracking-normal text-muted-foreground">(Optional)</span></h3>
+            <p className="text-xs text-muted-foreground mb-4">
               Divide your planter into sections (e.g., one section for tomatoes,
               another for lettuce)
             </p>
 
             {/* Add Virtual Section */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 mb-4">
+            <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 mb-4">
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="text-xs text-gray-600 block mb-1">
+                  <label htmlFor="vsection-name" className="text-xs text-muted-foreground block mb-1">
                     Section Name
                   </label>
                   <input
+                    id="vsection-name"
                     type="text"
                     value={newVirtualSectionName}
-                    onChange={(e) => setNewVirtualSectionName(e.target.value)}
+                    onChange={(e) => { setNewVirtualSectionName(e.target.value); setSectionNameError(""); }}
                     placeholder="e.g., Tomato Section"
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-describedby={sectionNameError ? "vsection-name-error" : undefined}
+                    aria-invalid={!!sectionNameError}
+                    className={`w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary ${sectionNameError ? "border-destructive" : "border-border/60"}`}
                   />
+                  {sectionNameError && (
+                    <p id="vsection-name-error" className="text-destructive text-xs mt-1 animate-error-appear">{sectionNameError}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="text-xs text-gray-600 block mb-1">
+                  <label htmlFor="vsection-type" className="text-xs text-muted-foreground block mb-1">
                     Division Type
                   </label>
                   <select
+                    id="vsection-type"
                     value={newVirtualSectionType}
                     onChange={(e) => {
                       setNewVirtualSectionType(
@@ -324,7 +350,7 @@ export function PlanterDialog({
                           : Math.min(2, cols),
                       );
                     }}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1.5 border border-border/40 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white/50 shadow-inner"
                   >
                     <option value="rows">By Rows</option>
                     <option value="columns">By Columns</option>
@@ -334,40 +360,47 @@ export function PlanterDialog({
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="text-xs text-gray-600 block mb-1">
+                  <label htmlFor="vsection-start" className="text-xs text-muted-foreground block mb-1">
                     Start {newVirtualSectionType === "rows" ? "Row" : "Column"}
                   </label>
                   <input
+                    id="vsection-start"
                     type="number"
                     min="1"
                     max={newVirtualSectionType === "rows" ? rows : cols}
                     value={newVirtualSectionStart}
-                    onChange={(e) =>
-                      setNewVirtualSectionStart(parseInt(e.target.value) || 1)
-                    }
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => {
+                      setNewVirtualSectionStart(parseInt(e.target.value) || 1);
+                      setSectionRangeError("");
+                    }}
+                    className="w-full px-2 py-1.5 border border-border/60 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-600 block mb-1">
+                  <label htmlFor="vsection-end" className="text-xs text-muted-foreground block mb-1">
                     End {newVirtualSectionType === "rows" ? "Row" : "Column"}
                   </label>
                   <input
+                    id="vsection-end"
                     type="number"
                     min="1"
                     max={newVirtualSectionType === "rows" ? rows : cols}
                     value={newVirtualSectionEnd}
-                    onChange={(e) =>
-                      setNewVirtualSectionEnd(parseInt(e.target.value) || 1)
-                    }
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => {
+                      setNewVirtualSectionEnd(parseInt(e.target.value) || 1);
+                      setSectionRangeError("");
+                    }}
+                    className="w-full px-2 py-1.5 border border-border/60 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
+              {sectionRangeError && (
+                <p className="text-destructive text-xs mb-2 animate-error-appear">{sectionRangeError}</p>
+              )}
 
               <button
                 onClick={handleAddVirtualSection}
-                className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                className="w-full px-3 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-bold"
               >
                 <Plus className="w-4 h-4" />
                 Add Virtual Section
@@ -384,8 +417,8 @@ export function PlanterDialog({
                     style={{ backgroundColor: vb.color }}
                   >
                     <div className="flex-1">
-                      <div className="font-medium">{vb.name}</div>
-                      <div className="text-xs text-gray-600">
+                      <div className="font-medium text-sm">{vb.name}</div>
+                      <div className="text-xs text-muted-foreground">
                         {vb.type === "rows" ? "Rows" : "Columns"} {vb.start} to{" "}
                         {vb.end}
                       </div>
@@ -404,18 +437,19 @@ export function PlanterDialog({
 
           {/* Action buttons */}
           <div className="flex gap-2 justify-end pt-2 border-t">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              className="rounded-xl"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSave}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+              className="rounded-xl px-8 shadow-lg shadow-primary/20"
             >
               {initialConfig ? "Save Changes" : "Create Planter"}
-            </button>
+            </Button>
           </div>
         </div>
       </DialogContent>

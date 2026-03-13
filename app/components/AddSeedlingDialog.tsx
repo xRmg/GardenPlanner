@@ -110,7 +110,7 @@ export function AddSeedlingDialog({
             <Sprout className="w-5 h-5 text-primary" /> Add Seedling Batch
           </DialogTitle>
           <DialogDescription className="text-xs uppercase tracking-wider font-bold text-muted-foreground/60">
-            Log a new seedling or direct-sown batch
+            Track seeds you've started — indoors or straight in the ground.
           </DialogDescription>
         </DialogHeader>
 
@@ -118,12 +118,12 @@ export function AddSeedlingDialog({
           {/* Plant selector */}
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 block mb-1.5">
-              Plant / Seed *
+              Plant or Seed *
             </label>
             {!showPicker && selectedPlant ? (
               <button
                 onClick={() => setShowPicker(true)}
-                className="w-full flex items-center gap-3 p-3 bg-white/80 border border-primary/30 rounded-xl hover:border-primary/60 transition-all shadow-sm"
+                className="w-full flex items-center gap-3 p-3 bg-white/80 border border-primary/30 rounded-xl hover:border-primary/60 transition-[border-color] shadow-sm"
               >
                 <span className="text-2xl">{selectedPlant.icon}</span>
                 <div className="flex-1 text-left">
@@ -162,10 +162,10 @@ export function AddSeedlingDialog({
                         setSearch("");
                         if (p.isSeed) setSeedCount(Math.min(10, p.amount ?? 1));
                       }}
-                      className="flex flex-col items-center gap-1 p-2 bg-white/60 hover:bg-white rounded-lg border border-white/50 hover:border-primary/30 transition-all text-center"
+                      className="flex flex-col items-center gap-1 p-2 bg-white/60 hover:bg-white rounded-lg border border-white/50 hover:border-primary/30 transition-[background-color,border-color] text-center"
                     >
                       <span className="text-xl">{p.icon}</span>
-                      <span className="text-[9px] font-black uppercase leading-tight">
+                      <span className="text-xs font-black uppercase leading-tight">
                         {p.name}
                       </span>
                     </button>
@@ -187,7 +187,7 @@ export function AddSeedlingDialog({
                     <button
                       key={m}
                       onClick={() => setMethod(m)}
-                      className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                      className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-[color,background-color,border-color] border ${
                         method === m
                           ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
                           : "bg-white/60 text-muted-foreground border-border/30 hover:border-primary/30"
@@ -197,7 +197,7 @@ export function AddSeedlingDialog({
                     </button>
                   ))}
                 </div>
-                <p className="text-[9px] text-muted-foreground/50 mt-1.5 ml-1 font-medium">
+                <p className="text-xs text-muted-foreground/50 mt-1.5 ml-1 font-medium">
                   {method === "indoor"
                     ? "Seeds started in trays/pots indoors before transplanting out."
                     : "Seeds sown directly into the outdoor growing bed."}

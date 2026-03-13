@@ -40,7 +40,7 @@ export function ToolBar({
   }, [plants, filter]);
 
   return (
-    <div className="min-h-20 bg-white/70 backdrop-blur-md border border-white/60 p-3 flex items-center gap-4 rounded-xl shadow-lg flex-wrap">
+    <div className="min-h-20 bg-card border border-border/20 p-3 flex items-center gap-4 rounded-xl shadow-sm flex-wrap">
       {/* Left: Garden organisation */}
       <div className="flex flex-col gap-1.5 pl-2 shrink-0">
         <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
@@ -49,7 +49,7 @@ export function ToolBar({
         <div className="flex gap-1.5">
           <button
             onClick={onAddArea}
-            className="h-8 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-md shadow-primary/10 hover:scale-105 active:scale-95 text-sm"
+            className="h-8 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-[background-color,transform] flex items-center gap-1.5 shadow-md shadow-primary/10 hover:scale-105 active:scale-95 text-sm"
           >
             <MapIcon className="w-3.5 h-3.5" />
             <span className="font-medium whitespace-nowrap">New Area</span>
@@ -57,7 +57,7 @@ export function ToolBar({
           {onShowSeedlings && (
             <button
               onClick={onShowSeedlings}
-              className={`h-8 px-3 rounded-lg border transition-all flex-shrink-0 flex items-center gap-1.5 text-xs font-bold ${
+              className={`h-8 px-3 rounded-lg border transition-[color,background-color,border-color] shrink-0 flex items-center gap-1.5 text-xs font-bold ${
                 seedlingCount > 0
                   ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                   : "border-border/30 bg-white/40 text-muted-foreground hover:bg-white/70"
@@ -65,7 +65,7 @@ export function ToolBar({
             >
               🌱
               {seedlingCount > 0 && (
-                <span className="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
+                <span className="bg-emerald-600 text-white text-xs font-black px-1.5 py-0.5 rounded-full leading-none">
                   {seedlingCount}
                 </span>
               )}
@@ -94,7 +94,7 @@ export function ToolBar({
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider transition-all ${
+                className={`px-2 py-0.5 rounded text-xs font-black uppercase tracking-wider transition-[color,background-color] ${
                   filter === key
                     ? "bg-white shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -110,7 +110,7 @@ export function ToolBar({
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide px-0.5">
           <button
             onClick={onAddPlant}
-            className="h-8 px-3 rounded-lg border border-dashed border-primary text-primary hover:bg-primary/5 transition-all flex-shrink-0 flex items-center gap-1.5 text-xs font-bold"
+            className="h-8 px-3 rounded-lg border border-dashed border-primary text-primary hover:bg-primary/5 transition-[background-color] shrink-0 flex items-center gap-1.5 text-xs font-bold"
           >
             <Plus className="w-3.5 h-3.5" />
             Add
@@ -147,7 +147,7 @@ export function ToolBar({
                         ? `${plant.name} (${isInfinite ? "∞" : plant.amount} seeds)`
                         : plant.name
                   }
-                  className={`h-8 px-3 rounded-lg border transition-all flex items-center gap-1.5 flex-shrink-0 animate-in fade-in zoom-in duration-300 relative ${
+                  className={`h-8 px-3 rounded-lg border transition-[background-color,border-color,box-shadow] flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in duration-300 relative ${
                     isDepleted
                       ? "border-red-200 bg-red-50/50 opacity-50 cursor-not-allowed grayscale"
                       : isSelected
@@ -168,7 +168,7 @@ export function ToolBar({
                   {/* Inventory badge */}
                   {showBadge && !isDepleted && (
                     <span
-                      className={`text-[8px] font-black px-1 py-px rounded leading-none ${
+                      className={`text-xs font-black px-1 py-px rounded leading-none ${
                         (plant.amount ?? 0) <= LOW_STOCK_THRESHOLD
                           ? "bg-amber-100 text-amber-700"
                           : "bg-blue-50 text-blue-600"
@@ -178,7 +178,7 @@ export function ToolBar({
                     </span>
                   )}
                   {plant.isSeed && isInfinite && (
-                    <span className="text-[8px] font-black px-1 py-px rounded leading-none bg-emerald-50 text-emerald-600">
+                    <span className="text-xs font-black px-1 py-px rounded leading-none bg-emerald-50 text-emerald-600">
                       ∞
                     </span>
                   )}

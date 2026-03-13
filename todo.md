@@ -1,19 +1,20 @@
 # Garden Planner — TODO
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 complete — 1.1–1.14 ✅ · Phase 2 next
-> **Current sprint**: Phase 1 closed · preparing Phase 2 internationalization
+> **Status**: Phase 1 complete — 1.1–1.14 ✅ · Phase 1B queued
+> **Current sprint**: Phase 1B — metaplants, plant state, view persistence, prompt hardening
 > **Purpose**: Active implementation roadmap. Architecture decisions → `docs/architecture-decisions.md`. Product vision → `docs/product-vision.md`.
 
 ---
 
 ## Roadmap
 
-| Phase | Focus                                           | Status         |
-| ----- | ----------------------------------------------- | -------------- |
-| **1** | Foundation + smart suggestions (local-first)    | ✅ Complete    |
-| **2** | Internationalization (i18next, en + nl)         | ⬜ Queued      |
-| **3** | Backend, intelligence proxy & multi-user auth   | ⬜ Future      |
+| Phase  | Focus                                           | Status         |
+| ------ | ----------------------------------------------- | -------------- |
+| **1**  | Foundation + smart suggestions (local-first)    | ✅ Complete    |
+| **1B** | Plant intelligence & garden UX polish           | ⬜ Next        |
+| **2**  | Internationalization (i18next, en + nl)         | ⬜ Queued      |
+| **3**  | Backend, intelligence proxy & multi-user auth   | ⬜ Future      |
 
 ---
 
@@ -42,6 +43,36 @@
 
 ---
 
+## Phase 1B — Plant Intelligence & Garden UX
+
+**Goal**: Metaplant grouping for smart multi-cell suggestions, plant lifecycle and health states, persistent view modes, and prompt injection hardening.
+
+- [ ] **1B.1 — Metaplant grouping**  
+  Adjacent cells sharing the same **plant name** (8-connected, diagonal included) are treated as a single metaplant at runtime — no schema storage needed. Metaplant identity is computed via flood-fill on the grid each time it is needed. When a pest, treatment, or care event is logged on any cell in a metaplant group, it is automatically propagated to all cells in that group. Variety differences do not break grouping (a named variety is a distinct plant entry in the catalogue, so will naturally not group with the base species). Display: highlight all grouped cells when one is selected.  
+  **Selection model**: left-click (or tap) selects the entire metaplant group — all cells highlight and any logged event applies to all. Right-click (or long-press on touch, via `onContextMenu`) selects a single cell only, bypassing the group — useful for recording an event or health state on one individual plant within a larger patch. A subtle visual distinction (e.g. single-cell highlight vs. full-group highlight) makes the two modes obvious.
+
+- [ ] **1B.2 — Plant growth stage (auto-derive + manual override)**  
+  Add `growthStage: 'sprouting' | 'vegetative' | 'flowering' | 'fruiting' | 'dormant' | null` to `PlantInstance` in `schema.ts`. Auto-derive from planting date + new optional `Plant` schema fields `daysToFlower` and `daysToFruit` (both `number | null`). Store a manual override flag `growthStageOverride: boolean` so the rules engine knows whether the stage was user-set. Manual override via a picker in `PlantDetailsDialog`. Stage feeds the rules engine: `dormant` suppresses watering and fertilising suggestions; `fruiting` triggers harvest-window reminders. Applies per-cell and per-metaplant.
+
+- [ ] **1B.3 — Plant health state**  
+  Add `healthState: 'healthy' | 'stressed' | 'damaged' | 'diseased' | 'dead' | null` to `PlantInstance`. Changing health state **auto-creates a `GardenEvent`** journal entry (e.g. event type `observation`, note auto-populated as "Health state changed to: damaged") so there is always a timestamped record. UI: quick-set health picker in `PlantDetailsDialog`; visual indicator on grid cell (coloured dot or desaturated cell). Health state feeds the rules engine: `damaged` or `diseased` escalates pest and treatment suggestion priority; `dead` suppresses all suggestions and marks the cell visually as inactive.
+
+- [ ] **1B.4 — View mode persistence (view vs. edit layout)**  
+  Area planner has two explicit modes: **View** (interact with plants — click to log events, see details) and **Edit Layout** (structural changes — add/remove/resize planters, reorder). Mode toggle is a persistent setting in `Settings` (Dexie), defaulting to View. Additionally persist `lastSelectedAreaId` and `lastSelectedPlanterId` to `Settings` so the user returns to exactly where they left off after a page reload.
+
+- [ ] **1B.5 — Prompt injection hardening**  
+  Three-layer defence:
+  1. **Input layer** — Add `maxlength` HTML attributes and Zod `.max()` refinements in `schema.ts`: plant name ≤ 80 chars, variety ≤ 80 chars, pest name ≤ 120 chars, free-text notes/tips ≤ 500 chars.
+  2. **AI call site** (`app/services/ai/`) — Truncate all user-sourced strings to their respective max lengths before inserting into any prompt template. Log a warning if truncation occurs.
+  3. **Backend** (`backend/src/routes.ts`) — Add `z.string().max()` to all string fields in the `/api/ai/chat` Zod request schema. Reject oversized payloads with HTTP 400 before they reach OpenRouter. This prevents users who call the API directly from bypassing client-side limits.
+
+- [ ] **1B.6 — Calendar day detail panel**  
+  Clicking a day in `CalendarView` opens a detail popover/sheet showing the full log for that day: all `GardenEvent` entries (type, plant, note), active suggestions that were generated for that date, and any harvest-window crops. Empty days show a friendly empty state. The popover is dismissible via Escape or clicking outside and includes a quick-add shortcut to log a new event directly for that day.
+
+- [ ] **AI-8 fix** — Remove the silent multi-model fallback from `app/services/ai/aiSuggestions.ts`. On AI failure, surface a clear error to the user and stop — do not retry with an alternative model. Aligns with the existing `usePlantAILookup` behaviour and the explicit product decision recorded above.
+
+---
+
 ## AI Integration Technical Debt
 
 > Findings from code review of AI plumbing (plant lookup + suggestion engine + backend proxy). Fix before adding new AI features.
@@ -60,12 +91,11 @@
 
 - [x] **AI-7** *(resolved)* AI-enabled guards now use the sanitized frontend settings state consistently.
 
-- [ ] **AI-8** *(LOW — inconsistency)* `app/hooks/usePlantAILookup.ts` uses `chatCompletionWithFallback` which does **not** implement the multi-model retry loop, while `aiSuggestions.ts` has an explicit fallback chain (`mistral-small` → `llama-3.3-70b`). Both surfaces should share the same resilience strategy; consider unifying on the explicit fallback loop. 
+- [ ] **AI-8** *(LOW — resolved in 1B.5 fix)* `aiSuggestions.ts` silent multi-model fallback to be removed in task **1B AI-8 fix** — fail clearly, no alternative model retry. See note below.
 
 - [x] **AI-9** *(resolved)* The AI design docs now describe the proxy-only flow and the dedicated backend settings endpoints.
 
-
-## User supplied comment regarding: **AI-8** * DO not have fallback to other models. Present error, and do not continue
+> **Product decision — AI-8**: Do **not** fall back to alternative models on AI failure. Present the error clearly and stop. No silent fallbacks.
 ---
 
 ## Phase 2 — Internationalization
@@ -136,21 +166,4 @@
 
 ## Scratchpad.
 
-This section is for vague ideas that need to be refined into stories.
-
-### Multi plant editing / smart grouping.
-
-I'm considering that Same plants that touch will be treated as one plant for suggestions, pests and treatments.
-
-A planter full or partly full with say for example strawberry all at the same moment have pests or need fertilization, need water etc etc.
-
-I'm thinking we can do this smartly by considering idenitcal plants in adjecent cells one metaplant. (Maybe issue with varieties? to be discussed.) 
-
-### Plant State
-
-We can give a plant (being 1 cell, or metaplant as above) a specific state, maybe sprouting/flowering/fruiting/losing leaves. Maybe we need to split it into 2 states, one about sprouting/flowering etc. and one about plant health, like losing leaves, leaf damage (pests, or hail), 
-
-
-
-
-
+*All items promoted to Phase 1B (tasks 1B.1–1B.5 + AI-8 fix).*

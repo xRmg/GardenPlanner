@@ -40,6 +40,20 @@ const COLORS = [
   "#ec4899", // Pink
 ];
 
+const COLOR_NAMES: Record<string, string> = {
+  "#ef4444": "Red",
+  "#f97316": "Orange",
+  "#f59e0b": "Amber",
+  "#84cc16": "Lime",
+  "#22c55e": "Green",
+  "#10b981": "Emerald",
+  "#06b6d4": "Cyan",
+  "#3b82f6": "Blue",
+  "#8b5cf6": "Violet",
+  "#d946ef": "Fuchsia",
+  "#ec4899": "Pink",
+};
+
 const EMOJIS = [
   "🌱",
   "🍅",
@@ -152,6 +166,7 @@ export function PlantDialog({
   const [antagonists, setAntagonists] = useState(
     initialPlant?.antagonists?.join(", ") || "",
   );
+  const [nameError, setNameError] = useState("");
 
   // Track which fields were overridden by the user after an AI fill
   const [userOverrides, setUserOverrides] = useState<Set<string>>(new Set());
@@ -271,9 +286,10 @@ export function PlantDialog({
 
   const handleSave = () => {
     if (!name.trim()) {
-      alert("Please enter a plant name");
+      setNameError("Please enter a plant name");
       return;
     }
+    setNameError("");
     const splitTrimmed = (s: string) =>
       s
         .split(",")
@@ -358,7 +374,7 @@ export function PlantDialog({
             </div>
             <div className="ml-auto flex items-center gap-3">
               <div className="flex flex-col items-end gap-1">
-                <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block">
+                <label htmlFor="plant-amount" className="text-sm font-black text-muted-foreground uppercase tracking-widest block">
                   {isSeed ? "Seed Count" : "Quantity"}
                 </label>
                 <div className="flex items-center gap-2">
@@ -368,6 +384,7 @@ export function PlantDialog({
                     </span>
                   ) : (
                     <input
+                      id="plant-amount"
                       type="number"
                       min={0}
                       value={amount}
@@ -381,7 +398,7 @@ export function PlantDialog({
                       onCheckedChange={setInfiniteStock}
                       className="data-[state=checked]:bg-emerald-500 scale-75"
                     />
-                    <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60">
+                    <span className="text-xs font-black uppercase tracking-wider text-muted-foreground/60">
                       ∞ Unlimited
                     </span>
                   </div>
@@ -393,14 +410,16 @@ export function PlantDialog({
           {/* Plant Name + icon preview */}
           <div className="grid grid-cols-4 gap-4">
             <div className="col-span-3">
-              <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label htmlFor="plant-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 Plant Name *
               </label>
               <input
+                id="plant-name"
                 type="text"
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
+                  setNameError("");
                   if (aiResult) {
                     if (e.target.value.trim() !== aiResult.name) {
                       clearAiResult();
@@ -410,8 +429,13 @@ export function PlantDialog({
                   }
                 }}
                 placeholder="e.g., Roma Tomato"
-                className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
+                aria-describedby={nameError ? "plant-name-error" : undefined}
+                aria-invalid={!!nameError}
+                className={`w-full px-4 py-3 bg-muted/30 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner ${nameError ? "border-destructive" : "border-white/20"}`}
               />
+              {nameError && (
+                <p id="plant-name-error" className="text-destructive text-xs mt-1 ml-1 animate-error-appear">{nameError}</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-1.5 text-center">
@@ -482,8 +506,9 @@ export function PlantDialog({
                   setIcon(e);
                   markOverride("icon");
                 }}
-                className={`w-10 h-10 flex items-center justify-center text-xl rounded-lg transition-all hover:bg-white/80 active:scale-95 ${icon === e ? "bg-white shadow-md ring-2 ring-primary/20" : ""}`}
-                title="Select icon"
+                className={`w-10 h-10 flex items-center justify-center text-xl rounded-lg transition-[background-color,transform] hover:bg-white/80 active:scale-95 ${icon === e ? "bg-white shadow-md ring-2 ring-primary/20" : ""}`}
+                aria-label={`Select ${e} icon`}
+                aria-pressed={icon === e}
               >
                 {e}
               </button>
@@ -504,9 +529,10 @@ export function PlantDialog({
                     setColor(c);
                     markOverride("color");
                   }}
-                  className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-90 ${color === c ? "border-primary ring-2 ring-primary/20" : "border-white"}`}
+                  className={`w-8 h-8 rounded-full border-2 transition-[transform,border-color] hover:scale-110 active:scale-90 ${color === c ? "border-primary ring-2 ring-primary/20" : "border-white"}`}
                   style={{ backgroundColor: c }}
-                  title="Select color"
+                  aria-label={`${COLOR_NAMES[c] ?? c} color${color === c ? ", currently selected" : ""}`}
+                  aria-pressed={color === c}
                 />
               ))}
             </div>
@@ -514,11 +540,12 @@ export function PlantDialog({
 
           {/* Latin Name */}
           <div>
-            <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label htmlFor="plant-latin-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               Latin Name
               <ConfidenceBadge confidence={confidence?.latinName} />
             </label>
             <input
+              id="plant-latin-name"
               type="text"
               value={latinName}
               onChange={(e) => {
@@ -533,10 +560,11 @@ export function PlantDialog({
           {/* Variety, Days to Harvest, Spacing */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label htmlFor="plant-variety" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 Variety
               </label>
               <input
+                id="plant-variety"
                 type="text"
                 value={variety}
                 onChange={(e) => setVariety(e.target.value)}
@@ -545,11 +573,12 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label htmlFor="plant-days-to-harvest" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 Days to Harvest
                 <ConfidenceBadge confidence={confidence?.daysToHarvest} />
               </label>
               <input
+                id="plant-days-to-harvest"
                 type="number"
                 value={daysToHarvest}
                 onChange={(e) => {
@@ -560,11 +589,12 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label htmlFor="plant-spacing" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 Spacing (cm)
                 <ConfidenceBadge confidence={confidence?.spacingCm} />
               </label>
               <input
+                id="plant-spacing"
                 type="number"
                 min={1}
                 value={spacingCm}
@@ -613,7 +643,7 @@ export function PlantDialog({
                     setSunRequirement(opt);
                     markOverride("sunRequirement");
                   }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-[color,background-color,border-color] ${
                     sunRequirement === opt
                       ? "bg-primary text-white border-primary shadow-md"
                       : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"
@@ -630,34 +660,36 @@ export function PlantDialog({
           </div>
 
           <div>
-            <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label htmlFor="plant-watering" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               Watering
               <ConfidenceBadge confidence={confidence?.watering} />
             </label>
             <textarea
+              id="plant-watering"
               value={watering}
               onChange={(e) => {
                 setWatering(e.target.value);
                 markOverride("watering");
               }}
               placeholder="e.g., Water deeply once or twice a week and keep soil evenly moist"
-              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-[72px] text-sm"
+              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-18 text-sm"
             />
           </div>
 
           <div>
-            <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label htmlFor="plant-growing-tips" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               Growing Tips
               <ConfidenceBadge confidence={confidence?.growingTips} />
             </label>
             <textarea
+              id="plant-growing-tips"
               value={growingTips}
               onChange={(e) => {
                 setGrowingTips(e.target.value);
                 markOverride("growingTips");
               }}
               placeholder="Add practical care notes, pruning guidance, or harvest timing cues"
-              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-[96px] text-sm"
+              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-24 text-sm"
             />
           </div>
 
@@ -684,7 +716,7 @@ export function PlantDialog({
                         );
                         markOverride("sowIndoorMonths");
                       }}
-                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-green-500 text-white border-green-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-green-500 text-white border-green-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
                     >
                       {m}
                     </button>
@@ -717,7 +749,7 @@ export function PlantDialog({
                         );
                         markOverride("sowDirectMonths");
                       }}
-                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-emerald-600 text-white border-emerald-600 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-emerald-600 text-white border-emerald-600 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
                     >
                       {m}
                     </button>
@@ -750,7 +782,7 @@ export function PlantDialog({
                         );
                         markOverride("harvestMonths");
                       }}
-                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-all ${active ? "bg-amber-500 text-white border-amber-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-amber-500 text-white border-amber-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
                     >
                       {m}
                     </button>
@@ -763,11 +795,12 @@ export function PlantDialog({
           {/* Companions / Antagonists */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label htmlFor="plant-companions" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 Good With
                 <ConfidenceBadge confidence={confidence?.companions} />
               </label>
               <input
+                id="plant-companions"
                 type="text"
                 value={companions}
                 onChange={(e) => {
@@ -779,11 +812,12 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label htmlFor="plant-antagonists" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 Avoid Near
                 <ConfidenceBadge confidence={confidence?.antagonists} />
               </label>
               <input
+                id="plant-antagonists"
                 type="text"
                 value={antagonists}
                 onChange={(e) => {
@@ -798,11 +832,12 @@ export function PlantDialog({
 
           {/* Description */}
           <div>
-            <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label htmlFor="plant-description" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               Short Description
               <ConfidenceBadge confidence={confidence?.description} />
             </label>
             <textarea
+              id="plant-description"
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);

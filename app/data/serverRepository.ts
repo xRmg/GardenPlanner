@@ -51,7 +51,7 @@ class ServerRepository implements GardenRepository {
     try {
       await this.syncFromServer();
       dismissErrorToast(ERROR_TOAST_IDS.startupSync);
-      console.log("✓ Synced from server on startup");
+      if (import.meta.env.DEV) console.log("✓ Synced from server on startup");
     } catch (error) {
       console.warn(
         "⚠ Server sync on startup failed; using local Dexie only:",
@@ -180,12 +180,13 @@ class ServerRepository implements GardenRepository {
 
     const allPlants = plants;
 
-    console.log(`[Server Sync] Sending to ${API_GARDEN}/sync:`, {
-      areas: areas.length,
-      plants: allPlants.length,
-      seedlings: seedlings.length,
-      events: events.length,
-    });
+    if (import.meta.env.DEV)
+      console.log(`[Server Sync] Sending to ${API_GARDEN}/sync:`, {
+        areas: areas.length,
+        plants: allPlants.length,
+        seedlings: seedlings.length,
+        events: events.length,
+      });
 
     const response = await fetch(API_GARDEN + "/sync", {
       method: "POST",
@@ -206,7 +207,7 @@ class ServerRepository implements GardenRepository {
     }
 
     const result = await response.json();
-    console.log("✓ Server sync successful:", result);
+    if (import.meta.env.DEV) console.log("✓ Server sync successful:", result);
   }
 
   private async syncToServer(): Promise<void> {

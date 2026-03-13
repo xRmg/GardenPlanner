@@ -36,3 +36,57 @@
     height: 100%;
   }
 }
+
+/* ── Custom keyframe animations ───────────────────────────── */
+
+@keyframes plant-place {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-6deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes error-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+
+/* ── Utility classes ──────────────────────────────────────── */
+
+.animate-plant-place {
+  animation: plant-place var(--duration-base, 220ms) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.animate-error-appear {
+  animation: error-appear var(--duration-quick, 120ms) var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) both;
+}
+
+.animate-float-gentle {
+  animation: float-gentle 3s var(--ease-in-out-quart, cubic-bezier(0.76, 0, 0.24, 1)) infinite;
+}
+
+/* ── Reduced motion safety net ────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

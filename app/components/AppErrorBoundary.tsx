@@ -45,13 +45,8 @@ export class AppErrorBoundary extends Component<
 
     return (
       <div className="min-h-screen bg-background relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-primary/5 blur-3xl" />
-          <div className="absolute bottom-[-5%] right-[-5%] h-[30%] w-[30%] rounded-full bg-secondary/10 blur-3xl" />
-        </div>
-
-        <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
-          <div className="w-full max-w-xl rounded-3xl border border-white/70 bg-white/70 p-8 shadow-xl backdrop-blur-md">
+        <div className="flex min-h-screen items-center justify-center p-6">
+          <div className="w-full max-w-xl rounded-3xl border border-border/20 bg-card p-8 shadow-sm">
             <div className="flex items-start gap-4">
               <div className="rounded-2xl bg-red-50 p-3 text-red-600">
                 <AlertCircle className="h-6 w-6" />

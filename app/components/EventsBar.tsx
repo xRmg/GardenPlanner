@@ -128,6 +128,41 @@ const DEFAULT_SUGGESTION_ICON = {
   color: "text-muted-foreground",
 };
 
+const eventBg: Partial<Record<GardenEvent["type"], string>> = {
+  planted: "bg-green-50",
+  watered: "bg-blue-50",
+  composted: "bg-amber-50",
+  weeded: "bg-orange-50",
+  harvested: "bg-purple-50",
+  sown: "bg-sky-50",
+  sprouted: "bg-emerald-50",
+  removed: "bg-red-50",
+  pest: "bg-red-50",
+  treatment: "bg-emerald-50",
+};
+
+const suggestionBg: Record<string, string> = {
+  water: "bg-blue-50",
+  harvest: "bg-purple-50",
+  repot: "bg-indigo-50",
+  compost: "bg-amber-50",
+  weed: "bg-orange-50",
+  sow: "bg-emerald-50",
+  fertilize: "bg-yellow-50",
+  treatment: "bg-emerald-50",
+  no_water: "bg-sky-50",
+  frost_protect: "bg-cyan-50",
+  thin_seedlings: "bg-lime-50",
+  harden_seedlings: "bg-yellow-50",
+  companion_conflict: "bg-rose-50",
+  succession_sow: "bg-teal-50",
+  pest_alert: "bg-red-50",
+  disease_risk: "bg-orange-50",
+  end_of_season: "bg-amber-50",
+  mulch: "bg-amber-50",
+  prune: "bg-violet-50",
+};
+
 const MODE_BADGES: Record<
   SuggestionMode,
   { label: string; className: string }
@@ -244,11 +279,11 @@ export function EventsBar({
   };
 
   return (
-    <div className="w-72 bg-white/60 backdrop-blur-md rounded-2xl border border-white/70 shadow-lg flex flex-col h-full overflow-hidden">
+    <div className="w-72 bg-card rounded-2xl border border-border/20 shadow-sm flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="p-3.5 flex items-center justify-between border-b border-white/20 bg-primary/5">
+      <div className="p-3.5 flex items-center justify-between border-b border-white/20 bg-linear-to-br from-primary/10 to-transparent">
         <h2 className="flex items-center gap-2 font-black text-foreground tracking-tight text-base uppercase">
-          <Calendar className="w-4.5 h-4.5 text-primary" />
+          <Calendar className="w-5 h-5 text-primary" aria-hidden="true" />
           {currentMonth}
         </h2>
       </div>
@@ -258,26 +293,27 @@ export function EventsBar({
         {/* Harvest Soon Section */}
         {harvestAlerts.length > 0 && (
           <div>
-            <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3 px-1">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3 px-1">
               Harvest Soon
             </h3>
             <div className="space-y-1.5 mb-2">
               {harvestAlerts.slice(0, 5).map((alert, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 bg-purple-50/60 border border-purple-100 rounded-lg px-2.5 py-2"
+                  className="flex items-center gap-2 bg-purple-50/60 border border-purple-100 rounded-lg px-2.5 py-2 animate-in fade-in slide-in-from-bottom-1 duration-300 fill-mode-both"
+                  style={{ animationDelay: `${i * 50}ms` }}
                 >
                   <span className="text-base shrink-0">{alert.plantIcon}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black text-foreground truncate">
                       {alert.plantName}
                     </p>
-                    <p className="text-[8px] text-muted-foreground/60 uppercase tracking-wider font-bold">
+                    <p className="text-xs text-muted-foreground/60 uppercase tracking-wider font-bold">
                       {alert.areaName}
                     </p>
                   </div>
                   <span
-                    className={`text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${
+                    className={`text-xs font-black px-1.5 py-0.5 rounded-md shrink-0 ${
                       alert.daysUntilHarvest <= 3
                         ? "bg-red-100 text-red-600"
                         : alert.daysUntilHarvest <= 7
@@ -298,7 +334,7 @@ export function EventsBar({
         {/* Next Steps Section */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
-            <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60">
               Next Steps
             </h3>
             <div className="flex items-center gap-1.5">
@@ -320,7 +356,7 @@ export function EventsBar({
                 [1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="bg-white/80 rounded-lg p-2.5 shadow-sm border border-emerald-50 animate-pulse"
+                    className="bg-card rounded-lg p-2.5 shadow-sm border border-border/10 animate-pulse"
                   >
                     <div className="flex gap-2.5">
                       <div className="w-7 h-7 rounded-md bg-muted/20 shrink-0" />
@@ -331,7 +367,7 @@ export function EventsBar({
                     </div>
                   </div>
                 ))
-              : suggestions.map((suggestion) => {
+              : suggestions.map((suggestion, suggestionIdx) => {
                   const iconEntry =
                     suggestionIcons[suggestion.type] ?? DEFAULT_SUGGESTION_ICON;
                   const IconComponent = iconEntry.icon;
@@ -340,11 +376,21 @@ export function EventsBar({
                   return (
                     <div
                       key={suggestion.id}
-                      className="bg-white/80 rounded-lg p-2.5 shadow-sm border border-emerald-50 hover:shadow-md transition-all group animate-in slide-in-from-right-4 duration-500"
+                      className="relative overflow-hidden bg-card rounded-lg p-2.5 shadow-sm border border-border/10 hover:shadow-md transition-shadow group animate-in fade-in slide-in-from-right-3 duration-300 fill-mode-both"
+                      style={{ animationDelay: `${suggestionIdx * 55}ms` }}
                     >
+                      {suggestion.priority !== "low" && (
+                        <div
+                          className={`absolute inset-y-0 left-0 w-1 ${
+                            suggestion.priority === "high"
+                              ? "bg-red-300"
+                              : "bg-amber-300"
+                          }`}
+                        />
+                      )}
                       <div className="flex gap-2.5">
                         <div
-                          className={`p-1.5 rounded-md bg-muted/20 ${iconColor} shrink-0 mt-0.5`}
+                          className={`p-1.5 rounded-md ${suggestionBg[suggestion.type] ?? "bg-muted/20"} ${iconColor} shrink-0 mt-0.5`}
                         >
                           <IconComponent className="w-3.5 h-3.5" />
                         </div>
@@ -368,7 +414,7 @@ export function EventsBar({
                                 </span>
                               )}
                               {suggestion.dueDate && (
-                                <span className="text-[8px] font-medium text-muted-foreground/40">
+                                <span className="text-xs font-medium text-muted-foreground/40">
                                   {formatDate(suggestion.dueDate)}
                                 </span>
                               )}
@@ -403,8 +449,9 @@ export function EventsBar({
                         ) : (
                           <button
                             onClick={() => onCompleteSuggestion?.(suggestion)}
-                            className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 transition-all mt-0.5"
+                            className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 hover:scale-110 active:scale-95 transition-[color,background-color,transform] duration-150 mt-0.5"
                             title="Mark done"
+                            aria-label="Mark suggestion as done"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
@@ -414,9 +461,9 @@ export function EventsBar({
                   );
                 })}
             {!suggestionsLoading && suggestions.length === 0 && (
-              <div className="text-center py-6 px-4 text-muted-foreground/40 bg-white/30 rounded-2xl border border-dashed border-border/40">
-                <div className="text-lg mb-0.5">✨</div>
-                <p className="text-[9px] font-black uppercase tracking-widest">
+                <div className="text-center py-6 px-4 text-muted-foreground/40 bg-muted/20 rounded-2xl border border-dashed border-border/40">
+                <div className="text-lg mb-0.5 animate-float-gentle">✨</div>
+                <p className="text-xs font-black uppercase tracking-widest">
                   All caught up!
                 </p>
               </div>
@@ -426,21 +473,22 @@ export function EventsBar({
 
         {/* Garden Journal Section */}
         <div>
-          <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3 px-1">
+          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3 px-1">
             Garden Journal
           </h3>
           <div className="space-y-1.5 ">
-            {groupedEvents.map((group) => {
+              {groupedEvents.map((group, groupIdx) => {
               const IconComponent = eventIcons[group.type].icon;
               const iconColor = eventIcons[group.type].color;
 
               return (
                 <div
                   key={group.key}
-                  className="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/40 transition-colors animate-in fade-in duration-300"
+                  className="flex items-start gap-2 p-1.5 rounded-lg hover:bg-muted/30 transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300 fill-mode-both"
+                  style={{ animationDelay: `${Math.min(groupIdx, 8) * 40}ms` }}
                 >
                   <div
-                    className={`p-1 rounded-md bg-white shadow-sm border border-border/5 ${iconColor} shrink-0`}
+                    className={`p-1 rounded-md ${eventBg[group.type] ?? "bg-white"} shadow-sm border border-border/5 ${iconColor} shrink-0`}
                   >
                     <IconComponent className="w-3 h-3" />
                   </div>
@@ -458,14 +506,14 @@ export function EventsBar({
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-0">
-                      <span className="text-[8px] font-medium text-muted-foreground/40">
+                      <span className="text-xs font-medium text-muted-foreground/40">
                         {formatEventDate(group.date)}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {group.count > 1 && (
-                      <span className="text-[9px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">
+                      <span className="text-xs font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">
                         ×{group.count}
                       </span>
                     )}
@@ -479,8 +527,13 @@ export function EventsBar({
               );
             })}
             {events.length === 0 && (
-              <div className="text-center py-4 text-muted-foreground/20 text-[10px] font-bold uppercase tracking-widest">
-                No recent logs
+              <div className="text-center py-5 px-2">
+                <p className="text-muted-foreground/30 text-[10px] font-bold uppercase tracking-widest">
+                  No logs yet
+                </p>
+                <p className="text-muted-foreground/20 text-xs mt-1 normal-case font-medium">
+                  Water, harvest, or treat a plant to see entries here.
+                </p>
               </div>
             )}
           </div>

@@ -149,12 +149,12 @@ export function PlantDetailsDialog({
             <div>
               <div>{plantInstance.plant.name}</div>
               {mergedPlant.latinName && (
-                <div className="text-sm text-gray-500 font-normal italic mt-1">
+                <div className="text-sm text-muted-foreground font-normal italic mt-1">
                   {mergedPlant.latinName}
                 </div>
               )}
               {variety && (
-                <div className="text-sm text-gray-600 font-normal mt-1">
+                <div className="text-sm text-muted-foreground font-normal mt-1">
                   Variety: {variety}
                 </div>
               )}
@@ -168,20 +168,20 @@ export function PlantDetailsDialog({
         <div className="space-y-6">
           {/* Plant Description */}
           {mergedPlant.description && (
-            <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
-              <h3 className="text-sm font-semibold mb-2">Description</h3>
-              <p className="text-sm text-gray-700">{mergedPlant.description}</p>
+            <div className="bg-accent/30 rounded-xl p-4 border border-accent">
+              <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-2">Description</h3>
+              <p className="text-sm text-foreground/80">{mergedPlant.description}</p>
             </div>
           )}
 
           {/* Specific Plant Instance Info */}
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-            <h3 className="text-sm font-semibold mb-3">Your Plant Details</h3>
+          <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
+            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">Your Plant Details</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-start gap-2">
-                <Calendar className="w-4 h-4 mt-0.5 text-blue-600" />
+                <Calendar className="w-4 h-4 mt-0.5 text-primary" />
                 <div>
-                  <div className="text-xs text-gray-600">Planted</div>
+                  <div className="text-xs text-muted-foreground">Planted</div>
                   <div className="text-sm font-medium">
                     {plantInstance.plantingDate
                       ? formatDate(plantInstance.plantingDate)
@@ -192,7 +192,7 @@ export function PlantDetailsDialog({
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 mt-0.5 text-green-600" />
                 <div>
-                  <div className="text-xs text-gray-600">Expected Harvest</div>
+                  <div className="text-xs text-muted-foreground">Expected Harvest</div>
                   <div className="text-sm font-medium">
                     {plantInstance.harvestDate
                       ? formatDate(plantInstance.harvestDate)
@@ -203,27 +203,28 @@ export function PlantDetailsDialog({
             </div>
 
             <div className="mt-4">
-              <label className="text-xs text-gray-600 block mb-1">
+              <label htmlFor="variety-input" className="text-xs font-bold text-muted-foreground block mb-1">
                 Variety (optional)
               </label>
               <input
+                id="variety-input"
                 type="text"
                 value={variety}
                 onChange={(e) => setVariety(e.target.value)}
                 placeholder="e.g., Cherry, Beefsteak, Roma..."
-                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
               />
             </div>
           </div>
 
           {/* Generic Plant Care Information */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-sm mb-3">Growing Information</h3>
+          <div className="bg-muted/20 rounded-xl p-4 border border-white/30">
+            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">Growing Information</h3>
             <div className="space-y-3">
               <div className="flex items-start gap-2">
                 <Sun className="w-4 h-4 mt-0.5 text-yellow-600" />
                 <div>
-                  <div className="text-xs text-gray-600">Sunlight</div>
+                  <div className="text-xs text-muted-foreground">Sunlight</div>
                   <div className="text-sm">
                     {formatSunlight(mergedPlant.sunRequirement)}
                   </div>
@@ -232,7 +233,7 @@ export function PlantDetailsDialog({
               <div className="flex items-start gap-2">
                 <Droplets className="w-4 h-4 mt-0.5 text-blue-600" />
                 <div>
-                  <div className="text-xs text-gray-600">Watering</div>
+                  <div className="text-xs text-muted-foreground">Watering</div>
                   <div className="text-sm">
                     {mergedPlant.watering || "Not recorded"}
                   </div>
@@ -241,7 +242,7 @@ export function PlantDetailsDialog({
               <div className="flex items-start gap-2">
                 <Ruler className="w-4 h-4 mt-0.5 text-gray-600" />
                 <div>
-                  <div className="text-xs text-gray-600">Spacing</div>
+                  <div className="text-xs text-muted-foreground">Spacing</div>
                   <div className="text-sm">
                     {mergedPlant.spacingCm
                       ? `${mergedPlant.spacingCm} cm minimum between plants`
@@ -252,7 +253,7 @@ export function PlantDetailsDialog({
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 mt-0.5 text-green-600" />
                 <div>
-                  <div className="text-xs text-gray-600">Days to Harvest</div>
+                  <div className="text-xs text-muted-foreground">Days to Harvest</div>
                   <div className="text-sm">
                     {mergedPlant.daysToHarvest
                       ? `${mergedPlant.daysToHarvest} days`
@@ -261,8 +262,8 @@ export function PlantDetailsDialog({
                 </div>
               </div>
             </div>
-            <div className="mt-3 p-3 bg-green-50 rounded border border-green-100">
-              <div className="text-xs text-gray-600 mb-1">💡 Growing Tips</div>
+            <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
+              <div className="text-xs font-bold text-muted-foreground mb-1">💡 Growing Tips</div>
               <div className="text-sm">
                 {mergedPlant.growingTips || "No specific tips recorded yet."}
               </div>
@@ -270,21 +271,21 @@ export function PlantDetailsDialog({
           </div>
 
           {/* Pest & Treatment Log */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-sm mb-3 flex items-center gap-2">
+          <div className="bg-muted/20 rounded-xl p-4 border border-white/30">
+            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3 flex items-center gap-2">
               <Bug className="w-4 h-4" />
               Pest &amp; Treatment Log
             </h3>
 
             {/* Add new event */}
-            <div className="mb-4 p-3 bg-gray-50 rounded">
+            <div className="mb-4 p-3 bg-muted/30 rounded-xl">
               <div className="flex gap-2 mb-2">
                 <select
                   value={newEventType}
                   onChange={(e) =>
                     setNewEventType(e.target.value as "pest" | "treatment")
                   }
-                  className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-white/50 border border-border/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                 >
                   <option value="pest">🐛 Pest Spotted</option>
                   <option value="treatment">💊 Treatment Applied</option>
@@ -294,14 +295,15 @@ export function PlantDetailsDialog({
                   value={newEventDescription}
                   onChange={(e) => setNewEventDescription(e.target.value)}
                   placeholder="Describe what happened..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 bg-white/50 border border-border/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleAddEvent();
                   }}
                 />
                 <button
                   onClick={handleAddEvent}
-                  className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  className="px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  aria-label="Add event"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -311,14 +313,14 @@ export function PlantDetailsDialog({
             {/* Event list */}
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {sortedPestEvents.length === 0 ? (
-                <div className="text-center text-gray-400 py-4 text-sm">
+                <div className="text-center text-muted-foreground/40 py-4 text-sm">
                   No pest or treatment events logged yet
                 </div>
               ) : (
                 sortedPestEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="flex items-start gap-2 p-2 bg-white border rounded hover:bg-gray-50"
+                    className="flex items-start gap-2 p-2 bg-white/60 border border-border/20 rounded-lg hover:bg-white/90 transition-colors"
                   >
                     {event.type === "pest" ? (
                       <Bug className="w-4 h-4 mt-0.5 text-red-600 shrink-0" />
@@ -327,7 +329,7 @@ export function PlantDetailsDialog({
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm">{event.description}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         {formatDate(event.date)}
                       </div>
                     </div>
@@ -344,16 +346,16 @@ export function PlantDetailsDialog({
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-2 justify-end pt-2 border-t">
+          <div className="flex gap-2 justify-end pt-2 border-t border-border/20">
             <button
               onClick={() => onOpenChange(false)}
-              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-border rounded-lg hover:bg-muted/40 transition-colors text-sm font-bold"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-bold shadow-md shadow-primary/20"
             >
               Save Changes
             </button>

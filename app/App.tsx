@@ -19,8 +19,8 @@ import { Button } from "./components/ui/button";
 import {
   Calendar as CalendarIcon,
   Map as MapIcon,
-  Users,
-  Thermometer,
+  Leaf,
+  Sparkles,
   Settings as SettingsIcon,
   Plus,
   Trash2,
@@ -34,7 +34,9 @@ import {
   CheckCircle2,
   AlertCircle,
   MapPin,
+  Bell,
 } from "lucide-react";
+import { Sheet, SheetContent } from "./components/ui/sheet";
 import { useGardenData } from "./hooks/useGardenData";
 import { useLocationSettings } from "./hooks/useLocationSettings";
 import { useOpenRouterSettings } from "./hooks/useOpenRouterSettings";
@@ -46,29 +48,10 @@ import { useSuggestions } from "./hooks/useSuggestions";
 import { useGlobalAsyncErrorToasts } from "./hooks/useGlobalAsyncErrorToasts";
 import type { PestEvent } from "./data/schema";
 
-const MONTH_ABBR = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-function formatMonthRange(months: number[]): string {
-  if (!months?.length) return "";
-  const sorted = [...months].sort((a, b) => a - b);
-  if (sorted.length === 1) return MONTH_ABBR[sorted[0] - 1];
-  return `${MONTH_ABBR[sorted[0] - 1]}–${MONTH_ABBR[sorted[sorted.length - 1] - 1]}`;
-}
-
 export default function App() {
   useGlobalAsyncErrorToasts();
+
+  const [eventsSheetOpen, setEventsSheetOpen] = useState(false);
 
   // ── Core data (DB loading + persistence) ──────────────────────────────────
   const {
@@ -343,66 +326,67 @@ export default function App() {
   return (
     <div className="size-full flex flex-col bg-background relative overflow-hidden">
       {dbError && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white px-4 py-2 text-sm font-semibold flex items-center gap-2">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground px-4 py-2 text-sm font-semibold flex items-center gap-2">
           <span>⚠ Database error – data will not persist:</span>
           <span className="font-mono font-normal">{dbError}</span>
         </div>
       )}
       <div
-        className={`fixed bottom-4 right-4 z-50 bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 transition-all duration-500 ${
+        className={`fixed bottom-24 right-3 md:bottom-4 md:right-4 z-50 bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 transition-[opacity,transform] duration-500 ${
           savedIndicator
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-2 pointer-events-none"
         }`}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/50 animate-pulse" />
         Saved
       </div>
-      {/* Decorative background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-2xl pointer-events-none" />
-      <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-secondary/10 rounded-full blur-2xl pointer-events-none" />
-
       {/* Main content area */}
-      <div className="flex-1 flex overflow-hidden p-4 gap-4 relative z-10">
+      <div className="flex-1 flex overflow-hidden p-2 sm:p-4 gap-2 sm:gap-4 relative z-10">
         <div className="flex-1 flex flex-col gap-4">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="w-full h-auto flex-wrap justify-start bg-white/40 backdrop-blur-sm border border-white/60">
+            <TabsList className="w-full h-auto flex-wrap justify-start bg-muted/40 border-none">
               <TabsTrigger value="areas">
-                <MapIcon className="w-4 h-4 mr-2" /> Areas
+                <MapIcon className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Areas</span>
               </TabsTrigger>
               <TabsTrigger value="calendar">
-                <CalendarIcon className="w-4 h-4 mr-2" /> Calendar
+                <CalendarIcon className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Calendar</span>
               </TabsTrigger>
               <TabsTrigger value="plants">
-                <Users className="w-4 h-4 mr-2" /> My Plants / Seeds
+                <Leaf className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">My Plants / Seeds</span>
               </TabsTrigger>
               <TabsTrigger value="seedlings">
-                <Thermometer className="w-4 h-4 mr-2" /> Seedlings
+                <Sprout className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Seedlings</span>
               </TabsTrigger>
               <TabsTrigger value="settings">
-                <SettingsIcon className="w-4 h-4 mr-2" /> Settings
+                <SettingsIcon className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Settings</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="areas" className="flex-1 mt-0">
-              <div className="flex-1 overflow-auto bg-white/40 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-4 custom-scrollbar h-[calc(100vh-12rem)]">
+            <TabsContent value="areas" className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
+              <div className="flex-1 overflow-auto bg-card rounded-2xl border border-border/20 shadow-sm p-4 custom-scrollbar h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]">
                 <div className="mb-4 px-1 flex items-center justify-between">
                   <div>
                     <h1 className="text-xl font-black text-foreground tracking-tight uppercase">
                       Area Planner
                     </h1>
                     <p className="text-muted-foreground mt-0.5 text-[10px] uppercase font-bold tracking-wider opacity-60">
-                      Organize your garden into logical areas and planters.
+                      Add areas like 'Backyard' or 'Patio', then build planters inside each one.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setIsEditMode((prev) => !prev)}
-                      className={`h-8 px-3 rounded-lg border flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-all ${
+                      className={`h-8 px-3 rounded-lg border flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-[color,background-color,border-color] ${
                         isEditMode
                           ? "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
                           : "bg-white/60 border-border/40 text-muted-foreground hover:bg-white/90 hover:text-foreground"
@@ -410,11 +394,11 @@ export default function App() {
                     >
                       {isEditMode ? (
                         <>
-                          <EyeOff className="w-3.5 h-3.5" /> View Mode
+                          <EyeOff className="w-3.5 h-3.5" /> Done Editing
                         </>
                       ) : (
                         <>
-                          <Eye className="w-3.5 h-3.5" /> Edit Mode
+                          <Eye className="w-3.5 h-3.5" /> Edit Layout
                         </>
                       )}
                     </button>
@@ -431,23 +415,22 @@ export default function App() {
 
                 <div className="space-y-6">
                   {areas.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-center text-gray-400 w-full mt-12 py-12 border-2 border-dashed border-gray-100 rounded-2xl bg-white/20">
+                    <div className="flex flex-col items-center justify-center text-center text-muted-foreground/50 w-full mt-12 py-12 border-2 border-dashed border-primary/20 rounded-2xl bg-primary/5">
                       <div className="bg-primary/10 p-4 rounded-full mb-3">
                         <MapIcon className="w-6 h-6 text-primary" />
                       </div>
-                      <p className="text-lg font-bold text-gray-600">
-                        No areas defined yet
+                      <p className="text-lg font-bold text-foreground">
+                        Your garden map is empty
                       </p>
-                      <p className="mt-1 text-xs text-gray-400 max-w-sm">
-                        Create your first area (like "Backyard" or "Front
-                        Porch") to start adding planters.
+                      <p className="mt-1 text-xs text-muted-foreground max-w-sm">
+                        Add your first area — like "Backyard" or "Front Porch" — then lay out planters inside it.
                       </p>
                     </div>
                   ) : (
                     areas.map((area, areaIdx) => (
                       <div
                         key={area.id}
-                        className="bg-white/50 backdrop-blur-xl rounded-2xl border border-white/80 shadow-sm overflow-hidden transition-all hover:shadow-md"
+                        className="bg-card rounded-2xl border border-border/20 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
                       >
                         <div
                           className="px-4 py-2.5 flex items-center justify-between border-b border-white/40"
@@ -463,7 +446,7 @@ export default function App() {
                             <div>
                               {isEditMode ? (
                                 <input
-                                  className="bg-transparent text-lg font-black text-foreground border-none focus:outline-none focus:ring-1 focus:ring-primary/20 rounded px-1 -ml-1 transition-all"
+                                  className="bg-transparent text-lg font-black text-foreground border-none focus:outline-none focus:ring-1 focus:ring-primary/20 rounded px-1 -ml-1 transition-shadow"
                                   value={area.name}
                                   onChange={(e) =>
                                     handleUpdateArea(area.id, {
@@ -478,7 +461,7 @@ export default function App() {
                               )}
                               {isEditMode ? (
                                 <input
-                                  className="bg-transparent text-[9px] font-bold uppercase tracking-widest text-muted-foreground block border-none focus:outline-none focus:ring-1 focus:ring-primary/20 rounded px-1 -ml-1 mt-0"
+                                  className="bg-transparent text-xs font-bold uppercase tracking-widest text-muted-foreground block border-none focus:outline-none focus:ring-1 focus:ring-primary/20 rounded px-1 -ml-1 mt-0"
                                   value={area.tagline}
                                   onChange={(e) =>
                                     handleUpdateArea(area.id, {
@@ -487,7 +470,7 @@ export default function App() {
                                   }
                                 />
                               ) : (
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground block px-1">
+                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block px-1">
                                   {area.tagline}
                                 </span>
                               )}
@@ -517,6 +500,7 @@ export default function App() {
                                 onClick={() => handleMoveArea(area.id, "up")}
                                 disabled={areaIdx === 0}
                                 className="h-7 w-7 rounded-md"
+                                aria-label={`Move ${area.name} up`}
                               >
                                 <MoveUp className="w-3.5 h-3.5" />
                               </Button>
@@ -528,6 +512,7 @@ export default function App() {
                                 onClick={() => handleMoveArea(area.id, "down")}
                                 disabled={areaIdx === areas.length - 1}
                                 className="h-7 w-7 rounded-md"
+                                aria-label={`Move ${area.name} down`}
                               >
                                 <MoveDown className="w-3.5 h-3.5" />
                               </Button>
@@ -538,6 +523,7 @@ export default function App() {
                                 size="icon"
                                 onClick={() => handleRemoveArea(area.id)}
                                 className="h-7 w-7 rounded-md text-destructive hover:bg-destructive/10"
+                                aria-label={`Remove ${area.name}`}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
@@ -622,7 +608,7 @@ export default function App() {
 
                             <button
                               onClick={() => handleAddPlanter(area.id)}
-                              className={`w-40 h-40 flex flex-col items-center justify-center border-4 border-dashed border-gray-200/50 rounded-3xl text-gray-300 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all group ${
+                              className={`w-40 h-40 flex flex-col items-center justify-center border-4 border-dashed border-border rounded-3xl text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-[color,background-color,border-color] group ${
                                 !isEditMode ? "hidden" : ""
                               }`}
                             >
@@ -640,7 +626,7 @@ export default function App() {
               </div>
             </TabsContent>
 
-            <TabsContent value="calendar" className="flex-1 mt-0">
+            <TabsContent value="calendar" className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
               <CalendarView
                 areas={areas as unknown as import("./data/schema").Area[]}
                 events={events as unknown as import("./data/schema").GardenEvent[]}
@@ -653,8 +639,8 @@ export default function App() {
               />
             </TabsContent>
 
-            <TabsContent value="plants">
-              <div className="bg-white/40 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-5 h-[calc(100vh-12rem)] overflow-auto shadow-sm">
+            <TabsContent value="plants" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
+              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <div className="mb-5">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -719,7 +705,7 @@ export default function App() {
                         <button
                           key={key}
                           onClick={() => setPlantsFilter(key)}
-                          className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+                          className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-[color,background-color] ${
                             plantsFilter === key
                               ? "bg-white shadow-sm text-foreground"
                               : "text-muted-foreground hover:text-foreground"
@@ -732,197 +718,306 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
-                  {filteredAvailablePlants.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground/50">
-                      <p className="text-sm font-bold uppercase tracking-wider">
-                        No results
-                      </p>
-                      <p className="text-xs mt-1">
-                        Try a different filter or search term
-                      </p>
-                    </div>
-                  ) : null}
-                  {filteredAvailablePlants.map((plant) => {
-                    const isCustom = customPlants.some(
-                      (p) => p.id === plant.id,
-                    );
-                    const availableStock = getAvailableStock(plant.id);
-                    const isDepleted = plant.isSeed && availableStock === 0;
-
+                {/* Plants — featured: sow this month / compact list for the rest */}
+                {(() => {
+                  const inSeasonPlants = filteredAvailablePlants.filter(
+                    (p) =>
+                      p.sowIndoorMonths?.includes(currentMonth) ||
+                      p.sowDirectMonths?.includes(currentMonth),
+                  );
+                  const inSeasonIds = new Set(
+                    inSeasonPlants.map((p) => p.id),
+                  );
+                  const hasInSeason = inSeasonPlants.length > 0;
+                  const listPlants = hasInSeason
+                    ? filteredAvailablePlants.filter(
+                        (p) => !inSeasonIds.has(p.id),
+                      )
+                    : filteredAvailablePlants;
+                  if (filteredAvailablePlants.length === 0) {
                     return (
-                      <div
-                        key={plant.id}
-                        className={`group relative bg-white/70 backdrop-blur-sm p-3.5 rounded-xl shadow-sm border transition-all hover:shadow-md hover:bg-white/90 ${
-                          isDepleted
-                            ? "border-red-200 bg-red-50/10 grayscale-[0.3]"
-                            : "border-emerald-50"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className="w-12 h-12 flex items-center justify-center text-3xl bg-muted/40 rounded-xl group-hover:scale-105 transition-transform duration-500 shadow-inner border border-white/40 shrink-0">
-                            {plant.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-black text-base text-foreground tracking-tight leading-tight truncate">
-                              {plant.name}
-                            </h3>
-                            <div className="flex flex-wrap gap-2 items-center mt-1">
-                              {plant.isSeed && (
-                                <span
-                                  className={`text-xs font-black px-2 py-0.5 rounded-sm uppercase tracking-wider ${
-                                    isDepleted
-                                      ? "bg-red-600 text-white"
-                                      : "bg-blue-100 text-blue-700"
-                                  }`}
-                                >
-                                  {isDepleted ? "Depleted" : "Seed"}
-                                </span>
-                              )}
-                              {plant.variety && (
-                                <span className="text-xs font-black bg-primary/10 text-primary px-2 py-0.5 rounded-sm uppercase tracking-wider truncate max-w-[110px]">
-                                  {plant.variety}
-                                </span>
-                              )}
-                              {plant.frostHardy === true && (
-                                <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-blue-100 text-blue-700 uppercase tracking-wider">
-                                  ❄ Hardy
-                                </span>
-                              )}
-                              {plant.frostHardy === false && (
-                                <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-amber-100 text-amber-700 uppercase tracking-wider">
-                                  ⚡ Tender
-                                </span>
-                              )}
-                              {plant.sowIndoorMonths?.includes(
-                                currentMonth,
-                              ) && (
-                                <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-green-600 text-white uppercase tracking-wider">
-                                  🌱 Sow!
-                                </span>
-                              )}
-                              {plant.sowDirectMonths?.includes(
-                                currentMonth,
-                              ) && (
-                                <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-emerald-700 text-white uppercase tracking-wider">
-                                  🌾 Direct!
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Info chips */}
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-muted/30 text-foreground uppercase tracking-wider">
-                            {plant.daysToHarvest ?? 60}d
-                          </span>
-                          {plant.spacingCm && (
-                            <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-muted/30 text-foreground uppercase tracking-wider">
-                              {plant.spacingCm}cm
-                            </span>
-                          )}
-                          {plant.sunRequirement === "full" && (
-                            <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-yellow-50 text-yellow-700 uppercase tracking-wider">
-                              ☀ Full Sun
-                            </span>
-                          )}
-                          {plant.sunRequirement === "partial" && (
-                            <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-yellow-50 text-yellow-600 uppercase tracking-wider">
-                              ⛅ Partial
-                            </span>
-                          )}
-                          {plant.sunRequirement === "shade" && (
-                            <span className="text-xs font-black px-2 py-0.5 rounded-sm bg-slate-100 text-slate-600 uppercase tracking-wider">
-                              🌥 Shade
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Sow window */}
-                        {((plant.sowIndoorMonths?.length ?? 0) > 0 ||
-                          (plant.sowDirectMonths?.length ?? 0) > 0) && (
-                          <p className="text-sm font-semibold text-foreground/70 mb-2 leading-relaxed">
-                            {(plant.sowIndoorMonths?.length ?? 0) > 0 &&
-                              `🌱 ${formatMonthRange(plant.sowIndoorMonths!)}`}
-                            {(plant.sowIndoorMonths?.length ?? 0) > 0 &&
-                              (plant.sowDirectMonths?.length ?? 0) > 0 &&
-                              " · "}
-                            {(plant.sowDirectMonths?.length ?? 0) > 0 &&
-                              `🌾 ${formatMonthRange(plant.sowDirectMonths!)}`}
-                          </p>
-                        )}
-
-                        {/* Companions */}
-                        {(plant.companions?.length ?? 0) > 0 && (
-                          <p className="text-sm font-medium text-emerald-700 mb-2">
-                            ✓ {plant.companions!.slice(0, 3).join(", ")}
-                          </p>
-                        )}
-
-                        {/* Actions */}
-                        <div className="flex justify-between items-center pt-1.5 border-t border-white/30 mt-auto">
-                          <span
-                            className={`text-sm font-black uppercase tracking-wider ${
-                              isDepleted ? "text-red-500" : "text-foreground/60"
-                            }`}
-                          >
-                            {plant.amount === undefined
-                              ? "∞ Unlimited"
-                              : `${availableStock} ${plant.isSeed ? "seeds" : "qty"}`}
-                          </span>
-                          <div className="flex gap-1.5">
-                            {plant.isSeed && !isDepleted && (
-                              <button
-                                onClick={() => handleOpenSowModal(plant)}
-                                className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-all group/sow"
-                                title="Sow Seeds"
-                              >
-                                <Sprout className="w-3.5 h-3.5 group-hover/sow:scale-110 transition-transform" />
-                              </button>
-                            )}
-                            {isCustom ? (
-                              <>
-                                <button
-                                  onClick={() => handleEditPlantManually(plant)}
-                                  className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-all"
-                                  title="Edit"
-                                >
-                                  <Edit className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleRemovePlantManually(plant.id)
-                                  }
-                                  className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-all"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </>
-                            ) : (
-                              <button className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30">
-                                <SettingsIcon className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
+                        <p className="text-sm font-bold uppercase tracking-wider">
+                          Nothing found
+                        </p>
+                        <p className="text-xs mt-1">
+                          Try clearing the search or switching to "All"
+                        </p>
                       </div>
                     );
-                  })}
-                </div>
+                  }
+                  return (
+                    <div className="space-y-6">
+                      {/* Featured: Sow This Month */}
+                      {hasInSeason && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-pulse" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                              Sow This Month
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {inSeasonPlants.map((plant) => {
+                              const isCustom = customPlants.some(
+                                (p) => p.id === plant.id,
+                              );
+                              const availableStock = getAvailableStock(
+                                plant.id,
+                              );
+                              const isDepleted =
+                                plant.isSeed && availableStock === 0;
+                              return (
+                                <div
+                                  key={plant.id}
+                                  className={`group relative flex gap-4 items-start p-4 rounded-xl border transition-[border-color] ${
+                                    isDepleted
+                                      ? "border-red-200 bg-red-50/20 grayscale-[0.3]"
+                                      : "border-primary/20 bg-primary/5 hover:border-primary/40"
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-14 h-14 flex items-center justify-center text-4xl ${
+                                      plant.isSeed ? "bg-blue-50" : "bg-white"
+                                    } rounded-xl shadow-sm border border-primary/10 shrink-0 group-hover:scale-105 transition-transform duration-300`}
+                                  >
+                                    {plant.icon}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-black text-sm text-foreground leading-tight">
+                                      {plant.name}
+                                      {plant.variety && (
+                                        <span className="ml-1.5 text-[9px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-widest align-middle">
+                                          {plant.variety}
+                                        </span>
+                                      )}
+                                    </h3>
+                                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                                      {plant.sowIndoorMonths?.includes(
+                                        currentMonth,
+                                      ) && (
+                                        <span className="text-[10px] font-black px-2 py-0.5 rounded bg-primary text-white uppercase tracking-widest">
+                                          🌱 Indoors Now
+                                        </span>
+                                      )}
+                                      {plant.sowDirectMonths?.includes(
+                                        currentMonth,
+                                      ) && (
+                                        <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-700 text-white uppercase tracking-widest">
+                                          🌾 Direct Now
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-3 mt-2 flex-wrap">
+                                      <span className="text-[10px] font-bold text-muted-foreground">
+                                        {plant.daysToHarvest ?? 60}d harvest
+                                      </span>
+                                      {plant.spacingCm && (
+                                        <span className="text-[10px] font-bold text-muted-foreground">
+                                          {plant.spacingCm}cm spacing
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="mt-2">
+                                      <span
+                                        className={`text-[10px] font-black uppercase tracking-wider ${
+                                          isDepleted
+                                            ? "text-red-500"
+                                            : "text-foreground/50"
+                                        }`}
+                                      >
+                                        {plant.amount === undefined
+                                          ? "∞ Unlimited"
+                                          : `${availableStock} ${plant.isSeed ? "seeds" : "qty"}`}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-1.5 shrink-0">
+                                    {plant.isSeed && !isDepleted && (
+                                      <button
+                                        onClick={() =>
+                                          handleOpenSowModal(plant)
+                                        }
+                                        className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+                                        aria-label={`Sow seeds for ${plant.name}`}
+                                      >
+                                        <Sprout className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                    {isCustom ? (
+                                      <>
+                                        <button
+                                          onClick={() =>
+                                            handleEditPlantManually(plant)
+                                          }
+                                          className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                                          aria-label={`Edit ${plant.name}`}
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleRemovePlantManually(plant.id)
+                                          }
+                                          className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
+                                          aria-label={`Delete ${plant.name}`}
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        disabled
+                                        aria-label="Bundled plants cannot be edited"
+                                        className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
+                                      >
+                                        <SettingsIcon className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Compact list: remaining plants */}
+                      {listPlants.length > 0 && (
+                        <div>
+                          {hasInSeason && (
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 mb-2 px-1">
+                              All Plants &amp; Seeds
+                            </p>
+                          )}
+                          <div className="space-y-0.5">
+                            {listPlants.map((plant) => {
+                              const isCustom = customPlants.some(
+                                (p) => p.id === plant.id,
+                              );
+                              const availableStock = getAvailableStock(
+                                plant.id,
+                              );
+                              const isDepleted =
+                                plant.isSeed && availableStock === 0;
+                              return (
+                                <div
+                                  key={plant.id}
+                                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-[background-color,opacity] ${
+                                    isDepleted
+                                      ? "opacity-50"
+                                      : "hover:bg-muted/30"
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-8 h-8 flex items-center justify-center text-xl ${
+                                      plant.isSeed
+                                        ? "bg-blue-50"
+                                        : "bg-emerald-50"
+                                    } rounded-lg shrink-0`}
+                                  >
+                                    {plant.icon}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <span className="font-bold text-sm text-foreground truncate block leading-tight">
+                                      {plant.name}
+                                    </span>
+                                    {plant.variety && (
+                                      <span className="text-[9px] font-black text-primary/70 uppercase tracking-wider">
+                                        {plant.variety}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    {plant.isSeed && (
+                                      <span
+                                        className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest ${
+                                          isDepleted
+                                            ? "bg-red-600 text-white"
+                                            : "bg-blue-100 text-blue-700"
+                                        }`}
+                                      >
+                                        {isDepleted ? "Empty" : "Seed"}
+                                      </span>
+                                    )}
+                                    {plant.frostHardy === true && (
+                                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 uppercase">
+                                        ❄
+                                      </span>
+                                    )}
+                                    {plant.frostHardy === false && (
+                                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 uppercase">
+                                        ⚡
+                                      </span>
+                                    )}
+                                    <span className="text-[9px] font-bold text-muted-foreground/40 tabular-nums">
+                                      {plant.daysToHarvest ?? 60}d
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
+                                    {plant.isSeed && !isDepleted && (
+                                      <button
+                                        onClick={() =>
+                                          handleOpenSowModal(plant)
+                                        }
+                                        className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
+                                        aria-label={`Sow seeds for ${plant.name}`}
+                                      >
+                                        <Sprout className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                    {isCustom ? (
+                                      <>
+                                        <button
+                                          onClick={() =>
+                                            handleEditPlantManually(plant)
+                                          }
+                                          className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                                          aria-label={`Edit ${plant.name}`}
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleRemovePlantManually(plant.id)
+                                          }
+                                          className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
+                                          aria-label={`Delete ${plant.name}`}
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        disabled
+                                        aria-label="Bundled plants cannot be edited"
+                                        className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
+                                      >
+                                        <SettingsIcon className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </TabsContent>
 
-            <TabsContent value="seedlings">
-              <div className="bg-white/40 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-5 h-[calc(100vh-12rem)] overflow-auto">
+            <TabsContent value="seedlings" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
+              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <div className="flex justify-between items-center mb-5">
                   <div>
                     <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
                       Active Seedlings
                     </h2>
                     <p className="text-muted-foreground text-[11px] font-medium mt-1 uppercase tracking-wider opacity-60">
-                      Track batches from seed to transplant.
+                      Follow each batch from first sprout to planting day.
                     </p>
                   </div>
                   <Button
@@ -933,193 +1028,221 @@ export default function App() {
                   </Button>
                 </div>
                 {seedlings.length === 0 ? (
-                  <div className="text-center py-12 bg-white/20 rounded-2xl border-2 border-dashed border-border/20">
-                    <Thermometer className="mx-auto w-10 h-10 text-muted-foreground/30 mb-3" />
+                  <div className="text-center py-12 bg-emerald-50/40 rounded-2xl border-2 border-dashed border-emerald-200/50">
+                    <Sprout className="mx-auto w-10 h-10 text-emerald-400/60 mb-3" />
                     <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider">
-                      No seedlings yet. Start some seeds!
+                      Nothing sprouting yet
+                    </p>
+                    <p className="text-muted-foreground/60 text-[10px] mt-1 normal-case font-medium">
+                      Sow some seeds to start tracking your first batch.
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {seedlings.map((seedling) => (
-                      <div
-                        key={seedling.id}
-                        className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 p-4 shadow-sm group hover:shadow-md transition-all flex flex-col"
-                      >
-                        <div className="flex items-start gap-3 mb-4">
-                          <div className="w-12 h-12 flex items-center justify-center text-3xl bg-primary/10 rounded-xl shadow-inner border border-primary/20 shrink-0">
-                            {seedling.plant.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-black text-base text-foreground truncate">
-                              {seedling.plant.name}
-                            </h3>
-                            <div className="flex flex-wrap gap-1 items-center mt-1">
+                  <div className="space-y-6">
+                    {(
+                      [
+                        {
+                          status: "ready" as const,
+                          label: "Ready to Plant",
+                          dotColor: "bg-primary",
+                          borderColor: "border-l-primary",
+                          featured: true,
+                        },
+                        {
+                          status: "hardening" as const,
+                          label: "Hardening Off",
+                          dotColor: "bg-orange-500",
+                          borderColor: "border-l-orange-400",
+                          featured: false,
+                        },
+                        {
+                          status: "growing" as const,
+                          label: "Growing",
+                          dotColor: "bg-blue-500",
+                          borderColor: "border-l-blue-400",
+                          featured: false,
+                        },
+                        {
+                          status: "germinating" as const,
+                          label: "Germinating",
+                          dotColor: "bg-amber-500",
+                          borderColor: "border-l-amber-400",
+                          featured: false,
+                        },
+                      ] as Array<{
+                        status:
+                          | "ready"
+                          | "hardening"
+                          | "growing"
+                          | "germinating";
+                        label: string;
+                        dotColor: string;
+                        borderColor: string;
+                        featured: boolean;
+                      }>
+                    ).map(
+                      ({ status, label, dotColor, borderColor, featured }) => {
+                        const group = seedlings.filter(
+                          (s) => s.status === status,
+                        );
+                        if (group.length === 0) return null;
+                        return (
+                          <div key={status}>
+                            <div className="flex items-center gap-2 mb-3">
                               <span
-                                className={`text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-[0.1em] ${
-                                  seedling.status === "germinating"
-                                    ? "bg-amber-100 text-amber-600"
-                                    : seedling.status === "growing"
-                                      ? "bg-blue-100 text-blue-600"
-                                      : seedling.status === "hardening"
-                                        ? "bg-orange-100 text-orange-600"
-                                        : "bg-emerald-100 text-emerald-600"
-                                }`}
-                              >
-                                {seedling.status === "hardening"
-                                  ? "Hardening Off"
-                                  : seedling.status}
-                              </span>
-                              {seedling.method && (
-                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-[0.1em] bg-muted/40 text-muted-foreground">
-                                  {seedling.method === "indoor"
-                                    ? "🏠 Indoor"
-                                    : "🌾 Direct"}
-                                </span>
-                              )}
-                              <span
-                                className="text-[9px] font-bold text-muted-foreground uppercase opacity-40 truncate max-w-[80px]"
-                                title={seedling.location}
-                              >
-                                {seedling.location}
-                              </span>
+                                className={`w-1.5 h-1.5 rounded-full ${dotColor} inline-block`}
+                              />
+                              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                {label} · {group.length}
+                              </p>
                             </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 mb-4 bg-muted/20 p-3 rounded-xl border border-white/20">
-                          <div>
-                            <p className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-wider">
-                              Started
-                            </p>
-                            <p className="text-[10px] font-bold">
-                              {new Date(
-                                seedling.plantedDate,
-                              ).toLocaleDateString(
-                                settings.locale || undefined,
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                },
-                              )}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-wider">
-                              Days
-                            </p>
-                            <p className="text-[10px] font-bold">
-                              {Math.floor(
-                                (Date.now() -
-                                  new Date(seedling.plantedDate).getTime()) /
-                                  (1000 * 60 * 60 * 24),
-                              )}
-                              d
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-wider">
-                              Batch
-                            </p>
-                            <p className="text-[10px] font-bold">
-                              {seedling.seedCount}×
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-auto pt-2 space-y-2">
-                          {/* Primary action button */}
-                          <div className="flex gap-2">
-                            {seedling.status === "germinating" && (
-                              <Button
-                                onClick={() =>
-                                  handleUpdateSeedlingStatus(
-                                    seedling.id,
-                                    "growing",
-                                  )
-                                }
-                                className="flex-1 h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
-                              >
-                                Started Sprouting
-                              </Button>
+                            {featured ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {group.map((seedling) => (
+                                  <div
+                                    key={seedling.id}
+                                    className="flex gap-4 items-start p-4 rounded-xl border border-primary/20 bg-primary/5 hover:border-primary/40 transition-[border-color]"
+                                  >
+                                    <div className="w-14 h-14 flex items-center justify-center text-4xl bg-white rounded-xl shadow-sm border border-primary/10 shrink-0">
+                                      {seedling.plant.icon}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="font-black text-sm text-foreground">
+                                        {seedling.plant.name}
+                                      </h3>
+                                      <div className="flex gap-3 mt-1">
+                                        <span className="text-[10px] font-bold text-muted-foreground">
+                                          {Math.floor(
+                                            (Date.now() -
+                                              new Date(
+                                                seedling.plantedDate,
+                                              ).getTime()) /
+                                              (1000 * 60 * 60 * 24),
+                                          )}
+                                          d old
+                                        </span>
+                                        <span className="text-[10px] font-bold text-muted-foreground">
+                                          {seedling.seedCount}× batch
+                                        </span>
+                                      </div>
+                                      <div className="flex gap-2 mt-3">
+                                        <Button
+                                          onClick={() =>
+                                            handlePlantFromBatch(seedling)
+                                          }
+                                          className="flex-1 h-7 bg-primary hover:bg-primary/90 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm shadow-primary/20"
+                                        >
+                                          Use Batch
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          onClick={() =>
+                                            handleRemoveSeedling(seedling.id)
+                                          }
+                                          className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
+                                          aria-label="Remove seedling batch"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                {group.map((seedling) => {
+                                  const daysOld = Math.floor(
+                                    (Date.now() -
+                                      new Date(
+                                        seedling.plantedDate,
+                                      ).getTime()) /
+                                      (1000 * 60 * 60 * 24),
+                                  );
+                                  return (
+                                    <div
+                                      key={seedling.id}
+                                      className={`group flex items-center gap-3 pl-3 pr-3 py-2.5 rounded-lg border-l-2 ${borderColor} bg-muted/10 hover:bg-muted/20 transition-[background-color]`}
+                                    >
+                                      <div className="text-xl w-8 h-8 flex items-center justify-center shrink-0">
+                                        {seedling.plant.icon}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <span className="font-bold text-sm text-foreground truncate block">
+                                          {seedling.plant.name}
+                                        </span>
+                                        <span className="text-[9px] text-muted-foreground/60 font-medium">
+                                          {daysOld}d · {seedling.seedCount}× ·{" "}
+                                          {seedling.location}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                        {status === "germinating" && (
+                                          <Button
+                                            onClick={() =>
+                                              handleUpdateSeedlingStatus(
+                                                seedling.id,
+                                                "growing",
+                                              )
+                                            }
+                                            className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 shadow-none"
+                                          >
+                                            Sprouted
+                                          </Button>
+                                        )}
+                                        {status === "growing" && (
+                                          <Button
+                                            onClick={() =>
+                                              handleUpdateSeedlingStatus(
+                                                seedling.id,
+                                                "hardening",
+                                              )
+                                            }
+                                            className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 shadow-none"
+                                          >
+                                            Harden Off
+                                          </Button>
+                                        )}
+                                        {status === "hardening" && (
+                                          <Button
+                                            onClick={() =>
+                                              handleUpdateSeedlingStatus(
+                                                seedling.id,
+                                                "ready",
+                                              )
+                                            }
+                                            className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-none"
+                                          >
+                                            Mark Ready
+                                          </Button>
+                                        )}
+                                        <Button
+                                          variant="ghost"
+                                          onClick={() =>
+                                            handleRemoveSeedling(seedling.id)
+                                          }
+                                          className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
+                                          aria-label="Remove seedling batch"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             )}
-                            {seedling.status === "growing" && (
-                              <Button
-                                onClick={() =>
-                                  handleUpdateSeedlingStatus(
-                                    seedling.id,
-                                    "hardening",
-                                  )
-                                }
-                                className="flex-1 h-8 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
-                              >
-                                Hardening Off
-                              </Button>
-                            )}
-                            {seedling.status === "hardening" && (
-                              <Button
-                                onClick={() =>
-                                  handleUpdateSeedlingStatus(
-                                    seedling.id,
-                                    "ready",
-                                  )
-                                }
-                                className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
-                              >
-                                Ready to Plant
-                              </Button>
-                            )}
-                            {seedling.status === "ready" && (
-                              <Button
-                                onClick={() => handlePlantFromBatch(seedling)}
-                                className="flex-1 h-8 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md shadow-primary/20"
-                              >
-                                Use Batch
-                              </Button>
-                            )}
-                            {/* Delete always visible */}
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleRemoveSeedling(seedling.id)}
-                              className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
-                              title="Remove seedling batch"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
                           </div>
-                          {/* Sow More – only show if the plant has seeds available */}
-                          {(() => {
-                            const sourcePlant = AVAILABLE_PLANTS.find(
-                              (p) => p.id === seedling.plant.id && p.isSeed,
-                            );
-                            if (!sourcePlant) return null;
-                            const canSow =
-                              sourcePlant.amount === undefined ||
-                              sourcePlant.amount > 0;
-                            if (!canSow) return null;
-                            const amountLabel =
-                              sourcePlant.amount === undefined
-                                ? "∞"
-                                : sourcePlant.amount;
-                            return (
-                              <button
-                                onClick={() => handleOpenSowModal(sourcePlant)}
-                                className="w-full h-7 rounded-lg border border-blue-200 bg-blue-50/60 text-blue-600 hover:bg-blue-100 text-[9px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1"
-                              >
-                                🌱 Sow More ({amountLabel} seeds left)
-                              </button>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      },
+                    )}
                   </div>
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="settings">
-              <div className="bg-white/40 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-5 h-[calc(100vh-12rem)] overflow-auto">
+            <TabsContent value="settings" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
+              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <h2 className="text-2xl font-black text-foreground tracking-tight uppercase mb-6 leading-none">
                   Settings
                 </h2>
@@ -1135,12 +1258,13 @@ export default function App() {
 
                     {/* Location with verify */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label htmlFor="settings-location" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         Location
                       </label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <input
+                            id="settings-location"
                             className={`w-full bg-white/50 border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner pr-9 ${
                               locationStatus === "valid"
                                 ? "border-green-400/60"
@@ -1197,13 +1321,14 @@ export default function App() {
 
                     {/* Climate Zone — auto-derived but still overridable */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label htmlFor="settings-growth-zone" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         Köppen–Geiger Climate Zone
                         <span className="ml-2 normal-case font-medium text-muted-foreground/70">
                           (auto-derived from location, or set manually)
                         </span>
                       </label>
                       <select
+                        id="settings-growth-zone"
                         className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
                         value={settings.growthZone}
                         onChange={(e) =>
@@ -1284,7 +1409,7 @@ export default function App() {
                   {/* ── AI Integration (OpenRouter) ───────────────────── */}
                   <section className="space-y-4">
                     <div className="flex items-center gap-2 mb-1">
-                      <Thermometer className="w-4 h-4 text-primary" />
+                      <Sparkles className="w-4 h-4 text-primary" />
                       <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
                         AI Integration
                       </h3>
@@ -1297,12 +1422,13 @@ export default function App() {
 
                     {/* OpenRouter API key */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label htmlFor="settings-or-key" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         OpenRouter API Key
                       </label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <input
+                            id="settings-or-key"
                             type={showOrKey ? "text" : "password"}
                             className={`w-full bg-white/50 border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner pr-10 font-mono ${
                               orStatus === "valid"
@@ -1332,6 +1458,7 @@ export default function App() {
                             type="button"
                             onClick={() => setShowOrKey((v) => !v)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={showOrKey ? "Hide API key" : "Show API key"}
                           >
                             {showOrKey ? (
                               <EyeOff className="w-4 h-4" />
@@ -1391,10 +1518,11 @@ export default function App() {
 
                     {/* Model */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label htmlFor="settings-ai-model" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                         Model
                       </label>
                       <input
+                        id="settings-ai-model"
                         className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner font-mono"
                         value={settings.aiModel}
                         onChange={(e) =>
@@ -1419,8 +1547,8 @@ export default function App() {
           </Tabs>
         </div>
 
-        {/* Events sidebar - Floating style */}
-        <div className="w-72 h-full flex flex-col drop-shadow-xl">
+        {/* Events sidebar - desktop only */}
+        <div className="hidden md:flex w-72 h-full flex-col drop-shadow-xl">
           <EventsBar
             events={events}
             suggestions={
@@ -1434,6 +1562,46 @@ export default function App() {
           />
         </div>
       </div>
+
+      {/* Mobile events sheet */}
+      <Sheet open={eventsSheetOpen} onOpenChange={setEventsSheetOpen}>
+        <SheetContent
+          side="right"
+          className="md:hidden w-full max-w-sm p-0 flex flex-col"
+        >
+          <EventsBar
+            events={events}
+            suggestions={
+              suggestions as unknown as import("./components/EventsBar").Suggestion[]
+            }
+            harvestAlerts={harvestAlerts}
+            onCompleteSuggestion={(s) => {
+              handleCompleteSuggestion(s);
+              setEventsSheetOpen(false);
+            }}
+            onOpenTreatmentSuggestion={(s) => {
+              handleOpenTreatmentSuggestion(s);
+              setEventsSheetOpen(false);
+            }}
+            suggestionsMode={suggestionsMode}
+            suggestionsLoading={suggestionsLoading}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Mobile FAB — opens events sheet */}
+      <button
+        onClick={() => setEventsSheetOpen(true)}
+        className="md:hidden fixed right-3 bottom-30 z-30 w-12 h-12 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-[background-color,transform] duration-150"
+        aria-label="Open garden events and suggestions"
+      >
+        <Bell className="w-5 h-5" />
+        {suggestions.length > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-xs font-black flex items-center justify-center">
+            {suggestions.length > 9 ? "9+" : suggestions.length}
+          </span>
+        )}
+      </button>
 
       {/* Bottom toolbar - Floating style */}
       <div className="px-4 pb-4 relative z-20">

@@ -273,7 +273,7 @@ export function PlanterGrid({
 
   return (
     <>
-      <div className="inline-block bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-5 border border-white/60 transition-all hover:shadow-xl animate-in fade-in zoom-in duration-500">
+      <div className="inline-block bg-card rounded-2xl shadow-sm p-5 border border-border/20 transition-shadow hover:shadow-md animate-in fade-in zoom-in duration-500">
         <div className="flex items-center justify-between mb-4 px-1">
           <div className="flex flex-col">
             <h3 className="text-xl font-bold text-foreground tracking-tight">
@@ -287,8 +287,9 @@ export function PlanterGrid({
             {!viewOnly && onMoveUp && (
               <button
                 onClick={onMoveUp}
-                className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-all shadow-sm active:scale-90"
+                className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
                 title="Move planter up"
+                aria-label={`Move ${name} up`}
               >
                 <ArrowUp className="w-4 h-4" />
               </button>
@@ -296,8 +297,9 @@ export function PlanterGrid({
             {!viewOnly && onMoveDown && (
               <button
                 onClick={onMoveDown}
-                className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-all shadow-sm active:scale-90"
+                className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
                 title="Move planter down"
+                aria-label={`Move ${name} down`}
               >
                 <ArrowDown className="w-4 h-4" />
               </button>
@@ -305,8 +307,9 @@ export function PlanterGrid({
             {!viewOnly && onEdit && (
               <button
                 onClick={onEdit}
-                className="p-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl transition-all shadow-sm active:scale-90"
+                className="p-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
                 title="Edit planter"
+                aria-label={`Edit ${name}`}
               >
                 <Settings className="w-4 h-4" />
               </button>
@@ -315,8 +318,9 @@ export function PlanterGrid({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
-                    className="p-2 bg-destructive/5 hover:bg-destructive/10 text-destructive rounded-xl transition-all shadow-sm active:scale-90"
+                    className="p-2 bg-destructive/5 hover:bg-destructive/10 text-destructive rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
                     title="Remove planter"
+                    aria-label={`Remove ${name}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -356,7 +360,7 @@ export function PlanterGrid({
               {virtualSections.map((vb) => (
                 <div
                   key={vb.id}
-                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider text-white shadow-sm"
+                  className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider text-white shadow-sm"
                   style={{ backgroundColor: vb.color }}
                 >
                   <div className="w-1 h-1 rounded-full bg-white/40 mr-1.5" />
@@ -403,8 +407,15 @@ export function PlanterGrid({
                             ? `${square.plantInstance.plant.name}${square.plantInstance.plant.spacingCm ? ` · ${square.plantInstance.plant.spacingCm}cm spacing` : ""}`
                             : undefined
                         }
+                        aria-label={
+                          square.plantInstance
+                            ? `${square.plantInstance.plant.name} at row ${rowIndex + 1}, column ${colIndex + 1}`
+                            : selectedPlant
+                              ? `Place ${selectedPlant.name} at row ${rowIndex + 1}, column ${colIndex + 1}`
+                              : `Row ${rowIndex + 1}, column ${colIndex + 1} — empty`
+                        }
                         className={cn(
-                          "w-12 h-12 rounded-lg relative transition-all hover:scale-105 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
+                          "w-12 h-12 rounded-lg relative transition-[transform,background-color,box-shadow] duration-150 hover:scale-105 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
                           square.plantInstance
                             ? "bg-white/90"
                             : "bg-white/40 hover:bg-white/80",
@@ -425,7 +436,7 @@ export function PlanterGrid({
                         }}
                       >
                         {square.plantInstance ? (
-                          <div className="flex flex-col items-center justify-center h-full relative animate-in zoom-in duration-300">
+                          <div className="flex flex-col items-center justify-center h-full relative animate-plant-place">
                             <span className="text-xl drop-shadow-sm select-none">
                               {square.plantInstance.plant.icon}
                             </span>
@@ -440,7 +451,7 @@ export function PlanterGrid({
                             <>
                               {(getAvailableStock?.(selectedPlant.id) ?? 1) >
                               0 ? (
-                                <div className="opacity-0 group-hover/square:opacity-20 flex items-center justify-center">
+                                <div className="opacity-0 group-hover/square:opacity-20 transition-opacity duration-200 flex items-center justify-center">
                                   <span className="text-xl grayscale select-none">
                                     {selectedPlant.icon}
                                   </span>
@@ -459,8 +470,9 @@ export function PlanterGrid({
                           onClick={(e) =>
                             handleRemovePlant(rowIndex, colIndex, e)
                           }
-                          className="absolute -top-1 -right-1 bg-white border border-red-100 text-red-500 rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 hover:bg-red-50 transition-all z-10"
+                          className="absolute -top-1 -right-1 bg-white border border-red-100 text-red-500 rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 hover:bg-red-50 transition-[opacity,background-color,transform] duration-150 hover:scale-110 active:scale-95 z-10"
                           title="Remove plant"
+                          aria-label={`Remove ${square.plantInstance?.plant.name}`}
                         >
                           <X className="w-3 h-3" />
                         </button>

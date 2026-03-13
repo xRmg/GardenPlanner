@@ -88,7 +88,7 @@ export function PlantPickerDialog({
                 <button
                   key={plant.id}
                   onClick={() => handleSelect(plant)}
-                  className="flex flex-col items-center gap-1.5 p-3 bg-white/60 hover:bg-white rounded-xl border border-white/50 hover:border-primary/30 hover:shadow-md transition-all group text-left"
+                  className="flex flex-col items-center gap-1.5 p-3 bg-white/60 hover:bg-white rounded-xl border border-white/50 hover:border-primary/30 hover:shadow-md transition-[background-color,border-color,box-shadow] group text-left"
                 >
                   <span className="text-3xl group-hover:scale-110 transition-transform">
                     {plant.icon}
@@ -97,12 +97,12 @@ export function PlantPickerDialog({
                     {plant.name}
                   </span>
                   {plant.variety && (
-                    <span className="text-[8px] font-bold text-muted-foreground/50 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider">
                       {plant.variety}
                     </span>
                   )}
                   {plant.isSeed && (
-                    <span className="text-[8px] font-black text-blue-500 mt-0.5">
+                    <span className="text-xs font-black text-blue-500 mt-0.5">
                       {plant.amount === undefined ? '∞ seeds' : `${plant.amount} seeds`}
                     </span>
                   )}

@@ -186,7 +186,7 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
       {suggestionCount > 0 && (
         <span
           className={cn(
-            "rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider",
+            "rounded-full px-1.5 py-0.5 text-xs font-black uppercase tracking-wider",
             PRIORITY_STYLES[day.suggestions[0].priority].count,
           )}
         >
@@ -196,7 +196,7 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
       {eventCount > 0 && (
         <span
           className={cn(
-            "rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider",
+            "rounded-full px-1.5 py-0.5 text-xs font-black uppercase tracking-wider",
             EVENT_STYLES[day.events[0].type].count,
           )}
         >
@@ -204,7 +204,7 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
         </span>
       )}
       {harvestCount > 0 && (
-        <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">
+        <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-emerald-700">
           {harvestCount} harvest
         </span>
       )}
@@ -227,8 +227,8 @@ function DayCell({ day }: { day: CalendarDayCell }) {
       className={cn(
         "flex min-h-28 flex-col gap-2 rounded-2xl border p-2.5 shadow-sm transition-colors sm:min-h-32",
         day.inCurrentMonth
-          ? "border-white/70 bg-white/70"
-          : "border-white/40 bg-white/35 text-muted-foreground/55",
+          ? "border-border/20 bg-card"
+          : "border-border/10 bg-muted/20 text-muted-foreground/55",
         day.isToday &&
           "border-primary/30 bg-primary/5 ring-2 ring-primary/10 ring-offset-0",
       )}
@@ -350,7 +350,7 @@ export function CalendarView({
     model.counts.harvests === 0;
 
   return (
-    <div className="flex-1 overflow-auto bg-white/40 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-4 custom-scrollbar h-[calc(100vh-12rem)]">
+    <div className="flex-1 overflow-auto bg-card rounded-2xl border border-border/20 shadow-sm p-4 custom-scrollbar h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]">
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
@@ -377,7 +377,7 @@ export function CalendarView({
                 </span>
               )}
               {suggestionsLoading && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/20 bg-muted/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" /> Refreshing
                 </span>
               )}
@@ -388,7 +388,7 @@ export function CalendarView({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-xl bg-white/75"
+                className="h-9 rounded-xl"
                 onClick={() =>
                   setVisibleMonth((currentMonth) =>
                     addCalendarMonths(currentMonth, -1),
@@ -398,7 +398,7 @@ export function CalendarView({
                 <ChevronLeft className="h-4 w-4" />
                 Prev
               </Button>
-              <div className="min-w-44 rounded-xl border border-white/70 bg-white/75 px-4 py-2 text-center">
+              <div className="min-w-44 rounded-xl border border-border/20 bg-card px-4 py-2 text-center">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
                   Viewing
                 </p>
@@ -408,7 +408,7 @@ export function CalendarView({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-9 rounded-xl bg-white/75"
+                className="h-9 rounded-xl"
                 onClick={() =>
                   setVisibleMonth((currentMonth) =>
                     addCalendarMonths(currentMonth, 1),
@@ -433,13 +433,13 @@ export function CalendarView({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-white/75 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-white/70">
+          <span className="rounded-full bg-muted/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-border/20">
             {model.counts.events} journal
           </span>
-          <span className="rounded-full bg-white/75 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-white/70">
+          <span className="rounded-full bg-muted/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-border/20">
             {model.counts.datedSuggestions + model.counts.undatedSuggestions} suggestions
           </span>
-          <span className="rounded-full bg-white/75 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-white/70">
+          <span className="rounded-full bg-muted/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-border/20">
             {model.counts.harvests} harvest windows
           </span>
         </div>
@@ -447,7 +447,7 @@ export function CalendarView({
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
           <section className="min-w-0 space-y-3">
             {isQuietMonth && (
-              <div className="rounded-2xl border border-dashed border-white/70 bg-white/40 px-4 py-3 text-sm font-medium text-muted-foreground">
+              <div className="rounded-2xl border border-dashed border-border/30 bg-muted/20 px-4 py-3 text-sm font-medium text-muted-foreground">
                 This month has no dated activity yet. Use the summary panel for
                 harvest context, and switch back to the current month for
                 unscheduled suggestions.
@@ -504,7 +504,7 @@ export function CalendarView({
                   model.undatedSuggestions.map((suggestion) => (
                     <div
                       key={suggestion.id}
-                      className="rounded-xl border border-white/70 bg-white/80 p-3"
+                      className="rounded-xl border border-border/10 bg-muted/20 p-3"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -520,7 +520,7 @@ export function CalendarView({
                         </div>
                         <span
                           className={cn(
-                            "rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                            "rounded-full px-2 py-0.5 text-xs font-black uppercase tracking-wider",
                             PRIORITY_STYLES[suggestion.priority].count,
                           )}
                         >
@@ -574,7 +574,7 @@ export function CalendarView({
                       </div>
                       <span
                         className={cn(
-                          "rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                          "rounded-full px-2 py-0.5 text-xs font-black uppercase tracking-wider",
                           HARVEST_STYLES[harvest.state].badge,
                         )}
                       >
