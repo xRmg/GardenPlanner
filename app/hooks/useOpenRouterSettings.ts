@@ -7,7 +7,13 @@
  *
  * The key entered here is synced to the backend SQLite via
  * POST /api/garden/sync. The backend proxy (/api/ai/chat) reads
- * it server-side for all AI calls — the key never leaves the server.
+ * it server-side for all AI inference calls — the key never leaves
+ * the server for inference.
+ *
+ * Exception: the key is sent to openrouter.ai/api/v1/auth/key
+ * directly from the browser solely for the one-time validation step
+ * that gives the user immediate ✓/✗ feedback. It is never stored
+ * anywhere during that call.
  */
 
 import { useState, useEffect, useRef } from "react";

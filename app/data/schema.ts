@@ -220,6 +220,12 @@ export const AiProviderSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("server") }),
   z.object({
     type: z.literal("proxy"),
+    /**
+     * TODO (Phase 3): A bring-your-own-proxy option where the frontend
+     * routes AI calls through a user-supplied URL with an optional bearer
+     * token. Not used by any code path today — reserved for future
+     * self-hosted / Cloudflare Worker deployment tiers.
+     */
     proxyUrl: z.string().url(),
     token: z.string().optional(),
   }),

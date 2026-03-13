@@ -76,7 +76,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
     async (plantName: string, variety?: string) => {
       const isDev = import.meta.env.DEV;
       const name = plantName.trim();
-      if (!name || (settings.aiProvider.type !== "byok" && settings.aiProvider.type !== "server")) return;
+      if (!name || settings.aiProvider.type === "none") return;
 
       if (isDev)
         console.log("[usePlantAILookup] Starting AI lookup for:", {
@@ -109,27 +109,21 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         if (isDev) console.log("[usePlantAILookup] Cache miss, calling API…");
 
         // 2. Build the API client
-        // When a backend is available (VITE_API_BASE is set), route through
-        // the server proxy so the API key stays server-side and all request/
-        // response logging appears in the npm terminal.
+        // All AI calls are routed through the server proxy so the API key
+        // stays server-side (never exposed in the browser). The apiKey field
+        // is intentionally left empty — the backend reads the key from its
+        // own SQLite settings row.
         const proxyUrl = API_BASE ? `${API_BASE}/api/ai/chat` : "/api/ai/chat";
         const client = new OpenRouterClient({
-          apiKey:
-            settings.aiProvider.type === "byok" ? settings.aiProvider.key : "",
+          apiKey: "", // Always empty — backend reads the key from its own SQLite DB
           model: settings.aiModel,
           proxyUrl,
         });
 
         if (isDev) {
-          if (proxyUrl) {
-            console.log(
-              `[usePlantAILookup] Using backend proxy: ${proxyUrl} (API key stays server-side; full logs in npm terminal)`,
-            );
-          } else {
-            console.log(
-              "[usePlantAILookup] No backend detected — calling OpenRouter directly from browser",
-            );
-          }
+          console.log(
+            `[usePlantAILookup] Using backend proxy: ${proxyUrl} (API key stays server-side; full logs in npm terminal)`,
+          );
         }
 
         // 3. Call the API
