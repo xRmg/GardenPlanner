@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import type { Settings } from "../data/schema";
 import { usePlantAILookup } from "../hooks/usePlantAILookup";
 import { CONFIDENCE } from "../services/ai/prompts";
+import { formatMonthNarrow } from "@/app/i18n/utils/formatting";
 
 interface PlantDialogProps {
   open: boolean;
@@ -124,6 +126,8 @@ export function PlantDialog({
   defaultIsSeed = false,
   settings,
 }: PlantDialogProps) {
+  const { t } = useTranslation();
+  const monthLabels = Array.from({ length: 12 }, (_, i) => formatMonthNarrow(i + 1));
   const [name, setName] = useState(initialPlant?.name || "");
   const [latinName, setLatinName] = useState(initialPlant?.latinName || "");
   const [variety, setVariety] = useState(initialPlant?.variety || "");
@@ -286,7 +290,7 @@ export function PlantDialog({
 
   const handleSave = () => {
     if (!name.trim()) {
-      setNameError("Please enter a plant name");
+      setNameError(t("dialogs.plantDefinitionDialog.nameError"));
       return;
     }
     setNameError("");
@@ -339,16 +343,16 @@ export function PlantDialog({
           <DialogTitle className="text-2xl font-bold tracking-tight">
             {initialPlant
               ? isSeed
-                ? "Edit Seed Packet"
-                : "Edit Plant Catalog"
+                ? t("dialogs.plantDefinitionDialog.titleEditSeed")
+                : t("dialogs.plantDefinitionDialog.titleEditPlant")
               : isSeed
-                ? "Add New Seeds"
-                : "Add New Plant"}
+                ? t("dialogs.plantDefinitionDialog.titleAddSeed")
+                : t("dialogs.plantDefinitionDialog.titleAddPlant")}
           </DialogTitle>
           <DialogDescription>
             {isSeed
-              ? "Track your seed inventory and varieties."
-              : "Define the characteristics of your custom vegetable or herb."}
+              ? t("dialogs.plantDefinitionDialog.descriptionSeed")
+              : t("dialogs.plantDefinitionDialog.descriptionPlant")}
           </DialogDescription>
         </DialogHeader>
 
@@ -366,21 +370,21 @@ export function PlantDialog({
                 htmlFor="is-seed"
                 className="text-sm font-bold text-foreground"
               >
-                Seed Packet
+                {t("dialogs.plantDefinitionDialog.seedPacket")}
               </Label>
               <span className="text-sm text-muted-foreground font-medium">
-                Manage inventory for seedlings
+                {t("dialogs.plantDefinitionDialog.seedPacketHint")}
               </span>
             </div>
             <div className="ml-auto flex items-center gap-3">
               <div className="flex flex-col items-end gap-1">
                 <label htmlFor="plant-amount" className="text-sm font-black text-muted-foreground uppercase tracking-widest block">
-                  {isSeed ? "Seed Count" : "Quantity"}
+                  {isSeed ? t("dialogs.plantDefinitionDialog.seedCount") : t("dialogs.plantDefinitionDialog.quantity")}
                 </label>
                 <div className="flex items-center gap-2">
                   {infiniteStock ? (
                     <span className="w-20 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center font-black text-emerald-600 text-lg shadow-inner select-none">
-                      ∞
+                      {t("dialogs.plantDefinitionDialog.unlimitedSwitch")}
                     </span>
                   ) : (
                     <input
@@ -399,7 +403,7 @@ export function PlantDialog({
                       className="data-[state=checked]:bg-emerald-500 scale-75"
                     />
                     <span className="text-xs font-black uppercase tracking-wider text-muted-foreground/60">
-                      ∞ Unlimited
+                      {t("dialogs.plantDefinitionDialog.unlimited")}
                     </span>
                   </div>
                 </div>
@@ -411,7 +415,7 @@ export function PlantDialog({
           <div className="grid grid-cols-4 gap-4">
             <div className="col-span-3">
               <label htmlFor="plant-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-                Plant Name *
+                {t("dialogs.plantDefinitionDialog.plantName")}
               </label>
               <input
                 id="plant-name"
@@ -428,7 +432,7 @@ export function PlantDialog({
                     }
                   }
                 }}
-                placeholder="e.g., Roma Tomato"
+                placeholder={t("dialogs.plantDefinitionDialog.namePlaceholder")}
                 aria-describedby={nameError ? "plant-name-error" : undefined}
                 aria-invalid={!!nameError}
                 className={`w-full px-4 py-3 bg-muted/30 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner ${nameError ? "border-destructive" : "border-white/20"}`}
@@ -439,7 +443,7 @@ export function PlantDialog({
             </div>
             <div>
               <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-1.5 text-center">
-                Icon
+                {t("dialogs.plantDefinitionDialog.icon")}
               </label>
               <div className="flex flex-col items-center gap-1">
                 <div className="w-12 h-12 flex items-center justify-center text-3xl bg-primary/10 rounded-xl border border-primary/20 shadow-sm mb-1">
@@ -456,7 +460,7 @@ export function PlantDialog({
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
                   <span className="text-sm text-primary font-medium truncate">
-                    Looking up {name}…
+                    {t("dialogs.plantDefinitionDialog.lookingUp", { name })}
                   </span>
                   <Button
                     size="sm"
@@ -464,21 +468,21 @@ export function PlantDialog({
                     onClick={cancelAiLookup}
                     className="ml-auto shrink-0"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                 </>
               ) : aiResult ? (
                 <>
                   <Sparkles className="w-4 h-4 text-primary shrink-0" />
                   <span className="text-sm text-primary font-medium">
-                    AI-filled — review &amp; edit below
+                    {t("dialogs.plantDefinitionDialog.aiFilledReview")}
                   </span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 text-muted-foreground shrink-0" />
                   <span className="text-sm text-muted-foreground">
-                    AI can fill in growing data
+                    {t("dialogs.plantDefinitionDialog.aiCanFill")}
                   </span>
                   <Button
                     size="sm"
@@ -486,7 +490,7 @@ export function PlantDialog({
                     onClick={() => handleAiLookup(name, variety)}
                     className="ml-auto shrink-0"
                   >
-                    Ask AI ✨
+                    {t("dialogs.plantDefinitionDialog.askAI")}
                   </Button>
                 </>
               )}
@@ -518,7 +522,7 @@ export function PlantDialog({
           {/* Colour picker */}
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Color Identity
+              {t("dialogs.plantDefinitionDialog.colorIdentity")}
             </label>
             <div className="flex flex-wrap gap-2.5">
               {COLORS.map((c) => (
@@ -541,7 +545,7 @@ export function PlantDialog({
           {/* Latin Name */}
           <div>
             <label htmlFor="plant-latin-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Latin Name
+              {t("dialogs.plantDefinitionDialog.latinName")}
               <ConfidenceBadge confidence={confidence?.latinName} />
             </label>
             <input
@@ -552,7 +556,7 @@ export function PlantDialog({
                 setLatinName(e.target.value);
                 markOverride("latinName");
               }}
-              placeholder="e.g., Solanum lycopersicum"
+              placeholder={t("dialogs.plantDefinitionDialog.latinNamePlaceholder")}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner italic"
             />
           </div>
@@ -561,20 +565,20 @@ export function PlantDialog({
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label htmlFor="plant-variety" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-                Variety
+                {t("dialogs.plantDefinitionDialog.variety")}
               </label>
               <input
                 id="plant-variety"
                 type="text"
                 value={variety}
                 onChange={(e) => setVariety(e.target.value)}
-                placeholder="e.g., Heirloom"
+                placeholder={t("dialogs.plantDefinitionDialog.varietyPlaceholder")}
                 className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
               />
             </div>
             <div>
               <label htmlFor="plant-days-to-harvest" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-                Days to Harvest
+                {t("dialogs.plantDefinitionDialog.daysToHarvest")}
                 <ConfidenceBadge confidence={confidence?.daysToHarvest} />
               </label>
               <input
@@ -590,7 +594,7 @@ export function PlantDialog({
             </div>
             <div>
               <label htmlFor="plant-spacing" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-                Spacing (cm)
+                {t("dialogs.plantDefinitionDialog.spacingCm")}
                 <ConfidenceBadge confidence={confidence?.spacingCm} />
               </label>
               <input
@@ -620,10 +624,10 @@ export function PlantDialog({
                 htmlFor="frost-hardy"
                 className="text-sm font-bold text-foreground"
               >
-                Frost Hardy
+                {t("dialogs.plantDefinitionDialog.frostHardy")}
               </Label>
               <span className="text-sm text-muted-foreground font-medium">
-                Can tolerate light frost
+                {t("dialogs.plantDefinitionDialog.frostHardyHint")}
               </span>
             </div>
           </div>
@@ -631,7 +635,7 @@ export function PlantDialog({
           {/* Sun Requirement */}
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Sunlight
+              {t("dialogs.plantDefinitionDialog.sunlight")}
               <ConfidenceBadge confidence={confidence?.sunRequirement} />
             </label>
             <div className="flex gap-2">
@@ -650,10 +654,10 @@ export function PlantDialog({
                   }`}
                 >
                   {opt === "full"
-                    ? "☀ Full"
+                    ? t("dialogs.plantDefinitionDialog.sunFull")
                     : opt === "partial"
-                      ? "⛅ Partial"
-                      : "🌥 Shade"}
+                      ? t("dialogs.plantDefinitionDialog.sunPartial")
+                      : t("dialogs.plantDefinitionDialog.sunShade")}
                 </button>
               ))}
             </div>
@@ -661,7 +665,7 @@ export function PlantDialog({
 
           <div>
             <label htmlFor="plant-watering" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Watering
+              {t("dialogs.plantDefinitionDialog.watering")}
               <ConfidenceBadge confidence={confidence?.watering} />
             </label>
             <textarea
@@ -671,14 +675,14 @@ export function PlantDialog({
                 setWatering(e.target.value);
                 markOverride("watering");
               }}
-              placeholder="e.g., Water deeply once or twice a week and keep soil evenly moist"
+              placeholder={t("dialogs.plantDefinitionDialog.wateringPlaceholder")}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-18 text-sm"
             />
           </div>
 
           <div>
             <label htmlFor="plant-growing-tips" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Growing Tips
+              {t("dialogs.plantDefinitionDialog.growingTips")}
               <ConfidenceBadge confidence={confidence?.growingTips} />
             </label>
             <textarea
@@ -688,7 +692,7 @@ export function PlantDialog({
                 setGrowingTips(e.target.value);
                 markOverride("growingTips");
               }}
-              placeholder="Add practical care notes, pruning guidance, or harvest timing cues"
+              placeholder={t("dialogs.plantDefinitionDialog.growingTipsPlaceholder")}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-24 text-sm"
             />
           </div>
@@ -696,11 +700,11 @@ export function PlantDialog({
           {/* Sow Indoors */}
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Sow Indoors
+              {t("dialogs.plantDefinitionDialog.sowIndoors")}
               <ConfidenceBadge confidence={confidence?.sowIndoorMonths} />
             </label>
             <div className="flex flex-wrap gap-1">
-              {["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(
+              {monthLabels.map(
                 (m, i) => {
                   const month = i + 1;
                   const active = sowIndoorMonths.includes(month);
@@ -729,11 +733,11 @@ export function PlantDialog({
           {/* Sow Direct */}
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Sow Direct / Outdoors
+              {t("dialogs.plantDefinitionDialog.sowDirect")}
               <ConfidenceBadge confidence={confidence?.sowDirectMonths} />
             </label>
             <div className="flex flex-wrap gap-1">
-              {["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(
+              {monthLabels.map(
                 (m, i) => {
                   const month = i + 1;
                   const active = sowDirectMonths.includes(month);
@@ -762,11 +766,11 @@ export function PlantDialog({
           {/* Harvest Months */}
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Harvest Months
+              {t("dialogs.plantDefinitionDialog.harvestMonths")}
               <ConfidenceBadge confidence={confidence?.harvestMonths} />
             </label>
             <div className="flex flex-wrap gap-1">
-              {["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"].map(
+              {monthLabels.map(
                 (m, i) => {
                   const month = i + 1;
                   const active = harvestMonths.includes(month);
@@ -796,7 +800,7 @@ export function PlantDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="plant-companions" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-                Good With
+                {t("dialogs.plantDefinitionDialog.goodWith")}
                 <ConfidenceBadge confidence={confidence?.companions} />
               </label>
               <input
@@ -807,13 +811,13 @@ export function PlantDialog({
                   setCompanions(e.target.value);
                   markOverride("companions");
                 }}
-                placeholder="basil, carrot, onion"
+                placeholder={t("dialogs.plantDefinitionDialog.goodWithPlaceholder")}
                 className="w-full px-3 py-2 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner text-sm"
               />
             </div>
             <div>
               <label htmlFor="plant-antagonists" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-                Avoid Near
+                {t("dialogs.plantDefinitionDialog.avoidNear")}
                 <ConfidenceBadge confidence={confidence?.antagonists} />
               </label>
               <input
@@ -824,7 +828,7 @@ export function PlantDialog({
                   setAntagonists(e.target.value);
                   markOverride("antagonists");
                 }}
-                placeholder="fennel, potato"
+                placeholder={t("dialogs.plantDefinitionDialog.avoidNearPlaceholder")}
                 className="w-full px-3 py-2 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner text-sm"
               />
             </div>
@@ -833,7 +837,7 @@ export function PlantDialog({
           {/* Description */}
           <div>
             <label htmlFor="plant-description" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              Short Description
+              {t("dialogs.plantDefinitionDialog.shortDescription")}
               <ConfidenceBadge confidence={confidence?.description} />
             </label>
             <textarea
@@ -843,7 +847,7 @@ export function PlantDialog({
                 setDescription(e.target.value);
                 markOverride("description");
               }}
-              placeholder="Tell us about this plant..."
+              placeholder={t("dialogs.plantDefinitionDialog.descriptionPlaceholder")}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-20 text-sm"
             />
           </div>
@@ -855,13 +859,13 @@ export function PlantDialog({
             onClick={() => onOpenChange(false)}
             className="rounded-xl"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSave}
             className="rounded-xl px-8 shadow-lg shadow-primary/20"
           >
-            Save Plant
+            {t("dialogs.plantDefinitionDialog.savePlant")}
           </Button>
         </DialogFooter>
       </DialogContent>

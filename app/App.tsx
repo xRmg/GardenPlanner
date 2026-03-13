@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import i18n, { supportedLocales, LOCALE_LABELS, type SupportedLocale } from "./i18n/config";
 import { PlanterGrid, PlantInstance } from "./components/PlanterGrid";
 import {
   EventsBar,
@@ -50,6 +52,7 @@ import type { PestEvent } from "./data/schema";
 
 export default function App() {
   useGlobalAsyncErrorToasts();
+  const { t } = useTranslation();
 
   const [eventsSheetOpen, setEventsSheetOpen] = useState(false);
 
@@ -70,6 +73,14 @@ export default function App() {
     repositoryRef,
     hasLoadedFromDB,
   } = useGardenData();
+
+  // ── i18n locale sync ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (settings.locale && i18n.language !== settings.locale) {
+      i18n.changeLanguage(settings.locale);
+      document.documentElement.lang = settings.locale;
+    }
+  }, [settings.locale]);
 
   // ── UI-only state kept in App as orchestration layer ──────────────────────
   const [activeTab, setActiveTab] = useState("areas");
@@ -327,7 +338,7 @@ export default function App() {
     <div className="size-full flex flex-col bg-background relative overflow-hidden">
       {dbError && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-destructive text-destructive-foreground px-4 py-2 text-sm font-semibold flex items-center gap-2">
-          <span>⚠ Database error – data will not persist:</span>
+          <span>{t("dbError")}</span>
           <span className="font-mono font-normal">{dbError}</span>
         </div>
       )}
@@ -339,7 +350,7 @@ export default function App() {
         }`}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/50 animate-pulse" />
-        Saved
+        {t("common.saved")}
       </div>
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden p-2 sm:p-4 gap-2 sm:gap-4 relative z-10">
@@ -352,23 +363,23 @@ export default function App() {
             <TabsList className="w-full h-auto flex-wrap justify-start bg-muted/40 border-none">
               <TabsTrigger value="areas">
                 <MapIcon className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Areas</span>
+                <span className="hidden sm:inline">{t("tabs.areas")}</span>
               </TabsTrigger>
               <TabsTrigger value="calendar">
                 <CalendarIcon className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Calendar</span>
+                <span className="hidden sm:inline">{t("tabs.calendar")}</span>
               </TabsTrigger>
               <TabsTrigger value="plants">
                 <Leaf className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">My Plants / Seeds</span>
+                <span className="hidden sm:inline">{t("tabs.plants")}</span>
               </TabsTrigger>
               <TabsTrigger value="seedlings">
                 <Sprout className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Seedlings</span>
+                <span className="hidden sm:inline">{t("tabs.seedlings")}</span>
               </TabsTrigger>
               <TabsTrigger value="settings">
                 <SettingsIcon className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Settings</span>
+                <span className="hidden sm:inline">{t("tabs.settings")}</span>
               </TabsTrigger>
             </TabsList>
 
@@ -377,10 +388,10 @@ export default function App() {
                 <div className="mb-4 px-1 flex items-center justify-between">
                   <div>
                     <h1 className="text-xl font-black text-foreground tracking-tight uppercase">
-                      Area Planner
+                      {t("areas.title")}
                     </h1>
                     <p className="text-muted-foreground mt-0.5 text-[10px] uppercase font-bold tracking-wider opacity-60">
-                      Add areas like 'Backyard' or 'Patio', then build planters inside each one.
+                      {t("areas.subtitle")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -394,11 +405,11 @@ export default function App() {
                     >
                       {isEditMode ? (
                         <>
-                          <EyeOff className="w-3.5 h-3.5" /> Done Editing
+                          <EyeOff className="w-3.5 h-3.5" /> {t("areas.doneEditing")}
                         </>
                       ) : (
                         <>
-                          <Eye className="w-3.5 h-3.5" /> Edit Layout
+                          <Eye className="w-3.5 h-3.5" /> {t("areas.editLayout")}
                         </>
                       )}
                     </button>
@@ -407,7 +418,7 @@ export default function App() {
                         onClick={handleAddArea}
                         className="bg-primary hover:bg-primary/90 h-8 rounded-lg px-3 shadow-md shadow-primary/20 text-xs font-bold uppercase tracking-wider"
                       >
-                        <Plus className="w-4 h-4 mr-1.5" /> New Area
+                        <Plus className="w-4 h-4 mr-1.5" /> {t("areas.newArea")}
                       </Button>
                     )}
                   </div>
@@ -420,10 +431,10 @@ export default function App() {
                         <MapIcon className="w-6 h-6 text-primary" />
                       </div>
                       <p className="text-lg font-bold text-foreground">
-                        Your garden map is empty
+                        {t("areas.emptyTitle")}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-                        Add your first area — like "Backyard" or "Front Porch" — then lay out planters inside it.
+                        {t("areas.emptyHint")}
                       </p>
                     </div>
                   ) : (
@@ -500,7 +511,7 @@ export default function App() {
                                 onClick={() => handleMoveArea(area.id, "up")}
                                 disabled={areaIdx === 0}
                                 className="h-7 w-7 rounded-md"
-                                aria-label={`Move ${area.name} up`}
+                                aria-label={t("areas.moveAreaUpAriaLabel")}
                               >
                                 <MoveUp className="w-3.5 h-3.5" />
                               </Button>
@@ -512,7 +523,7 @@ export default function App() {
                                 onClick={() => handleMoveArea(area.id, "down")}
                                 disabled={areaIdx === areas.length - 1}
                                 className="h-7 w-7 rounded-md"
-                                aria-label={`Move ${area.name} down`}
+                                aria-label={t("areas.moveAreaDownAriaLabel")}
                               >
                                 <MoveDown className="w-3.5 h-3.5" />
                               </Button>
@@ -523,7 +534,7 @@ export default function App() {
                                 size="icon"
                                 onClick={() => handleRemoveArea(area.id)}
                                 className="h-7 w-7 rounded-md text-destructive hover:bg-destructive/10"
-                                aria-label={`Remove ${area.name}`}
+                                aria-label={t("areas.removeAreaAriaLabel")}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
@@ -614,7 +625,7 @@ export default function App() {
                             >
                               <Plus className="w-8 h-8 mb-2 group-hover:scale-110 transition-transform" />
                               <span className="text-xs font-bold uppercase tracking-widest">
-                                New Planter
+                                {t("areas.newPlanter")}
                               </span>
                             </button>
                           </div>
@@ -645,10 +656,10 @@ export default function App() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
-                        My Plants & Seeds
+                        {t("plants.title")}
                       </h2>
                       <p className="text-muted-foreground text-[11px] font-medium mt-1 uppercase tracking-wider opacity-60">
-                        Manage your catalog of vegetables, seeds, and flowers.
+                        {t("plants.subtitle")}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -661,7 +672,7 @@ export default function App() {
                         variant="outline"
                         className="h-8 rounded-lg px-3 border-primary/40 text-primary hover:bg-primary/5 shadow-sm text-xs font-bold uppercase tracking-wider"
                       >
-                        <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Seeds
+                        <Plus className="mr-1.5 h-3.5 w-3.5" /> {t("plants.addSeeds")}
                       </Button>
                       <Button
                         onClick={() => {
@@ -671,7 +682,7 @@ export default function App() {
                         }}
                         className="h-8 rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider"
                       >
-                        <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Plant
+                        <Plus className="mr-1.5 h-3.5 w-3.5" /> {t("plants.addPlant")}
                       </Button>
                     </div>
                   </div>
@@ -680,7 +691,7 @@ export default function App() {
                   <div className="flex items-center gap-3">
                     <input
                       type="search"
-                      placeholder="Search plants…"
+                      placeholder={t("plants.searchPlaceholder")}
                       value={plantsSearch}
                       onChange={(e) => setPlantsSearch(e.target.value)}
                       className="h-8 flex-1 max-w-xs bg-white/60 border border-border/40 rounded-lg px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
@@ -688,14 +699,14 @@ export default function App() {
                     <div className="flex gap-0.5 bg-muted/30 rounded-lg p-0.5">
                       {(
                         [
-                          { key: "all", label: `All (${plantTabCounts.all})` },
+                          { key: "all", label: t("plants.tabAll", { count: plantTabCounts.all }) },
                           {
                             key: "plants",
-                            label: `🌿 Plants (${plantTabCounts.plants})`,
+                            label: t("plants.tabPlants", { count: plantTabCounts.plants }),
                           },
                           {
                             key: "seeds",
-                            label: `🌾 Seeds (${plantTabCounts.seeds})`,
+                            label: t("plants.tabSeeds", { count: plantTabCounts.seeds }),
                           },
                         ] as {
                           key: "all" | "plants" | "seeds";
@@ -738,10 +749,10 @@ export default function App() {
                     return (
                       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
                         <p className="text-sm font-bold uppercase tracking-wider">
-                          Nothing found
+                          {t("plants.nothingFound")}
                         </p>
                         <p className="text-xs mt-1">
-                          Try clearing the search or switching to "All"
+                          {t("plants.nothingFoundHint")}
                         </p>
                       </div>
                     );
@@ -754,7 +765,7 @@ export default function App() {
                           <div className="flex items-center gap-2 mb-3">
                             <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-pulse" />
                             <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                              Sow This Month
+                              {t("plants.sowThisMonth")}
                             </p>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -797,24 +808,24 @@ export default function App() {
                                         currentMonth,
                                       ) && (
                                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-primary text-white uppercase tracking-widest">
-                                          🌱 Indoors Now
+                                          {t("plants.indoorsNow")}
                                         </span>
                                       )}
                                       {plant.sowDirectMonths?.includes(
                                         currentMonth,
                                       ) && (
                                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-700 text-white uppercase tracking-widest">
-                                          🌾 Direct Now
+                                          {t("plants.directNow")}
                                         </span>
                                       )}
                                     </div>
                                     <div className="flex gap-3 mt-2 flex-wrap">
                                       <span className="text-[10px] font-bold text-muted-foreground">
-                                        {plant.daysToHarvest ?? 60}d harvest
+                                        {t("common.daysToHarvest", { count: plant.daysToHarvest ?? 60 })}
                                       </span>
                                       {plant.spacingCm && (
                                         <span className="text-[10px] font-bold text-muted-foreground">
-                                          {plant.spacingCm}cm spacing
+                                          {t("common.spacingCm", { count: plant.spacingCm })}
                                         </span>
                                       )}
                                     </div>
@@ -827,53 +838,53 @@ export default function App() {
                                         }`}
                                       >
                                         {plant.amount === undefined
-                                          ? "∞ Unlimited"
-                                          : `${availableStock} ${plant.isSeed ? "seeds" : "qty"}`}
+                                          ? t("common.infiniteUnlimited")
+                                          : `${availableStock} ${plant.isSeed ? t("common.seeds") : t("common.qty")}`}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="flex flex-col gap-1.5 shrink-0">
-                                    {plant.isSeed && !isDepleted && (
-                                      <button
-                                        onClick={() =>
-                                          handleOpenSowModal(plant)
-                                        }
-                                        className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
-                                        aria-label={`Sow seeds for ${plant.name}`}
-                                      >
-                                        <Sprout className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                    {isCustom ? (
-                                      <>
-                                        <button
-                                          onClick={() =>
-                                            handleEditPlantManually(plant)
-                                          }
-                                          className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                                          aria-label={`Edit ${plant.name}`}
-                                        >
-                                          <Edit className="w-3 h-3" />
-                                        </button>
-                                        <button
-                                          onClick={() =>
-                                            handleRemovePlantManually(plant.id)
-                                          }
-                                          className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
-                                          aria-label={`Delete ${plant.name}`}
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        disabled
-                                        aria-label="Bundled plants cannot be edited"
-                                        className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
-                                      >
-                                        <SettingsIcon className="w-3 h-3" />
-                                      </button>
-                                    )}
+                                        {plant.isSeed && !isDepleted && (
+                                       <button
+                                         onClick={() =>
+                                           handleOpenSowModal(plant)
+                                         }
+                                         className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+                                         aria-label={t("plants.sowSeedsAriaLabel", { name: plant.name })}
+                                       >
+                                         <Sprout className="w-3.5 h-3.5" />
+                                       </button>
+                                     )}
+                                     {isCustom ? (
+                                       <>
+                                         <button
+                                           onClick={() =>
+                                             handleEditPlantManually(plant)
+                                           }
+                                           className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                                           aria-label={t("plants.editAriaLabel", { name: plant.name })}
+                                         >
+                                           <Edit className="w-3 h-3" />
+                                         </button>
+                                         <button
+                                           onClick={() =>
+                                             handleRemovePlantManually(plant.id)
+                                           }
+                                           className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
+                                           aria-label={t("plants.deleteAriaLabel", { name: plant.name })}
+                                         >
+                                           <Trash2 className="w-3 h-3" />
+                                         </button>
+                                       </>
+                                     ) : (
+                                       <button
+                                         disabled
+                                         aria-label={t("plants.bundledCannotEdit")}
+                                         className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
+                                       >
+                                         <SettingsIcon className="w-3 h-3" />
+                                       </button>
+                                     )}
                                   </div>
                                 </div>
                               );
@@ -937,7 +948,7 @@ export default function App() {
                                             : "bg-blue-100 text-blue-700"
                                         }`}
                                       >
-                                        {isDepleted ? "Empty" : "Seed"}
+                                        {isDepleted ? t("plants.emptyBadge") : t("plants.seedBadge")}
                                       </span>
                                     )}
                                     {plant.frostHardy === true && (
@@ -955,47 +966,47 @@ export default function App() {
                                     </span>
                                   </div>
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-                                    {plant.isSeed && !isDepleted && (
-                                      <button
-                                        onClick={() =>
-                                          handleOpenSowModal(plant)
-                                        }
-                                        className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
-                                        aria-label={`Sow seeds for ${plant.name}`}
-                                      >
-                                        <Sprout className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                    {isCustom ? (
-                                      <>
-                                        <button
-                                          onClick={() =>
-                                            handleEditPlantManually(plant)
-                                          }
-                                          className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                                          aria-label={`Edit ${plant.name}`}
-                                        >
-                                          <Edit className="w-3 h-3" />
-                                        </button>
-                                        <button
-                                          onClick={() =>
-                                            handleRemovePlantManually(plant.id)
-                                          }
-                                          className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
-                                          aria-label={`Delete ${plant.name}`}
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        disabled
-                                        aria-label="Bundled plants cannot be edited"
-                                        className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
-                                      >
-                                        <SettingsIcon className="w-3 h-3" />
-                                      </button>
-                                    )}
+                                      {plant.isSeed && !isDepleted && (
+                                       <button
+                                         onClick={() =>
+                                           handleOpenSowModal(plant)
+                                         }
+                                         className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
+                                         aria-label={t("plants.sowSeedsAriaLabel", { name: plant.name })}
+                                       >
+                                         <Sprout className="w-3 h-3" />
+                                       </button>
+                                     )}
+                                     {isCustom ? (
+                                       <>
+                                         <button
+                                           onClick={() =>
+                                             handleEditPlantManually(plant)
+                                           }
+                                           className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                                           aria-label={t("plants.editAriaLabel", { name: plant.name })}
+                                         >
+                                           <Edit className="w-3 h-3" />
+                                         </button>
+                                         <button
+                                           onClick={() =>
+                                             handleRemovePlantManually(plant.id)
+                                           }
+                                           className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
+                                           aria-label={t("plants.deleteAriaLabel", { name: plant.name })}
+                                         >
+                                           <Trash2 className="w-3 h-3" />
+                                         </button>
+                                       </>
+                                     ) : (
+                                       <button
+                                         disabled
+                                         aria-label={t("plants.bundledCannotEdit")}
+                                         className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
+                                       >
+                                         <SettingsIcon className="w-3 h-3" />
+                                       </button>
+                                     )}
                                   </div>
                                 </div>
                               );
@@ -1014,27 +1025,27 @@ export default function App() {
                 <div className="flex justify-between items-center mb-5">
                   <div>
                     <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
-                      Active Seedlings
+                      {t("seedlings.title")}
                     </h2>
                     <p className="text-muted-foreground text-[11px] font-medium mt-1 uppercase tracking-wider opacity-60">
-                      Follow each batch from first sprout to planting day.
+                      {t("seedlings.subtitle")}
                     </p>
                   </div>
                   <Button
                     onClick={() => setShowAddSeedlingModal(true)}
                     className="h-8 rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider"
                   >
-                    <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Seedling
+                    <Plus className="mr-1.5 h-3.5 w-3.5" /> {t("seedlings.addSeedling")}
                   </Button>
                 </div>
                 {seedlings.length === 0 ? (
                   <div className="text-center py-12 bg-emerald-50/40 rounded-2xl border-2 border-dashed border-emerald-200/50">
                     <Sprout className="mx-auto w-10 h-10 text-emerald-400/60 mb-3" />
                     <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider">
-                      Nothing sprouting yet
+                      {t("seedlings.emptyTitle")}
                     </p>
                     <p className="text-muted-foreground/60 text-[10px] mt-1 normal-case font-medium">
-                      Sow some seeds to start tracking your first batch.
+                      {t("seedlings.emptyHint")}
                     </p>
                   </div>
                 ) : (
@@ -1043,28 +1054,28 @@ export default function App() {
                       [
                         {
                           status: "ready" as const,
-                          label: "Ready to Plant",
+                          label: t("seedlings.statusLabels.ready"),
                           dotColor: "bg-primary",
                           borderColor: "border-l-primary",
                           featured: true,
                         },
                         {
                           status: "hardening" as const,
-                          label: "Hardening Off",
+                          label: t("seedlings.statusLabels.hardening"),
                           dotColor: "bg-orange-500",
                           borderColor: "border-l-orange-400",
                           featured: false,
                         },
                         {
                           status: "growing" as const,
-                          label: "Growing",
+                          label: t("seedlings.statusLabels.growing"),
                           dotColor: "bg-blue-500",
                           borderColor: "border-l-blue-400",
                           featured: false,
                         },
                         {
                           status: "germinating" as const,
-                          label: "Germinating",
+                          label: t("seedlings.statusLabels.germinating"),
                           dotColor: "bg-amber-500",
                           borderColor: "border-l-amber-400",
                           featured: false,
@@ -1112,17 +1123,16 @@ export default function App() {
                                       </h3>
                                       <div className="flex gap-3 mt-1">
                                         <span className="text-[10px] font-bold text-muted-foreground">
-                                          {Math.floor(
+                                          {t("seedlings.daysOld", { count: Math.floor(
                                             (Date.now() -
                                               new Date(
                                                 seedling.plantedDate,
                                               ).getTime()) /
                                               (1000 * 60 * 60 * 24),
-                                          )}
-                                          d old
+                                          ) })}
                                         </span>
                                         <span className="text-[10px] font-bold text-muted-foreground">
-                                          {seedling.seedCount}× batch
+                                          {t("seedlings.batchCount", { count: seedling.seedCount })}
                                         </span>
                                       </div>
                                       <div className="flex gap-2 mt-3">
@@ -1132,7 +1142,7 @@ export default function App() {
                                           }
                                           className="flex-1 h-7 bg-primary hover:bg-primary/90 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm shadow-primary/20"
                                         >
-                                          Use Batch
+                                          {t("seedlings.useBatch")}
                                         </Button>
                                         <Button
                                           variant="ghost"
@@ -1140,7 +1150,7 @@ export default function App() {
                                             handleRemoveSeedling(seedling.id)
                                           }
                                           className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
-                                          aria-label="Remove seedling batch"
+                                          aria-label={t("seedlings.removeSeedlingAriaLabel")}
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
                                         </Button>
@@ -1187,7 +1197,7 @@ export default function App() {
                                             }
                                             className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 shadow-none"
                                           >
-                                            Sprouted
+                                            {t("seedlings.sprouted")}
                                           </Button>
                                         )}
                                         {status === "growing" && (
@@ -1200,7 +1210,7 @@ export default function App() {
                                             }
                                             className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 shadow-none"
                                           >
-                                            Harden Off
+                                            {t("seedlings.hardenOff")}
                                           </Button>
                                         )}
                                         {status === "hardening" && (
@@ -1213,7 +1223,7 @@ export default function App() {
                                             }
                                             className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-none"
                                           >
-                                            Mark Ready
+                                            {t("seedlings.markReady")}
                                           </Button>
                                         )}
                                         <Button
@@ -1222,7 +1232,7 @@ export default function App() {
                                             handleRemoveSeedling(seedling.id)
                                           }
                                           className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
-                                          aria-label="Remove seedling batch"
+                                          aria-label={t("seedlings.removeSeedlingAriaLabel")}
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
                                         </Button>
@@ -1244,7 +1254,7 @@ export default function App() {
             <TabsContent value="settings" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
               <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <h2 className="text-2xl font-black text-foreground tracking-tight uppercase mb-6 leading-none">
-                  Settings
+                  {t("settings.title")}
                 </h2>
                 <div className="max-w-lg space-y-8">
                   {/* ── Location & Weather ─────────────────────────────── */}
@@ -1252,14 +1262,14 @@ export default function App() {
                     <div className="flex items-center gap-2 mb-1">
                       <MapPin className="w-4 h-4 text-primary" />
                       <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
-                        Location &amp; Weather
+                        {t("settings.locationWeather")}
                       </h3>
                     </div>
 
                     {/* Location with verify */}
                     <div className="space-y-1.5">
                       <label htmlFor="settings-location" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                        Location
+                        {t("settings.location")}
                       </label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
@@ -1281,7 +1291,7 @@ export default function App() {
                             onKeyDown={(e) => {
                               if (e.key === "Enter") handleVerifyLocation();
                             }}
-                            placeholder="e.g. London, UK"
+                            placeholder={t("settings.locationPlaceholder")}
                           />
                           {locationStatus === "valid" && (
                             <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500 pointer-events-none" />
@@ -1301,7 +1311,7 @@ export default function App() {
                           {locationStatus === "checking" ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            "Verify"
+                            t("common.verify")
                           )}
                         </button>
                       </div>
@@ -1312,9 +1322,11 @@ export default function App() {
                       )}
                       {locationStatus === "valid" && settings.lat != null && (
                         <p className="text-[11px] text-green-600 ml-1">
-                          Verified · {settings.lat.toFixed(4)}°,{" "}
-                          {settings.lng?.toFixed(4)}° · Climate zone auto-set to{" "}
-                          <strong>{settings.growthZone}</strong>
+                          {t("settings.locationVerified", {
+                            lat: settings.lat.toFixed(4),
+                            lng: settings.lng?.toFixed(4),
+                            zone: settings.growthZone,
+                          })}
                         </p>
                       )}
                     </div>
@@ -1322,9 +1334,9 @@ export default function App() {
                     {/* Climate Zone — auto-derived but still overridable */}
                     <div className="space-y-1.5">
                       <label htmlFor="settings-growth-zone" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                        Köppen–Geiger Climate Zone
+                        {t("settings.koppenZone")}
                         <span className="ml-2 normal-case font-medium text-muted-foreground/70">
-                          (auto-derived from location, or set manually)
+                          {t("settings.koppenZoneNote")}
                         </span>
                       </label>
                       <select
@@ -1338,67 +1350,41 @@ export default function App() {
                           }))
                         }
                       >
-                        <optgroup label="A — Tropical">
-                          <option value="Af">Af — Tropical Rainforest</option>
-                          <option value="Am">Am — Tropical Monsoon</option>
-                          <option value="Aw">Aw/As — Tropical Savanna</option>
+                        <optgroup label={t("settings.climateZones.groupTropical")}>
+                          <option value="Af">{t("settings.climateZones.Af")}</option>
+                          <option value="Am">{t("settings.climateZones.Am")}</option>
+                          <option value="Aw">{t("settings.climateZones.Aw")}</option>
                         </optgroup>
-                        <optgroup label="B — Arid">
-                          <option value="BWh">BWh — Hot Desert</option>
-                          <option value="BWk">BWk — Cold Desert</option>
-                          <option value="BSh">BSh — Hot Steppe</option>
-                          <option value="BSk">BSk — Cold Steppe</option>
+                        <optgroup label={t("settings.climateZones.groupArid")}>
+                          <option value="BWh">{t("settings.climateZones.BWh")}</option>
+                          <option value="BWk">{t("settings.climateZones.BWk")}</option>
+                          <option value="BSh">{t("settings.climateZones.BSh")}</option>
+                          <option value="BSk">{t("settings.climateZones.BSk")}</option>
                         </optgroup>
-                        <optgroup label="C — Temperate">
-                          <option value="Csa">
-                            Csa — Mediterranean (Hot Summer)
-                          </option>
-                          <option value="Csb">
-                            Csb — Mediterranean (Warm Summer)
-                          </option>
-                          <option value="Csc">
-                            Csc — Mediterranean (Cool Summer)
-                          </option>
-                          <option value="Cwa">
-                            Cwa — Humid Subtropical (Dry Winter)
-                          </option>
-                          <option value="Cwb">
-                            Cwb — Subtropical Highland (Dry Winter)
-                          </option>
-                          <option value="Cfa">Cfa — Humid Subtropical</option>
-                          <option value="Cfb">Cfb — Temperate Oceanic</option>
-                          <option value="Cfc">Cfc — Subpolar Oceanic</option>
+                        <optgroup label={t("settings.climateZones.groupTemperate")}>
+                          <option value="Csa">{t("settings.climateZones.Csa")}</option>
+                          <option value="Csb">{t("settings.climateZones.Csb")}</option>
+                          <option value="Csc">{t("settings.climateZones.Csc")}</option>
+                          <option value="Cwa">{t("settings.climateZones.Cwa")}</option>
+                          <option value="Cwb">{t("settings.climateZones.Cwb")}</option>
+                          <option value="Cfa">{t("settings.climateZones.Cfa")}</option>
+                          <option value="Cfb">{t("settings.climateZones.Cfb")}</option>
+                          <option value="Cfc">{t("settings.climateZones.Cfc")}</option>
                         </optgroup>
-                        <optgroup label="D — Continental">
-                          <option value="Dsa">
-                            Dsa — Hot-Summer Mediterranean Continental
-                          </option>
-                          <option value="Dsb">
-                            Dsb — Warm-Summer Mediterranean Continental
-                          </option>
-                          <option value="Dwa">
-                            Dwa — Monsoon-Influenced Hot-Summer Continental
-                          </option>
-                          <option value="Dwb">
-                            Dwb — Monsoon-Influenced Warm-Summer Continental
-                          </option>
-                          <option value="Dwc">
-                            Dwc — Monsoon-Influenced Subarctic
-                          </option>
-                          <option value="Dfa">
-                            Dfa — Continental (Hot Summer)
-                          </option>
-                          <option value="Dfb">
-                            Dfb — Continental (Warm Summer)
-                          </option>
-                          <option value="Dfc">Dfc — Subarctic</option>
-                          <option value="Dfd">
-                            Dfd — Subarctic (Extreme Winter)
-                          </option>
+                        <optgroup label={t("settings.climateZones.groupContinental")}>
+                          <option value="Dsa">{t("settings.climateZones.Dsa")}</option>
+                          <option value="Dsb">{t("settings.climateZones.Dsb")}</option>
+                          <option value="Dwa">{t("settings.climateZones.Dwa")}</option>
+                          <option value="Dwb">{t("settings.climateZones.Dwb")}</option>
+                          <option value="Dwc">{t("settings.climateZones.Dwc")}</option>
+                          <option value="Dfa">{t("settings.climateZones.Dfa")}</option>
+                          <option value="Dfb">{t("settings.climateZones.Dfb")}</option>
+                          <option value="Dfc">{t("settings.climateZones.Dfc")}</option>
+                          <option value="Dfd">{t("settings.climateZones.Dfd")}</option>
                         </optgroup>
-                        <optgroup label="E — Polar">
-                          <option value="ET">ET — Tundra</option>
-                          <option value="EF">EF — Ice Cap</option>
+                        <optgroup label={t("settings.climateZones.groupPolar")}>
+                          <option value="ET">{t("settings.climateZones.ET")}</option>
+                          <option value="EF">{t("settings.climateZones.EF")}</option>
                         </optgroup>
                       </select>
                     </div>
@@ -1411,11 +1397,11 @@ export default function App() {
                     <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="w-4 h-4 text-primary" />
                       <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
-                        AI Integration
+                        {t("settings.aiIntegration")}
                       </h3>
                       {orStatus === "valid" && (
                         <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" /> Enabled
+                          <CheckCircle2 className="w-3 h-3" /> {t("common.enabled")}
                         </span>
                       )}
                     </div>
@@ -1423,7 +1409,7 @@ export default function App() {
                     {/* OpenRouter API key */}
                     <div className="space-y-1.5">
                       <label htmlFor="settings-or-key" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                        OpenRouter API Key
+                        {t("settings.openRouterKey")}
                       </label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
@@ -1449,8 +1435,8 @@ export default function App() {
                             placeholder={
                               settings.aiProvider.type === "server" &&
                               !orKeyDraft.trim()
-                                ? "API key stored server-side — enter a new key to replace"
-                                : "sk-or-…"
+                                ? t("settings.keyStoredServerSide")
+                                : t("settings.keyPlaceholder")
                             }
                             autoComplete="off"
                           />
@@ -1458,7 +1444,7 @@ export default function App() {
                             type="button"
                             onClick={() => setShowOrKey((v) => !v)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            aria-label={showOrKey ? "Hide API key" : "Show API key"}
+                            aria-label={showOrKey ? t("settings.hideApiKey") : t("settings.showApiKey")}
                           >
                             {showOrKey ? (
                               <EyeOff className="w-4 h-4" />
@@ -1483,7 +1469,7 @@ export default function App() {
                           {orStatus === "checking" ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            "Validate & Save"
+                            t("settings.validateAndSave")
                           )}
                         </button>
                       </div>
@@ -1495,23 +1481,22 @@ export default function App() {
                       {settings.aiProvider.type === "server" &&
                         settings.aiLastValidatedAt && (
                           <p className="text-[11px] text-green-700 ml-1">
-                            Last validated{" "}
-                            {new Date(
-                              settings.aiLastValidatedAt,
-                            ).toLocaleString()}
+                            {t("settings.lastValidated", {
+                              date: new Date(
+                                settings.aiLastValidatedAt,
+                              ).toLocaleString(),
+                            })}
                           </p>
                         )}
                       <p className="text-[11px] text-muted-foreground ml-1">
-                        Required for AI plant lookup and suggestions. Key
-                        validation and all AI requests are routed through the
-                        backend.{" "}
+                        {t("settings.aiDescription")}{" "}
                         <a
                           href="https://openrouter.ai/keys"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="underline hover:text-foreground"
                         >
-                          Get a free key at openrouter.ai
+                          {t("settings.getKeyAt")}
                         </a>
                       </p>
                     </div>
@@ -1519,7 +1504,7 @@ export default function App() {
                     {/* Model */}
                     <div className="space-y-1.5">
                       <label htmlFor="settings-ai-model" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                        Model
+                        {t("settings.aiModel")}
                       </label>
                       <input
                         id="settings-ai-model"
@@ -1531,14 +1516,44 @@ export default function App() {
                             aiModel: e.target.value,
                           }))
                         }
-                        placeholder="google/gemini-2.0-flash"
+                        placeholder={t("settings.aiModelDefault")}
                       />
                       <p className="text-[11px] text-muted-foreground ml-1">
-                        Any model available on your OpenRouter account. Default:{" "}
-                        <code className="font-mono">
-                          google/gemini-2.0-flash
-                        </code>
+                        {t("settings.aiModelHint")}
                       </p>
+                    </div>
+                  </section>
+
+                  {/* ── Language ─────────────────────────────────────────────────────── */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        {t("settings.language")}
+                      </h3>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="settings-language" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                        {t("settings.language")}
+                      </label>
+                      <p className="text-[11px] text-muted-foreground/70 ml-1">{t("settings.languageHint")}</p>
+                      <select
+                        id="settings-language"
+                        className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
+                        value={settings.locale || "en"}
+                        onChange={(e) => {
+                          const locale = e.target.value as SupportedLocale;
+                          i18n.changeLanguage(locale);
+                          document.documentElement.lang = locale;
+                          setSettings((prev) => ({ ...prev, locale }));
+                          repositoryRef.current?.saveSettings({ ...settings, locale });
+                        }}
+                      >
+                        {supportedLocales.map((locale) => (
+                          <option key={locale} value={locale}>
+                            {LOCALE_LABELS[locale]}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </section>
                 </div>
