@@ -117,7 +117,7 @@ export const LOCALE_LABELS: Record<SupportedLocale, string> = {
 };
 
 // 4. Add to i18next resources
-i18n.use(LanguageDetector).use(initReactI18next).init({
+i18n.use(initReactI18next).init({
   resources: {
     en: { ui: enUI, plants: enPlants, calendar: enCalendar, errors: enErrors },
     nl: { ui: nlUI, plants: nlPlants, calendar: nlCalendar, errors: nlErrors },
@@ -230,11 +230,14 @@ The key must match the plant's `id` in the bundled plant catalogue
 
 ## Language Detection & Persistence
 
-On first visit the user's browser language (`navigator.language`) is used automatically
-via `i18next-browser-languagedetector`. After the user explicitly selects a language in
-Settings, the choice is persisted to:
+On first visit, if the user has no stored locale preference, the browser's
+`navigator.language` is automatically mapped to the nearest supported locale (in
+`useGardenData.ts` via `detectBrowserLocale()` from `app/i18n/config.ts`). The detected
+locale is saved to both Dexie (`settings.locale`) and `localStorage` (`gp_locale`).
 
-1. `localStorage` under the key `gp_locale` (for fast startup)
+After the user explicitly selects a language in Settings, the choice is persisted to:
+
+1. `localStorage` under the key `gp_locale` (for fast startup before DB loads)
 2. The `settings.locale` field in IndexedDB (Dexie) — survives `localStorage` clears
 
 The `<html lang>` attribute is updated whenever the language changes, which is important

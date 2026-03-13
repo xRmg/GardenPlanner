@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "@/app/i18n/config";
 import {
   Dialog,
   DialogContent,
@@ -128,7 +127,7 @@ export function PlantDialog({
   defaultIsSeed = false,
   settings,
 }: PlantDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const monthLabels = useMemo(
     () => Array.from({ length: 12 }, (_, i) => formatMonthNarrow(i + 1)),
     [i18n.language],

@@ -97,12 +97,12 @@
 > Design spec: `docs/i18n-and-plant-library-architecture.md`  
 > How to add a new language: `docs/adding-a-new-language.md`
 
-- [x] **2.1** — Install `i18next`, `react-i18next`, `i18next-browser-languagedetector`; configure TypeScript namespace augmentation (`app/i18n/config.ts`, `app/i18n/i18next.d.ts`)
+- [x] **2.1** — Install `i18next`, `react-i18next`; configure TypeScript namespace augmentation (`app/i18n/config.ts`, `app/i18n/i18next.d.ts`); `detectBrowserLocale()` helper for manual locale detection
 - [x] **2.2** — Extract ~373 hardcoded strings from `App.tsx`, `EventsBar`, `ToolBar`, and all dialogs into `app/i18n/locales/en/{ui,plants,calendar,errors}.json`; all components updated to use `useTranslation()`
 - [x] **2.3** — Replace hardcoded `["J","F","M","A","M","J","J","A","S","O","N","D"]` month array with `Intl.DateTimeFormat` via `formatMonthNarrow()` in `app/i18n/utils/formatting.ts`
 - [x] **2.4** — Dutch (nl) translations: `ui.json`, `plants.json`, `calendar.json`, `errors.json`
-- [x] **2.5** — Plant name translations: en + nl entries for all built-in plants (68 plants) in `app/i18n/locales/{en,nl}/plants.json`
-- [x] **2.6** — Language switcher in Settings tab (browser language detection on first visit via `i18next-browser-languagedetector`; persist choice to `settings.locale` in Dexie + `gp_locale` in localStorage; sets `<html lang>`)
+- [x] **2.5** — Plant name translations: en + nl entries for all 10 bundled plants + 55 additional common plants in `app/i18n/locales/{en,nl}/plants.json`; `getPlantName()` helper in `app/i18n/utils/plantTranslation.ts`
+- [x] **2.6** — Language switcher in Settings tab; browser locale auto-detected on first visit via `detectBrowserLocale()` in `useGardenData.ts`; choice persisted to `settings.locale` in Dexie + `gp_locale` in localStorage; `<html lang>` updated
 
 ---
 
@@ -150,7 +150,7 @@
 | ------------------------------------- | ----- | ------------------------------ |
 | ~~`i18next@^24`~~                     | ~~2~~ | ✅ installed (`^25`)           |
 | ~~`react-i18next@^15`~~               | ~~2~~ | ✅ installed (`^16`)           |
-| ~~`i18next-browser-languagedetector@^8`~~ | ~~2~~ | ✅ installed             |
+| ~~`i18next-browser-languagedetector@^8`~~ | ~~2~~ | Not used — detection handled manually in `useGardenData.ts` |
 | `hono@^4.7`                           | 3     | Backend framework (Workers)    |
 | `@hono/zod-validator@^0.5`            | 3     | Request validation             |
 | `wrangler@^4`                         | 3     | Cloudflare Workers CLI         |

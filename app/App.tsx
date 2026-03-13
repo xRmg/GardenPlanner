@@ -1607,6 +1607,7 @@ export default function App() {
                           const locale = e.target.value as SupportedLocale;
                           i18n.changeLanguage(locale);
                           document.documentElement.lang = locale;
+                          localStorage.setItem("gp_locale", locale);
                           setSettings((prev) => ({ ...prev, locale }));
                           repositoryRef.current?.saveSettings({ ...settings, locale });
                         }}

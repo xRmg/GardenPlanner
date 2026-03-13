@@ -30,6 +30,8 @@ import type { Area, Seedling } from "../types";
 import type { Plant } from "../components/PlanterGrid";
 import type { GardenEvent } from "../components/EventsBar";
 import { getPlantCache } from "../services/ai/plantCache";
+import i18n, { detectBrowserLocale, supportedLocales } from "../i18n/config";
+import type { SupportedLocale } from "../i18n/config";
 
 export interface GardenDataState {
   /** Non-null when the database failed to open. Data will not persist. */
@@ -122,7 +124,37 @@ export function useGardenData(): GardenDataState {
         setAreas(loadedAreas as unknown as Area[]);
         setCustomPlants(nextPlants as unknown as Plant[]);
         setSeedlings(loadedSeedlings as unknown as Seedling[]);
-        setSettings(loadedSettings);
+
+        // ── Locale bootstrap ────────────────────────────────────────────────
+        // On first visit there is no persisted locale; detect from the browser
+        // and persist so subsequent loads are instant.
+        let finalSettings = loadedSettings;
+        const storedLocaleRaw = localStorage.getItem("gp_locale");
+        const storedLocale: SupportedLocale | null =
+          storedLocaleRaw !== null &&
+          (supportedLocales as readonly string[]).includes(storedLocaleRaw)
+            ? (storedLocaleRaw as SupportedLocale)
+            : null;
+        if (storedLocale) {
+          // User has already chosen a language — honour it even if Dexie has a
+          // stale/default value.
+          if (loadedSettings.locale !== storedLocale) {
+            finalSettings = { ...loadedSettings, locale: storedLocale };
+            await repo.saveSettings(finalSettings);
+          }
+        } else if (!storedLocaleRaw) {
+          // True first visit: no explicit choice yet — detect from browser.
+          const detected = detectBrowserLocale();
+          localStorage.setItem("gp_locale", detected);
+          if (detected !== loadedSettings.locale) {
+            finalSettings = { ...loadedSettings, locale: detected };
+            await repo.saveSettings(finalSettings);
+          }
+        }
+        i18n.changeLanguage(finalSettings.locale);
+        document.documentElement.lang = finalSettings.locale;
+
+        setSettings(finalSettings);
         setEvents(loadedEvents as unknown as GardenEvent[]);
         hasLoadedFromDB.current = true;
         dismissErrorToast(ERROR_TOAST_IDS.dbInit);
