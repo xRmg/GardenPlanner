@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-import { useState, useMemo } from "react";
-import { Plus, Map as MapIcon } from "lucide-react";
-import { useTranslation } from "react-i18next";
-=======
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Plus, Map as MapIcon, ChevronLeft, ChevronRight } from "lucide-react";
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
+import { useTranslation } from "react-i18next";
 import { Plant } from "./PlanterGrid";
 
 interface ToolBarProps {
@@ -31,6 +26,7 @@ export function ToolBar({
   seedlingCount = 0,
   onShowSeedlings,
 }: ToolBarProps) {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<PlantFilter>("all");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -55,8 +51,8 @@ export function ToolBar({
   // Re-check whenever the filtered list changes
   useEffect(() => {
     // Small delay to let DOM settle after filter change
-    const t = setTimeout(updateScrollState, 50);
-    return () => clearTimeout(t);
+    const timer = setTimeout(updateScrollState, 50);
+    return () => clearTimeout(timer);
   }, [filter, updateScrollState]);
 
   const scroll = (dir: "left" | "right") => {
@@ -64,8 +60,6 @@ export function ToolBar({
     if (!el) return;
     el.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" });
   };
-
-  const { t } = useTranslation();
 
   const { filtered, seedCount, plantCount } = useMemo(() => {
     const seeds = plants.filter((p) => p.isSeed);
@@ -152,57 +146,6 @@ export function ToolBar({
           <div
             className={`absolute left-0 top-0 bottom-0 z-10 flex items-center transition-opacity duration-200 ${canScrollLeft ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           >
-<<<<<<< HEAD
-            <Plus className="w-3.5 h-3.5" />
-            {t("toolbar.add")}
-          </button>
-          <div className="w-px h-6 bg-border/20 self-center mx-1 shrink-0" />
-
-          {filtered.length === 0 ? (
-            <span className="self-center text-[10px] text-muted-foreground/50 italic px-2">
-              {filter === "seeds"
-                ? t("toolbar.noSeedsYet")
-                : filter === "plants"
-                  ? t("toolbar.noPlantsYet")
-                  : t("toolbar.noItemsYet")}
-            </span>
-          ) : (
-            filtered.map((plant) => {
-              const isSelected = selectedPlant?.id === plant.id;
-              const isDepleted = plant.isSeed && plant.amount === 0;
-              const isInfinite =
-                plant.amount === undefined || plant.amount === null;
-              const showBadge = plant.isSeed && !isInfinite;
-
-              return (
-                <button
-                  key={plant.id}
-                  onClick={() => onSelectPlant(isDepleted ? null : plant)}
-                  disabled={isDepleted}
-                  title={
-                    isDepleted
-                      ? t("toolbar.outOfSeeds", { name: plant.name })
-                      : plant.isSeed
-                        ? isInfinite
-                          ? t("toolbar.infiniteSeeds", { name: plant.name })
-                          : t("toolbar.seedsAvailable", { name: plant.name, count: plant.amount })
-                        : plant.name
-                  }
-                  className={`h-8 px-3 rounded-lg border transition-[background-color,border-color,box-shadow] flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in duration-300 relative ${
-                    isDepleted
-                      ? "border-red-200 bg-red-50/50 opacity-50 cursor-not-allowed grayscale"
-                      : isSelected
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/5 shadow-sm"
-                        : "border-transparent bg-white/40 hover:bg-white hover:border-border shadow-sm"
-                  }`}
-                >
-                  <span className="text-base drop-shadow-sm">{plant.icon}</span>
-                  <span
-                    className={`text-xs font-semibold ${
-                      isSelected && !isDepleted
-                        ? "text-primary font-bold"
-                        : "text-foreground"
-=======
             <div className="absolute inset-y-0 left-0 w-10 bg-linear-to-r from-card to-transparent" />
             <button
               onClick={() => scroll("left")}
@@ -223,19 +166,17 @@ export function ToolBar({
               className="h-8 px-3 rounded-lg border border-dashed border-primary text-primary hover:bg-primary/5 transition-[background-color] shrink-0 flex items-center gap-1.5 text-xs font-bold"
             >
               <Plus className="w-3.5 h-3.5" />
-              Add
+              {t("toolbar.add")}
             </button>
             <div className="w-px h-6 bg-border self-center mx-1 shrink-0" />
 
             {filtered.length === 0 ? (
               <span className="self-center text-[10px] text-muted-foreground/50 italic px-2">
-                No{" "}
                 {filter === "seeds"
-                  ? "seeds"
+                  ? t("toolbar.noSeedsYet")
                   : filter === "plants"
-                    ? "plants"
-                    : "items"}{" "}
-                yet
+                    ? t("toolbar.noPlantsYet")
+                    : t("toolbar.noItemsYet")}
               </span>
             ) : (
               filtered.map((plant) => {
@@ -252,9 +193,11 @@ export function ToolBar({
                     disabled={isDepleted}
                     title={
                       isDepleted
-                        ? `${plant.name} – out of seeds`
+                        ? t("toolbar.outOfSeeds", { name: plant.name })
                         : plant.isSeed
-                          ? `${plant.name} (${isInfinite ? "∞" : plant.amount} seeds)`
+                          ? isInfinite
+                            ? t("toolbar.infiniteSeeds", { name: plant.name })
+                            : t("toolbar.seedsAvailable", { name: plant.name, count: plant.amount })
                           : plant.name
                     }
                     className={`h-8 px-3 rounded-lg border transition-[background-color,border-color,box-shadow] flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in duration-300 relative ${
@@ -263,7 +206,6 @@ export function ToolBar({
                         : isSelected
                           ? "border-primary bg-primary/5 ring-2 ring-primary/5 shadow-sm"
                           : "border-border/60 bg-white/70 hover:bg-white hover:border-border shadow-sm"
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                     }`}
                   >
                     <span className="text-base drop-shadow-sm">
@@ -278,23 +220,6 @@ export function ToolBar({
                     >
                       {plant.name}
                     </span>
-<<<<<<< HEAD
-                  )}
-                  {plant.isSeed && isInfinite && (
-                    <span className="text-xs font-black px-1 py-px rounded leading-none bg-emerald-50 text-emerald-600">
-                      ∞
-                    </span>
-                  )}
-                  {isDepleted && (
-                    <span className="text-[7px] font-black px-1 py-px rounded leading-none bg-red-100 text-red-600 uppercase">
-                      {t("common.empty")}
-                    </span>
-                  )}
-                </button>
-              );
-            })
-          )}
-=======
                     {/* Inventory badge */}
                     {showBadge && !isDepleted && (
                       <span
@@ -314,7 +239,7 @@ export function ToolBar({
                     )}
                     {isDepleted && (
                       <span className="text-[7px] font-black px-1 py-px rounded leading-none bg-red-100 text-red-600 uppercase">
-                        Empty
+                        {t("common.empty")}
                       </span>
                     )}
                   </button>
@@ -336,7 +261,6 @@ export function ToolBar({
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
         </div>
       </div>
     </div>

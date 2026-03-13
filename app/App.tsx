@@ -1217,7 +1217,8 @@ export default function App() {
                                       </div>
                                     </div>
                                   </div>
-                                ))}
+                                );
+                              })}
                               </div>
                             ) : (
                               <div className="space-y-1.5">

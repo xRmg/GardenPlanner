@@ -222,32 +222,18 @@ export function PlantDetailsDialog({
                 : `Part of a group of ${groupSize} ${plantInstance.plant.name} plants — pest events, health state, and growth stage will apply to plants with the same current state`}
             </div>
           )}
+
           {/* Plant Description */}
           {mergedPlant.description && (
             <div className="bg-accent/30 rounded-xl p-4 border border-accent">
-<<<<<<< HEAD
               <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-2">{t("dialogs.plantDetailsDialog.descriptionSection")}</h3>
               <p className="text-sm text-foreground/80">{mergedPlant.description}</p>
-=======
-              <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-2">
-                Description
-              </h3>
-              <p className="text-sm text-foreground/80">
-                {mergedPlant.description}
-              </p>
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
             </div>
           )}
 
           {/* Specific Plant Instance Info */}
           <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
-<<<<<<< HEAD
             <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">{t("dialogs.plantDetailsDialog.yourPlantDetails")}</h3>
-=======
-            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">
-              Your Plant Details
-            </h3>
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-start gap-2">
                 <Calendar className="w-4 h-4 mt-0.5 text-primary" />
@@ -263,13 +249,7 @@ export function PlantDetailsDialog({
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 mt-0.5 text-green-600" />
                 <div>
-<<<<<<< HEAD
                   <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.expectedHarvest")}</div>
-=======
-                  <div className="text-xs text-muted-foreground">
-                    Expected Harvest
-                  </div>
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                   <div className="text-sm font-medium">
                     {plantInstance.harvestDate
                       ? formatDate(plantInstance.harvestDate)
@@ -280,16 +260,8 @@ export function PlantDetailsDialog({
             </div>
 
             <div className="mt-4">
-<<<<<<< HEAD
               <label htmlFor="variety-input" className="text-xs font-bold text-muted-foreground block mb-1">
                 {t("dialogs.plantDetailsDialog.varietyOptional")}
-=======
-              <label
-                htmlFor="variety-input"
-                className="text-xs font-bold text-muted-foreground block mb-1"
-              >
-                Variety (optional)
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               </label>
               <input
                 id="variety-input"
@@ -365,13 +337,7 @@ export function PlantDetailsDialog({
 
           {/* Generic Plant Care Information */}
           <div className="bg-muted/20 rounded-xl p-4 border border-white/30">
-<<<<<<< HEAD
             <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">{t("dialogs.plantDetailsDialog.growingInformation")}</h3>
-=======
-            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">
-              Growing Information
-            </h3>
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
             <div className="space-y-3">
               <div className="flex items-start gap-2">
                 <Sun className="w-4 h-4 mt-0.5 text-yellow-600" />
@@ -411,13 +377,7 @@ export function PlantDetailsDialog({
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 mt-0.5 text-green-600" />
                 <div>
-<<<<<<< HEAD
                   <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.daysToHarvest")}</div>
-=======
-                  <div className="text-xs text-muted-foreground">
-                    Days to Harvest
-                  </div>
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                   <div className="text-sm">
                     {mergedPlant.daysToHarvest
                       ? t("dialogs.plantDetailsDialog.daysToHarvestValue", { count: mergedPlant.daysToHarvest })
@@ -427,13 +387,7 @@ export function PlantDetailsDialog({
               </div>
             </div>
             <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
-<<<<<<< HEAD
               <div className="text-xs font-bold text-muted-foreground mb-1">{t("dialogs.plantDetailsDialog.growingTips")}</div>
-=======
-              <div className="text-xs font-bold text-muted-foreground mb-1">
-                💡 Growing Tips
-              </div>
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               <div className="text-sm">
                 {mergedPlant.growingTips || t("dialogs.plantDetailsDialog.noTips")}
               </div>

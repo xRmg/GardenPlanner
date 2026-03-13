@@ -105,13 +105,7 @@ export function PlantPickerDialog({
                   )}
                   {plant.isSeed && (
                     <span className="text-xs font-black text-blue-500 mt-0.5">
-<<<<<<< HEAD
                       {plant.amount === undefined ? t("dialogs.plantPickerDialog.infiniteSeeds") : t("dialogs.plantPickerDialog.seedCount", { count: plant.amount })}
-=======
-                      {plant.amount === undefined
-                        ? "∞ seeds"
-                        : `${plant.amount} seeds`}
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                     </span>
                   )}
                 </button>

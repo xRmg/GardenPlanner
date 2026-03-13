@@ -384,16 +384,8 @@ export function PlantDialog({
             </div>
             <div className="ml-auto flex items-center gap-3">
               <div className="flex flex-col items-end gap-1">
-<<<<<<< HEAD
                 <label htmlFor="plant-amount" className="text-sm font-black text-muted-foreground uppercase tracking-widest block">
                   {isSeed ? t("dialogs.plantDefinitionDialog.seedCount") : t("dialogs.plantDefinitionDialog.quantity")}
-=======
-                <label
-                  htmlFor="plant-amount"
-                  className="text-sm font-black text-muted-foreground uppercase tracking-widest block"
-                >
-                  {isSeed ? "Seed Count" : "Quantity"}
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                 </label>
                 <div className="flex items-center gap-2">
                   {infiniteStock ? (
@@ -428,16 +420,8 @@ export function PlantDialog({
           {/* Plant Name + icon preview */}
           <div className="grid grid-cols-4 gap-4">
             <div className="col-span-3">
-<<<<<<< HEAD
               <label htmlFor="plant-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.plantName")}
-=======
-              <label
-                htmlFor="plant-name"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                Plant Name *
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               </label>
               <input
                 id="plant-name"
@@ -460,12 +444,7 @@ export function PlantDialog({
                 className={`w-full px-4 py-3 bg-muted/30 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner ${nameError ? "border-destructive" : "border-white/20"}`}
               />
               {nameError && (
-                <p
-                  id="plant-name-error"
-                  className="text-destructive text-xs mt-1 ml-1 animate-error-appear"
-                >
-                  {nameError}
-                </p>
+                <p id="plant-name-error" className="text-destructive text-xs mt-1 ml-1 animate-error-appear">{nameError}</p>
               )}
             </div>
             <div>
@@ -571,16 +550,8 @@ export function PlantDialog({
 
           {/* Latin Name */}
           <div>
-<<<<<<< HEAD
             <label htmlFor="plant-latin-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.latinName")}
-=======
-            <label
-              htmlFor="plant-latin-name"
-              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-            >
-              Latin Name
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               <ConfidenceBadge confidence={confidence?.latinName} />
             </label>
             <input
@@ -599,16 +570,8 @@ export function PlantDialog({
           {/* Variety, Days to Harvest, Spacing */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-<<<<<<< HEAD
               <label htmlFor="plant-variety" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.variety")}
-=======
-              <label
-                htmlFor="plant-variety"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                Variety
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               </label>
               <input
                 id="plant-variety"
@@ -620,16 +583,8 @@ export function PlantDialog({
               />
             </div>
             <div>
-<<<<<<< HEAD
               <label htmlFor="plant-days-to-harvest" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.daysToHarvest")}
-=======
-              <label
-                htmlFor="plant-days-to-harvest"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                Days to Harvest
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                 <ConfidenceBadge confidence={confidence?.daysToHarvest} />
               </label>
               <input
@@ -644,16 +599,8 @@ export function PlantDialog({
               />
             </div>
             <div>
-<<<<<<< HEAD
               <label htmlFor="plant-spacing" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.spacingCm")}
-=======
-              <label
-                htmlFor="plant-spacing"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                Spacing (cm)
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                 <ConfidenceBadge confidence={confidence?.spacingCm} />
               </label>
               <input
@@ -723,16 +670,8 @@ export function PlantDialog({
           </div>
 
           <div>
-<<<<<<< HEAD
             <label htmlFor="plant-watering" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.watering")}
-=======
-            <label
-              htmlFor="plant-watering"
-              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-            >
-              Watering
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               <ConfidenceBadge confidence={confidence?.watering} />
             </label>
             <textarea
@@ -748,16 +687,8 @@ export function PlantDialog({
           </div>
 
           <div>
-<<<<<<< HEAD
             <label htmlFor="plant-growing-tips" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.growingTips")}
-=======
-            <label
-              htmlFor="plant-growing-tips"
-              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-            >
-              Growing Tips
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               <ConfidenceBadge confidence={confidence?.growingTips} />
             </label>
             <textarea
@@ -874,16 +805,8 @@ export function PlantDialog({
           {/* Companions / Antagonists */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-<<<<<<< HEAD
               <label htmlFor="plant-companions" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.goodWith")}
-=======
-              <label
-                htmlFor="plant-companions"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                Good With
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                 <ConfidenceBadge confidence={confidence?.companions} />
               </label>
               <input
@@ -899,16 +822,8 @@ export function PlantDialog({
               />
             </div>
             <div>
-<<<<<<< HEAD
               <label htmlFor="plant-antagonists" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.avoidNear")}
-=======
-              <label
-                htmlFor="plant-antagonists"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                Avoid Near
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                 <ConfidenceBadge confidence={confidence?.antagonists} />
               </label>
               <input
@@ -927,16 +842,8 @@ export function PlantDialog({
 
           {/* Description */}
           <div>
-<<<<<<< HEAD
             <label htmlFor="plant-description" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.shortDescription")}
-=======
-            <label
-              htmlFor="plant-description"
-              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-            >
-              Short Description
->>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               <ConfidenceBadge confidence={confidence?.description} />
             </label>
             <textarea
