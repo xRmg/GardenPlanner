@@ -215,6 +215,9 @@ export const AiProviderSchema = z.discriminatedUnion("type", [
      */
     key: z.string().min(1),
   }),
+  /** Indicates an API key is stored server-side. Returned by GET /api/garden
+   *  so the frontend knows AI is configured without exposing the actual key. */
+  z.object({ type: z.literal("server") }),
   z.object({
     type: z.literal("proxy"),
     proxyUrl: z.string().url(),

@@ -76,7 +76,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
     async (plantName: string, variety?: string) => {
       const isDev = import.meta.env.DEV;
       const name = plantName.trim();
-      if (!name || settings.aiProvider.type !== "byok") return;
+      if (!name || (settings.aiProvider.type !== "byok" && settings.aiProvider.type !== "server")) return;
 
       if (isDev)
         console.log("[usePlantAILookup] Starting AI lookup for:", {

@@ -152,7 +152,7 @@ export function PlantDialog({
   // Track which fields were overridden by the user after an AI fill
   const [userOverrides, setUserOverrides] = useState<Set<string>>(new Set());
 
-  const aiEnabled = settings?.aiProvider.type === "byok";
+  const aiEnabled = settings?.aiProvider.type === "byok" || settings?.aiProvider.type === "server";
   const {
     aiResult,
     aiLoading,

@@ -143,11 +143,11 @@ router.get("/garden", (req: Request, res: Response) => {
       .prepare("SELECT * FROM settings WHERE id = 'default'")
       .get() as any;
     // Mask the API key — never return it to the browser.
-    // The frontend treats { type: 'byok', key: '' } as "key stored".
+    // The frontend treats { type: 'server' } as "key stored server-side".
     const rawAiProvider = JSON.parse(settingsRow.aiProvider || '{"type":"none"}');
     const maskedAiProvider =
       rawAiProvider.type === 'byok'
-        ? { type: 'byok', key: '' }
+        ? { type: 'server' }
         : rawAiProvider;
     const settings = {
       location: settingsRow.location,
@@ -327,10 +327,10 @@ router.post("/garden/sync", (req: Request, res: Response) => {
 
       // Sync settings
       if (settings) {
-        // If the frontend sent a byok aiProvider with an empty key it means the key
-        // is masked ("key stored" placeholder) — preserve the existing key in the DB.
+        // If the frontend sent a 'server' aiProvider it means the key is
+        // stored server-side (masked round-trip) — preserve the existing key.
         let aiProviderToStore = settings.aiProvider || { type: "none" };
-        if (aiProviderToStore.type === 'byok' && !aiProviderToStore.key) {
+        if (aiProviderToStore.type === 'server' || (aiProviderToStore.type === 'byok' && !aiProviderToStore.key)) {
           const existingRow = db
             .prepare("SELECT aiProvider FROM settings WHERE id = 'default'")
             .get() as any;

@@ -36,7 +36,7 @@ export function useOpenRouterSettings(
   );
   const [orStatus, setOrStatus] = useState<
     "idle" | "checking" | "valid" | "invalid"
-  >(settings.aiProvider.type === "byok" ? "valid" : "idle");
+  >(settings.aiProvider.type === "byok" || settings.aiProvider.type === "server" ? "valid" : "idle");
   const [orError, setOrError] = useState("");
   const [showOrKey, setShowOrKey] = useState(false);
 
@@ -45,6 +45,11 @@ export function useOpenRouterSettings(
   useEffect(() => {
     if (!hasInitialized.current && settings.aiProvider.type === "byok") {
       setOrKeyDraft(settings.aiProvider.key);
+      setOrStatus("valid");
+      hasInitialized.current = true;
+    } else if (!hasInitialized.current && settings.aiProvider.type === "server") {
+      // Key is stored server-side; show as valid with empty draft
+      setOrKeyDraft("");
       setOrStatus("valid");
       hasInitialized.current = true;
     } else if (!hasInitialized.current && settings.aiProvider.type !== "none") {
