@@ -112,7 +112,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         // When a backend is available (VITE_API_BASE is set), route through
         // the server proxy so the API key stays server-side and all request/
         // response logging appears in the npm terminal.
-        const proxyUrl = API_BASE ? `${API_BASE}/api/ai/chat` : undefined;
+        const proxyUrl = API_BASE ? `${API_BASE}/api/ai/chat` : "/api/ai/chat";
         const client = new OpenRouterClient({
           apiKey:
             settings.aiProvider.type === "byok" ? settings.aiProvider.key : "",

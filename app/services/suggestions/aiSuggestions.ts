@@ -321,13 +321,6 @@ export async function getAISuggestions(
 ): Promise<AISuggestionResult[]> {
   if (settings.aiProvider.type === "none") return [];
   if (!settings.lat || !settings.lng) return [];
-  if (!API_BASE) {
-    console.warn(
-      "[aiSuggestions] No backend configured (VITE_API_BASE not set) — AI suggestions skipped",
-    );
-    return [];
-  }
-
   const aiContext = buildAISuggestionContext(ctx, ruleResults);
 
   // Check cache first
@@ -350,7 +343,7 @@ export async function getAISuggestions(
     siteUrl: "https://gardenplanner.app",
     siteName: "Garden Planner",
     model: settings.aiModel,
-    proxyUrl: `${API_BASE}/api/ai/chat`,
+    proxyUrl: API_BASE ? `${API_BASE}/api/ai/chat` : "/api/ai/chat",
   });
 
   const userMessage = JSON.stringify(aiContext, null, 0);
