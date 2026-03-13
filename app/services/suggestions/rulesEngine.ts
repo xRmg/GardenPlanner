@@ -298,6 +298,9 @@ const harvestingRule = {
     for (const placed of ctx.placedPlants) {
       const { plant, planterId, plantingDate } = placed;
 
+      // Skip harvest suggestions for dead plants
+      if (placed.healthState === "dead") continue;
+
       // Check harvest cooldown per instance
       const lastHarvested = getLastEvent(
         ctx,
@@ -394,6 +397,15 @@ const fertilizationRule = {
 
       if (daysAgo < this.cooldownDays) continue;
 
+      // Skip fertilization if all plants in this planter are dormant or dead
+      const planterPlants = ctx.placedPlants.filter(
+        (p) => p.planterId === planterId,
+      );
+      const allInactive = planterPlants.every(
+        (p) => p.growthStage === "dormant" || p.healthState === "dead",
+      );
+      if (allInactive) continue;
+
       let priority: SuggestionResult["priority"] = "medium";
       if (daysAgo >= 42 || lastComposted === undefined) {
         priority = "high";
@@ -446,6 +458,15 @@ const wateringRule = {
       const lastWatered = getLastGlobalEvent(ctx, planterId, "watered");
       const daysAgo = daysSince(lastWatered, ctx.today);
       if (daysAgo < this.cooldownDays) continue;
+
+      // Skip watering if all plants in this planter are dormant or dead
+      const planterPlants = ctx.placedPlants.filter(
+        (p) => p.planterId === planterId,
+      );
+      const allInactive = planterPlants.every(
+        (p) => p.growthStage === "dormant" || p.healthState === "dead",
+      );
+      if (allInactive) continue;
 
       let priority: SuggestionResult["priority"] = "low";
       if (waterBudget < -10 && maxTempLast3 >= 25) {
@@ -596,8 +617,16 @@ const treatmentRule = {
       }
 
       const pestAgeDays = daysSince(new Date(latestPest.date), ctx.today);
-      const priority: SuggestionResult["priority"] =
-        pestAgeDays <= 1 ? "high" : pestAgeDays <= 4 ? "medium" : "low";
+      // Escalate to high if plant is already damaged or diseased
+      const healthEscalated =
+        placed.healthState === "damaged" || placed.healthState === "diseased";
+      const priority: SuggestionResult["priority"] = healthEscalated
+        ? "high"
+        : pestAgeDays <= 1
+          ? "high"
+          : pestAgeDays <= 4
+            ? "medium"
+            : "low";
 
       results.push({
         key: `treatment:${placed.planterId}:${placed.instanceId}`,

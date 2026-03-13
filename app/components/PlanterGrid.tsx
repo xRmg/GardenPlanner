@@ -4,6 +4,7 @@ import { PlantDetailsDialog } from "./PlantDetailsDialog";
 import { RemovalConfirmDialog } from "./RemovalConfirmDialog";
 import { VirtualSection } from "./PlanterDialog";
 import { cn } from "./ui/utils";
+import type { GrowthStage, HealthState } from "../data/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +26,8 @@ export interface Plant {
   description?: string;
   variety?: string;
   daysToHarvest?: number;
+  daysToFlower?: number;
+  daysToFruit?: number;
   plantingDate?: string;
   harvestDate?: string;
   isSeed?: boolean;
@@ -55,6 +58,9 @@ export interface PlantInstance {
     type: "pest" | "treatment";
     description: string;
   }>;
+  growthStage?: GrowthStage | null;
+  growthStageOverride?: boolean;
+  healthState?: HealthState | null;
 }
 
 export interface PlanterSquare {
@@ -84,6 +90,7 @@ interface PlanterGridProps {
     planterId: string,
   ) => void;
   onSquaresChange?: (squares: PlanterSquare[][], planterId: string) => void;
+  onHealthStateChange?: (instance: PlantInstance, planterId: string) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onMoveUp?: () => void;
@@ -105,6 +112,7 @@ export function PlanterGrid({
   onPlantRemoved,
   onPlantUpdated,
   onSquaresChange,
+  onHealthStateChange,
   onEdit,
   onDelete,
   onMoveUp,
@@ -268,6 +276,12 @@ export function PlanterGrid({
     onSquaresChange?.(newSquares, id);
     if (onPlantUpdated) {
       onPlantUpdated(updatedInstance, previousPlantInstance ?? null, id);
+    }
+    if (
+      onHealthStateChange &&
+      updatedInstance.healthState !== (previousPlantInstance?.healthState ?? null)
+    ) {
+      onHealthStateChange(updatedInstance, id);
     }
   };
 
@@ -436,7 +450,10 @@ export function PlanterGrid({
                         }}
                       >
                         {square.plantInstance ? (
-                          <div className="flex flex-col items-center justify-center h-full relative animate-plant-place">
+                          <div className={cn(
+                            "flex flex-col items-center justify-center h-full relative animate-plant-place",
+                            square.plantInstance.healthState === "dead" && "grayscale opacity-50",
+                          )}>
                             <span className="text-xl drop-shadow-sm select-none">
                               {square.plantInstance.plant.icon}
                             </span>
@@ -444,6 +461,19 @@ export function PlanterGrid({
                               {square.plantInstance.variety ||
                                 square.plantInstance.plant.name}
                             </span>
+                            {square.plantInstance.healthState &&
+                              square.plantInstance.healthState !== "healthy" && (
+                                <span
+                                  className={cn(
+                                    "absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full border border-white/80",
+                                    square.plantInstance.healthState === "stressed" && "bg-yellow-400",
+                                    square.plantInstance.healthState === "damaged" && "bg-orange-500",
+                                    square.plantInstance.healthState === "diseased" && "bg-red-500",
+                                    square.plantInstance.healthState === "dead" && "bg-gray-400",
+                                  )}
+                                  title={`Health: ${square.plantInstance.healthState}`}
+                                />
+                              )}
                           </div>
                         ) : (
                           !viewOnly &&

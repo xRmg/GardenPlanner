@@ -47,6 +47,8 @@ function makePlacedPlant(overrides: Partial<PlacedPlant> = {}): PlacedPlant {
     areaId: "area-1",
     areaName: "Garden",
     adjacentPlantNames: [],
+    growthStage: null,
+    healthState: null,
     ...overrides,
   };
 }
@@ -1124,7 +1126,7 @@ describe("buildRuleContext", () => {
           squares: [
             [
               {
-                plantInstance: { instanceId: "inst-1", plant, pestEvents: [] },
+                plantInstance: { instanceId: "inst-1", plant, pestEvents: [], growthStage: null, growthStageOverride: false, healthState: null },
               },
               { plantInstance: null },
             ],
@@ -1176,7 +1178,7 @@ describe("buildRuleContext", () => {
           squares: [
             [
               {
-                plantInstance: { instanceId: "inst-1", plant, pestEvents: [] },
+                plantInstance: { instanceId: "inst-1", plant, pestEvents: [], growthStage: null, growthStageOverride: false, healthState: null },
               },
             ],
           ],

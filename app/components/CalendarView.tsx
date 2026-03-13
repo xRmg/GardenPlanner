@@ -94,6 +94,10 @@ const EVENT_STYLES: Record<
     chip: "border-emerald-200 bg-emerald-50 text-emerald-700",
     count: "bg-emerald-50 text-emerald-700",
   },
+  observation: {
+    chip: "border-teal-200 bg-teal-50 text-teal-700",
+    count: "bg-teal-50 text-teal-700",
+  },
 };
 
 const PRIORITY_STYLES: Record<

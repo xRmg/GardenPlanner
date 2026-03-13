@@ -25,6 +25,23 @@ export const SeedlingStatusSchema = z.enum([
   "hardening",
   "ready",
 ]);
+
+export const GrowthStageSchema = z.enum([
+  "sprouting",
+  "vegetative",
+  "flowering",
+  "fruiting",
+  "dormant",
+]);
+
+export const HealthStateSchema = z.enum([
+  "healthy",
+  "stressed",
+  "damaged",
+  "diseased",
+  "dead",
+]);
+
 export const GardenEventTypeSchema = z.enum([
   "planted",
   "watered",
@@ -36,6 +53,7 @@ export const GardenEventTypeSchema = z.enum([
   "removed",
   "pest",
   "treatment",
+  "observation",
 ]);
 export const SuggestionTypeSchema = z.enum([
   // Rules-engine types
@@ -97,6 +115,8 @@ export const PlantSchema = z.object({
   description: z.string().optional(),
   variety: z.string().max(80).optional(),
   daysToHarvest: z.number().int().positive().optional(),
+  daysToFlower: z.number().int().positive().optional(),
+  daysToFruit: z.number().int().positive().optional(),
   isSeed: z.boolean().default(false),
   /** Current stock count (seeds). */
   amount: z.number().int().min(0).optional(),
@@ -138,6 +158,9 @@ export const PlantInstanceSchema = z.object({
   harvestDate: z.string().datetime({ offset: true }).optional(),
   variety: z.string().max(80).optional(),
   pestEvents: z.array(PestEventSchema).default([]),
+  growthStage: GrowthStageSchema.nullable().default(null),
+  growthStageOverride: z.boolean().default(false),
+  healthState: HealthStateSchema.nullable().default(null),
 });
 
 // ---------------------------------------------------------------------------
@@ -345,6 +368,8 @@ export const SuggestionSchema = z.object({
 
 export type SunRequirement = z.infer<typeof SunRequirementSchema>;
 export type SeedlingStatus = z.infer<typeof SeedlingStatusSchema>;
+export type GrowthStage = z.infer<typeof GrowthStageSchema>;
+export type HealthState = z.infer<typeof HealthStateSchema>;
 export type GardenEventType = z.infer<typeof GardenEventTypeSchema>;
 export type SuggestionType = z.infer<typeof SuggestionTypeSchema>;
 export type Priority = z.infer<typeof PrioritySchema>;

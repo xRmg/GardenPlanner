@@ -16,9 +16,13 @@ import {
   Sparkles,
   Plus,
   Trash2,
+  Leaf,
+  Heart,
 } from "lucide-react";
 import { PlantInstance } from "./PlanterGrid";
 import { getBundledPlantByMatch } from "../data/bundledPlants";
+import { deriveGrowthStage } from "../services/plantGrowthStage";
+import type { GrowthStage, HealthState } from "../data/schema";
 
 interface PlantDetailsDialogProps {
   open: boolean;
@@ -67,6 +71,15 @@ export function PlantDetailsDialog({
   const [newEventType, setNewEventType] = useState<"pest" | "treatment">(
     "pest",
   );
+  const [growthStageOverride, setGrowthStageOverride] = useState(
+    plantInstance?.growthStageOverride ?? false,
+  );
+  const [manualGrowthStage, setManualGrowthStage] = useState<GrowthStage | null>(
+    plantInstance?.growthStage ?? null,
+  );
+  const [healthState, setHealthState] = useState<HealthState | null>(
+    plantInstance?.healthState ?? null,
+  );
 
   const fallbackPlant = useMemo(
     () => getBundledPlantByMatch(plantInstance.plant),
@@ -84,11 +97,32 @@ export function PlantDetailsDialog({
     [pestEvents],
   );
 
+  const autoGrowthStage = useMemo(
+    () =>
+      deriveGrowthStage({
+        plantingDate: plantInstance.plantingDate,
+        plant: {
+          daysToHarvest: plantInstance.plant.daysToHarvest,
+          daysToFlower: plantInstance.plant.daysToFlower,
+          daysToFruit: plantInstance.plant.daysToFruit,
+        },
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [plantInstance.instanceId, plantInstance.plantingDate],
+  );
+
+  const displayedGrowthStage = growthStageOverride
+    ? manualGrowthStage
+    : autoGrowthStage;
+
   const handleSave = () => {
     onUpdate({
       ...plantInstance,
       variety: variety || undefined,
       pestEvents,
+      growthStage: growthStageOverride ? manualGrowthStage : null,
+      growthStageOverride,
+      healthState,
     });
     onOpenChange(false);
   };
@@ -117,6 +151,9 @@ export function PlantDetailsDialog({
       setPestEvents(plantInstance.pestEvents || []);
       setNewEventDescription("");
       setNewEventType("pest");
+      setGrowthStageOverride(plantInstance.growthStageOverride ?? false);
+      setManualGrowthStage(plantInstance.growthStage ?? null);
+      setHealthState(plantInstance.healthState ?? null);
     }
   }, [open, plantInstance]);
 
@@ -133,7 +170,7 @@ export function PlantDetailsDialog({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, variety, pestEvents]);
+  }, [open, variety, pestEvents, growthStageOverride, manualGrowthStage, healthState]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -214,6 +251,67 @@ export function PlantDetailsDialog({
                 placeholder="e.g., Cherry, Beefsteak, Roma..."
                 className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
               />
+            </div>
+
+            {/* Growth Stage */}
+            <div className="mt-4">
+              <label className="text-xs font-bold text-muted-foreground block mb-1 flex items-center gap-1.5">
+                <Leaf className="w-3.5 h-3.5" />
+                Growth Stage
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={growthStageOverride ? (manualGrowthStage ?? "") : "auto"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "auto") {
+                      setGrowthStageOverride(false);
+                      setManualGrowthStage(null);
+                    } else {
+                      setGrowthStageOverride(true);
+                      setManualGrowthStage(val as GrowthStage);
+                    }
+                  }}
+                  className="flex-1 bg-white/50 border border-border/40 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
+                >
+                  <option value="auto">
+                    Auto{autoGrowthStage ? ` (${autoGrowthStage})` : " (unknown)"}
+                  </option>
+                  <option value="sprouting">🌱 Sprouting</option>
+                  <option value="vegetative">🌿 Vegetative</option>
+                  <option value="flowering">🌸 Flowering</option>
+                  <option value="fruiting">🍅 Fruiting</option>
+                  <option value="dormant">💤 Dormant</option>
+                </select>
+                {displayedGrowthStage && (
+                  <span className="text-xs text-muted-foreground font-medium px-2 py-1 bg-muted/30 rounded-lg whitespace-nowrap">
+                    Current: {displayedGrowthStage}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Health State */}
+            <div className="mt-4">
+              <label className="text-xs font-bold text-muted-foreground block mb-1 flex items-center gap-1.5">
+                <Heart className="w-3.5 h-3.5" />
+                Health State
+              </label>
+              <select
+                value={healthState ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setHealthState(val === "" ? null : (val as HealthState));
+                }}
+                className="w-full bg-white/50 border border-border/40 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
+              >
+                <option value="">— Not set —</option>
+                <option value="healthy">💚 Healthy</option>
+                <option value="stressed">🟡 Stressed</option>
+                <option value="damaged">🟠 Damaged</option>
+                <option value="diseased">🔴 Diseased</option>
+                <option value="dead">⬛ Dead</option>
+              </select>
             </div>
           </div>
 
