@@ -1,11 +1,13 @@
 import { useState } from "react";
 import {
   Calendar as CalendarIcon,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Leaf,
   Loader2,
   MapPin,
+  Plus,
   Sparkles,
 } from "lucide-react";
 
@@ -17,6 +19,12 @@ import type {
   SuggestionMode,
 } from "../data/schema";
 import { Button } from "./ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "./ui/sheet";
 import { cn } from "./ui/utils";
 import {
   addCalendarMonths,
@@ -151,6 +159,7 @@ interface CalendarViewProps {
   settings: Settings;
   suggestionsMode?: SuggestionMode;
   suggestionsLoading?: boolean;
+  onAddEvent?: (event: Omit<GardenEvent, "id">) => void;
 }
 
 function parseDateKey(dateKey: string): Date {
@@ -216,7 +225,7 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
   );
 }
 
-function DayCell({ day }: { day: CalendarDayCell }) {
+function DayCell({ day, onSelect }: { day: CalendarDayCell; onSelect: (day: CalendarDayCell) => void }) {
   const harvestPreview = day.harvests[0];
   const suggestionPreview = day.suggestions[0];
   const eventPreview = day.events[0];
@@ -228,8 +237,9 @@ function DayCell({ day }: { day: CalendarDayCell }) {
 
   return (
     <div
+      onClick={() => onSelect(day)}
       className={cn(
-        "flex min-h-28 flex-col gap-2 rounded-2xl border p-2.5 shadow-sm transition-colors sm:min-h-32",
+        "flex min-h-28 flex-col gap-2 rounded-2xl border p-2.5 shadow-sm transition-colors cursor-pointer hover:ring-2 hover:ring-primary/30 sm:min-h-32",
         day.inCurrentMonth
           ? "border-border/20 bg-card"
           : "border-border/10 bg-muted/20 text-muted-foreground/55",
@@ -322,11 +332,13 @@ export function CalendarView({
   settings,
   suggestionsMode,
   suggestionsLoading = false,
+  onAddEvent,
 }: CalendarViewProps) {
   const locale = settings.locale || "en-US";
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfCalendarMonth(new Date()),
   );
+  const [selectedDay, setSelectedDay] = useState<CalendarDayCell | null>(null);
 
   const model = buildCalendarMonth({
     month: visibleMonth,
@@ -470,7 +482,7 @@ export function CalendarView({
                 ))}
 
                 {model.days.map((day) => (
-                  <DayCell key={day.dateKey} day={day} />
+                  <DayCell key={day.dateKey} day={day} onSelect={setSelectedDay} />
                 ))}
               </div>
             </div>
@@ -592,6 +604,245 @@ export function CalendarView({
           </aside>
         </div>
       </div>
+
+      <DayDetailPanel
+        day={selectedDay}
+        locale={locale}
+        onClose={() => setSelectedDay(null)}
+        onAddEvent={onAddEvent}
+      />
     </div>
   );
 }
+
+const EVENT_TYPE_ICONS: Partial<Record<CalendarEventItem["type"], string>> = {
+  planted: "🌱",
+  watered: "💧",
+  composted: "🌿",
+  weeded: "🪴",
+  harvested: "🌾",
+  sown: "🌰",
+  sprouted: "🌿",
+  removed: "🗑️",
+  pest: "🪲",
+  treatment: "💊",
+  observation: "👁️",
+};
+
+const QUICK_ADD_ACTIONS: Array<{
+  label: string;
+  type: GardenEvent["type"];
+}> = [
+  { label: "💧 Watered", type: "watered" },
+  { label: "🌾 Harvested", type: "harvested" },
+  { label: "🪲 Pest Spotted", type: "pest" },
+  { label: "✏️ Note", type: "observation" },
+];
+
+function DayDetailPanel({
+  day,
+  locale,
+  onClose,
+  onAddEvent,
+}: {
+  day: CalendarDayCell | null;
+  locale: string;
+  onClose: () => void;
+  onAddEvent?: (event: Omit<GardenEvent, "id">) => void;
+}) {
+  const isEmpty =
+    day !== null &&
+    day.events.length === 0 &&
+    day.suggestions.length === 0 &&
+    day.harvests.length === 0;
+
+  const formattedDate = day
+    ? new Intl.DateTimeFormat(locale, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }).format(parseDateKey(day.dateKey))
+    : "";
+
+  const handleQuickAdd = (type: GardenEvent["type"]) => {
+    if (!day || !onAddEvent) return;
+    onAddEvent({
+      type,
+      date: parseDateKey(day.dateKey).toISOString(),
+      profileId: "default",
+    });
+    onClose();
+  };
+
+  return (
+    <Sheet open={day !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+        <SheetHeader className="pb-4">
+          <SheetTitle className="flex items-center gap-2 text-base font-black uppercase tracking-wider">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            {formattedDate}
+          </SheetTitle>
+        </SheetHeader>
+
+        {day && (
+          <div className="flex flex-col gap-5">
+            {isEmpty && (
+              <div className="rounded-2xl border border-dashed border-border/30 bg-muted/20 px-4 py-6 text-center">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Nothing logged for this day.
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground/60">
+                  Use the quick-add buttons below to log an event.
+                </p>
+              </div>
+            )}
+
+            {day.events.length > 0 && (
+              <section>
+                <h3 className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">
+                  Journal Entries
+                </h3>
+                <div className="space-y-2">
+                  {day.events.map((event) => (
+                    <div
+                      key={event.id}
+                      className={cn(
+                        "rounded-xl border px-3 py-2.5",
+                        EVENT_STYLES[event.type].chip,
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-base leading-none mt-0.5">
+                          {event.plantIcon ?? EVENT_TYPE_ICONS[event.type] ?? "📋"}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold leading-snug">
+                            {event.label}
+                          </p>
+                          {event.detail && (
+                            <p className="mt-0.5 text-[11px] font-medium opacity-75">
+                              {event.detail}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {day.suggestions.length > 0 && (
+              <section>
+                <h3 className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">
+                  Suggestions Due
+                </h3>
+                <div className="space-y-2">
+                  {day.suggestions.map((suggestion) => (
+                    <div
+                      key={suggestion.id}
+                      className={cn(
+                        "rounded-xl border px-3 py-2.5",
+                        PRIORITY_STYLES[suggestion.priority].chip,
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            {suggestion.plantIcon && (
+                              <span className="text-xs">{suggestion.plantIcon}</span>
+                            )}
+                            <p className="text-sm font-bold leading-snug">
+                              {suggestion.label}
+                            </p>
+                          </div>
+                          {suggestion.detail && (
+                            <p className="mt-0.5 text-[11px] font-medium opacity-75 flex items-center gap-1">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              {suggestion.detail}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider",
+                            PRIORITY_STYLES[suggestion.priority].count,
+                          )}
+                        >
+                          {suggestion.priority}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {day.harvests.length > 0 && (
+              <section>
+                <h3 className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">
+                  Harvest Windows
+                </h3>
+                <div className="space-y-2">
+                  {day.harvests.map((harvest) => (
+                    <div
+                      key={harvest.id}
+                      className={cn(
+                        "rounded-xl border px-3 py-2.5",
+                        HARVEST_STYLES[harvest.state].chip,
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{harvest.plantIcon}</span>
+                            <p className="text-sm font-bold leading-snug">
+                              {harvest.plantName}
+                            </p>
+                          </div>
+                          {harvest.detail && (
+                            <p className="mt-0.5 text-[11px] font-medium opacity-75">
+                              {harvest.detail}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider",
+                            HARVEST_STYLES[harvest.state].badge,
+                          )}
+                        >
+                          {HARVEST_STYLES[harvest.state].label}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {onAddEvent && (
+              <section>
+                <h3 className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60 flex items-center gap-1.5">
+                  <Plus className="h-3 w-3" />
+                  Quick Add
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {QUICK_ADD_ACTIONS.map((action) => (
+                    <button
+                      key={action.type}
+                      type="button"
+                      onClick={() => handleQuickAdd(action.type)}
+                      className="rounded-full border border-border/30 bg-muted/30 px-3 py-1.5 text-xs font-bold transition-colors hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );

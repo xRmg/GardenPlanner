@@ -669,6 +669,14 @@ export default function App() {
                 settings={settings}
                 suggestionsMode={suggestionsMode}
                 suggestionsLoading={suggestionsLoading}
+                onAddEvent={(partialEvent) => {
+                  const newEvent: import("./data/schema").GardenEvent = {
+                    ...partialEvent,
+                    id: crypto.randomUUID(),
+                  };
+                  setEvents((prev) => [...prev, newEvent as unknown as (typeof prev)[number]]);
+                  void repositoryRef.current.saveEvent(newEvent as unknown as import("./data/schema").GardenEvent);
+                }}
               />
             </TabsContent>
 
