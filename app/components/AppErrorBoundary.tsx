@@ -28,7 +28,11 @@ export class AppErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("[AppErrorBoundary] Unhandled render error:", error, errorInfo);
+    console.error(
+      "[AppErrorBoundary] Unhandled render error:",
+      error,
+      errorInfo,
+    );
   }
 
   private handleRetry = () => {

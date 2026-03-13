@@ -1,4 +1,5 @@
-import type { Area, Plant } from "../data/schema";
+import type { Area, Plant, GrowthStage, HealthState } from "../data/schema";
+import { getEffectiveGrowthStage } from "./plantGrowthStage";
 
 export interface PlacedPlant {
   instanceId: string;
@@ -16,6 +17,10 @@ export interface PlacedPlant {
   areaId: string;
   areaName: string;
   adjacentPlantNames: string[];
+  /** Effective growth stage: auto-derived unless overridden. Null when unknown. */
+  growthStage: GrowthStage | null;
+  /** Explicit health state set by the user. Null when unset. */
+  healthState: HealthState | null;
 }
 
 function buildAdjacentPlantNames(
@@ -94,6 +99,8 @@ export function buildPlacedPlants(areas: Area[]): PlacedPlant[] {
             areaId: area.id,
             areaName: area.name,
             adjacentPlantNames: adjacentMap.get(instanceId) ?? [],
+            growthStage: getEffectiveGrowthStage(cell.plantInstance),
+            healthState: cell.plantInstance.healthState ?? null,
           });
         }
       }

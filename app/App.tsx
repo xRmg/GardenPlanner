@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import i18n, { supportedLocales, LOCALE_LABELS, type SupportedLocale } from "./i18n/config";
 import { PlanterGrid, PlantInstance } from "./components/PlanterGrid";
@@ -84,13 +84,30 @@ export default function App() {
 
   // ── UI-only state kept in App as orchestration layer ──────────────────────
   const [activeTab, setActiveTab] = useState("areas");
-  const [isEditMode, setIsEditMode] = useState(true);
   const [selectedPlant, setSelectedPlant] = useState<
     PlantInstance["plant"] | null
   >(null);
   const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false);
   const [treatmentTarget, setTreatmentTarget] =
     useState<TreatmentSuggestionTarget | null>(null);
+
+  // ── View mode — derived from settings and persisted to Dexie ──────────────
+  const isEditMode = settings.isEditMode ?? false;
+  const setIsEditMode = (value: boolean | ((prev: boolean) => boolean)) => {
+    setSettings((prev) => ({
+      ...prev,
+      isEditMode: typeof value === "function" ? value(prev.isEditMode ?? false) : value,
+    }));
+  };
+
+  // Track the last interacted area/planter so we can restore scroll position
+  const setLastSelected = (areaId: string, planterId?: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      lastSelectedAreaId: areaId,
+      lastSelectedPlanterId: planterId ?? prev.lastSelectedPlanterId,
+    }));
+  };
 
   // ── Settings sub-hooks ────────────────────────────────────────────────────
   const {
@@ -198,6 +215,24 @@ export default function App() {
   });
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
+
+  // Scroll to last-selected area when the DB finishes loading.
+  // We fire the effect when `settings.lastSelectedAreaId` changes (which happens
+  // when data loads from DB). We check hasLoadedFromDB.current inside to guard
+  // against firing before persistence is ready, and a one-shot ref to avoid
+  // scrolling again when the user navigates back to the Areas tab.
+  const scrolledToLastSelected = useRef(false);
+  useEffect(() => {
+    if (!hasLoadedFromDB.current || scrolledToLastSelected.current) return;
+    const areaId = settings.lastSelectedAreaId;
+    if (!areaId) return;
+    scrolledToLastSelected.current = true;
+    // Brief timeout lets the DOM paint before scrolling
+    setTimeout(() => {
+      const el = document.getElementById(`area-${areaId}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+  }, [settings.lastSelectedAreaId]); // hasLoadedFromDB is a ref; check its .current inside
 
   const getLatestTreatmentContext = (pestEvents: PestEvent[]) => {
     const sorted = [...pestEvents].sort(
@@ -360,7 +395,7 @@ export default function App() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="w-full h-auto flex-wrap justify-start bg-muted/40 border-none">
+            <TabsList className="w-full h-auto flex-wrap justify-start bg-muted border border-border">
               <TabsTrigger value="areas">
                 <MapIcon className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">{t("tabs.areas")}</span>
@@ -383,8 +418,11 @@ export default function App() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="areas" className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
-              <div className="flex-1 overflow-auto bg-card rounded-2xl border border-border/20 shadow-sm p-4 custom-scrollbar h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]">
+            <TabsContent
+              value="areas"
+              className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
+              <div className="flex-1 overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]">
                 <div className="mb-4 px-1 flex items-center justify-between">
                   <div>
                     <h1 className="text-xl font-black text-foreground tracking-tight uppercase">
@@ -441,7 +479,8 @@ export default function App() {
                     areas.map((area, areaIdx) => (
                       <div
                         key={area.id}
-                        className="bg-card rounded-2xl border border-border/20 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+                        id={`area-${area.id}`}
+                        className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
                       >
                         <div
                           className="px-4 py-2.5 flex items-center justify-between border-b border-white/40"
@@ -566,6 +605,7 @@ export default function App() {
                                   onPlantRemoved={handlePlantRemoved}
                                   onPlantUpdated={handlePlantUpdated}
                                   onSquaresChange={(newSquares, planterId) => {
+                                    setLastSelected(area.id, planterId);
                                     setAreas((prev) =>
                                       prev.map((a) => ({
                                         ...a,
@@ -647,11 +687,29 @@ export default function App() {
                 settings={settings}
                 suggestionsMode={suggestionsMode}
                 suggestionsLoading={suggestionsLoading}
+                onAddEvent={(partialEvent) => {
+                  const newEvent = {
+                    ...partialEvent,
+                    id: crypto.randomUUID(),
+                  };
+                  // EventsBar uses its own GardenEvent interface (subset of schema);
+                  // the schema type is a superset so this cast is safe.
+                  setEvents((prev) => [
+                    ...prev,
+                    newEvent as (typeof prev)[number],
+                  ]);
+                  void repositoryRef.current.saveEvent(
+                    newEvent as unknown as import("./data/schema").GardenEvent,
+                  );
+                }}
               />
             </TabsContent>
 
-            <TabsContent value="plants" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
-              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+            <TabsContent
+              value="plants"
+              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <div className="mb-5">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -768,7 +826,7 @@ export default function App() {
                               {t("plants.sowThisMonth")}
                             </p>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {inSeasonPlants.map((plant) => {
                               const isCustom = customPlants.some(
                                 (p) => p.id === plant.id,
@@ -844,47 +902,47 @@ export default function App() {
                                     </div>
                                   </div>
                                   <div className="flex flex-col gap-1.5 shrink-0">
-                                        {plant.isSeed && !isDepleted && (
-                                       <button
-                                         onClick={() =>
-                                           handleOpenSowModal(plant)
-                                         }
-                                         className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
-                                         aria-label={t("plants.sowSeedsAriaLabel", { name: plant.name })}
-                                       >
-                                         <Sprout className="w-3.5 h-3.5" />
-                                       </button>
-                                     )}
-                                     {isCustom ? (
-                                       <>
-                                         <button
-                                           onClick={() =>
-                                             handleEditPlantManually(plant)
-                                           }
-                                           className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                                           aria-label={t("plants.editAriaLabel", { name: plant.name })}
-                                         >
-                                           <Edit className="w-3 h-3" />
-                                         </button>
-                                         <button
-                                           onClick={() =>
-                                             handleRemovePlantManually(plant.id)
-                                           }
-                                           className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
-                                           aria-label={t("plants.deleteAriaLabel", { name: plant.name })}
-                                         >
-                                           <Trash2 className="w-3 h-3" />
-                                         </button>
-                                       </>
-                                     ) : (
-                                       <button
-                                         disabled
-                                         aria-label={t("plants.bundledCannotEdit")}
-                                         className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
-                                       >
-                                         <SettingsIcon className="w-3 h-3" />
-                                       </button>
-                                     )}
+                                    {plant.isSeed && !isDepleted && (
+                                      <button
+                                        onClick={() =>
+                                          handleOpenSowModal(plant)
+                                        }
+                                        className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+                                        aria-label={t("plants.sowSeedsAriaLabel", { name: plant.name })}
+                                      >
+                                        <Sprout className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                    {isCustom ? (
+                                      <>
+                                        <button
+                                          onClick={() =>
+                                            handleEditPlantManually(plant)
+                                          }
+                                          className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                                          aria-label={t("plants.editAriaLabel", { name: plant.name })}
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleRemovePlantManually(plant.id)
+                                          }
+                                          className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
+                                          aria-label={t("plants.deleteAriaLabel", { name: plant.name })}
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        disabled
+                                        aria-label={t("plants.bundledCannotEdit")}
+                                        className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
+                                      >
+                                        <SettingsIcon className="w-3 h-3" />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -966,47 +1024,47 @@ export default function App() {
                                     </span>
                                   </div>
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
-                                      {plant.isSeed && !isDepleted && (
-                                       <button
-                                         onClick={() =>
-                                           handleOpenSowModal(plant)
-                                         }
-                                         className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
-                                         aria-label={t("plants.sowSeedsAriaLabel", { name: plant.name })}
-                                       >
-                                         <Sprout className="w-3 h-3" />
-                                       </button>
-                                     )}
-                                     {isCustom ? (
-                                       <>
-                                         <button
-                                           onClick={() =>
-                                             handleEditPlantManually(plant)
-                                           }
-                                           className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                                           aria-label={t("plants.editAriaLabel", { name: plant.name })}
-                                         >
-                                           <Edit className="w-3 h-3" />
-                                         </button>
-                                         <button
-                                           onClick={() =>
-                                             handleRemovePlantManually(plant.id)
-                                           }
-                                           className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
-                                           aria-label={t("plants.deleteAriaLabel", { name: plant.name })}
-                                         >
-                                           <Trash2 className="w-3 h-3" />
-                                         </button>
-                                       </>
-                                     ) : (
-                                       <button
-                                         disabled
-                                         aria-label={t("plants.bundledCannotEdit")}
-                                         className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
-                                       >
-                                         <SettingsIcon className="w-3 h-3" />
-                                       </button>
-                                     )}
+                                    {plant.isSeed && !isDepleted && (
+                                      <button
+                                        onClick={() =>
+                                          handleOpenSowModal(plant)
+                                        }
+                                        className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
+                                        aria-label={t("plants.sowSeedsAriaLabel", { name: plant.name })}
+                                      >
+                                        <Sprout className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                    {isCustom ? (
+                                      <>
+                                        <button
+                                          onClick={() =>
+                                            handleEditPlantManually(plant)
+                                          }
+                                          className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                                          aria-label={t("plants.editAriaLabel", { name: plant.name })}
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleRemovePlantManually(plant.id)
+                                          }
+                                          className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
+                                          aria-label={t("plants.deleteAriaLabel", { name: plant.name })}
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        disabled
+                                        aria-label={t("plants.bundledCannotEdit")}
+                                        className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
+                                      >
+                                        <SettingsIcon className="w-3 h-3" />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -1020,8 +1078,11 @@ export default function App() {
               </div>
             </TabsContent>
 
-            <TabsContent value="seedlings" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
-              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+            <TabsContent
+              value="seedlings"
+              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <div className="flex justify-between items-center mb-5">
                   <div>
                     <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
@@ -1108,7 +1169,7 @@ export default function App() {
                               </p>
                             </div>
                             {featured ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {group.map((seedling) => {
                                   const daysOld = Math.floor(
                                     (Date.now() - new Date(seedling.plantedDate).getTime()) /
@@ -1156,7 +1217,7 @@ export default function App() {
                                       </div>
                                     </div>
                                   </div>
-                                ); })}
+                                ))}
                               </div>
                             ) : (
                               <div className="space-y-1.5">
@@ -1250,8 +1311,11 @@ export default function App() {
               </div>
             </TabsContent>
 
-            <TabsContent value="settings" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
-              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+            <TabsContent
+              value="settings"
+              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <h2 className="text-2xl font-black text-foreground tracking-tight uppercase mb-6 leading-none">
                   {t("settings.title")}
                 </h2>
@@ -1522,7 +1586,6 @@ export default function App() {
                       </p>
                     </div>
                   </section>
-
                   {/* ── Language ─────────────────────────────────────────────────────── */}
                   <section className="space-y-4">
                     <div className="flex items-center gap-2 mb-1">

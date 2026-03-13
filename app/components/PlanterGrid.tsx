@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X, Settings, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { PlantDetailsDialog } from "./PlantDetailsDialog";
 import { RemovalConfirmDialog } from "./RemovalConfirmDialog";
 import { VirtualSection } from "./PlanterDialog";
 import { cn } from "./ui/utils";
+import type { GrowthStage, HealthState } from "../data/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +26,8 @@ export interface Plant {
   description?: string;
   variety?: string;
   daysToHarvest?: number;
+  daysToFlower?: number;
+  daysToFruit?: number;
   plantingDate?: string;
   harvestDate?: string;
   isSeed?: boolean;
@@ -55,6 +58,9 @@ export interface PlantInstance {
     type: "pest" | "treatment";
     description: string;
   }>;
+  growthStage?: GrowthStage | null;
+  growthStageOverride?: boolean;
+  healthState?: HealthState | null;
 }
 
 export interface PlanterSquare {
@@ -84,10 +90,70 @@ interface PlanterGridProps {
     planterId: string,
   ) => void;
   onSquaresChange?: (squares: PlanterSquare[][], planterId: string) => void;
+  onHealthStateChange?: (instance: PlantInstance, planterId: string) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+}
+
+/**
+ * Returns all [row, col] positions forming the 8-connected metaplant group
+ * containing the seed cell. Two cells belong to the same group when they share
+ * the same plant name (case-sensitive).
+ */
+function findMetaplantGroup(
+  squares: PlanterSquare[][],
+  seedRow: number,
+  seedCol: number,
+): Array<[number, number]> {
+  const plantName = squares[seedRow][seedCol].plantInstance?.plant.name;
+  if (!plantName) return [];
+
+  const rows = squares.length;
+  const cols = squares[0]?.length ?? 0;
+  const visited = new Set<string>();
+  const group: Array<[number, number]> = [];
+
+  const queue: Array<[number, number]> = [[seedRow, seedCol]];
+  visited.add(`${seedRow},${seedCol}`);
+
+  while (queue.length > 0) {
+    const [r, c] = queue.shift()!;
+    group.push([r, c]);
+
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = r + dr;
+        const nc = c + dc;
+        const key = `${nr},${nc}`;
+        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+        if (visited.has(key)) continue;
+        visited.add(key);
+        if (squares[nr][nc].plantInstance?.plant.name === plantName) {
+          queue.push([nr, nc]);
+        }
+      }
+    }
+  }
+
+  return group;
+}
+
+function abbreviatePlantName(name: string): string {
+  if (name.length <= 9) return name;
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) {
+    return name.slice(0, 8) + ".";
+  }
+  if (words.length === 2) {
+    const first =
+      words[0].length > 6 ? words[0].slice(0, 5) + "." : words[0];
+    return first + " " + words[1][0].toUpperCase() + ".";
+  }
+  // 3+ words → all initials
+  return words.map((w) => w[0].toUpperCase() + ".").join("");
 }
 
 export function PlanterGrid({
@@ -105,6 +171,7 @@ export function PlanterGrid({
   onPlantRemoved,
   onPlantUpdated,
   onSquaresChange,
+  onHealthStateChange,
   onEdit,
   onDelete,
   onMoveUp,
@@ -137,8 +204,40 @@ export function PlanterGrid({
     rowIndex: number;
     colIndex: number;
   } | null>(null);
+  // Set of "row,col" keys currently highlighted as part of a metaplant group
+  const [highlightedCells, setHighlightedCells] = useState<Set<string>>(
+    new Set(),
+  );
+  // true = user right-clicked (single-cell override); false = group selection
+  const [singleCellMode, setSingleCellMode] = useState(false);
+  // Set of "row,col" keys whose group is currently hovered (for group-wide zoom)
+  const [hoveredCells, setHoveredCells] = useState<Set<string>>(new Set());
 
-  // Helper function to determine which virtual section a square belongs to
+  useEffect(() => {
+    if (!detailsOpen) {
+      setHighlightedCells(new Set());
+      setSingleCellMode(false);
+    }
+  }, [detailsOpen]);
+
+  // Precompute group sizes for all cells to avoid repeated flood-fills in render
+  const groupSizeMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const processed = new Set<string>();
+    squares.forEach((row, r) => {
+      row.forEach((square, c) => {
+        const key = `${r},${c}`;
+        if (!square.plantInstance || processed.has(key)) return;
+        const group = findMetaplantGroup(squares, r, c);
+        group.forEach(([gr, gc]) => {
+          const gkey = `${gr},${gc}`;
+          map.set(gkey, group.length);
+          processed.add(gkey);
+        });
+      });
+    });
+    return map;
+  }, [squares]);
   const getVirtualSection = (
     rowIndex: number,
     colIndex: number,
@@ -183,15 +282,21 @@ export function PlanterGrid({
     const currentSquare = squares[rowIndex][colIndex];
 
     if (currentSquare.plantInstance) {
-      // Open details dialog for existing plant
       e.stopPropagation();
+      // Compute metaplant group and highlight all members
+      const group = findMetaplantGroup(squares, rowIndex, colIndex);
+      setHighlightedCells(new Set(group.map(([r, c]) => `${r},${c}`)));
+      setSingleCellMode(false);
       setSelectedPlantInstance(currentSquare.plantInstance);
       setDetailsOpen(true);
     } else if (selectedPlant) {
+      // Clicking an empty cell clears any active highlight
+      setHighlightedCells(new Set());
+      setSingleCellMode(false);
+
       // Check if stock is available
       const availableStock = getAvailableStock?.(selectedPlant.id) ?? 1;
       if (availableStock <= 0) {
-        // Insufficient stock - do not allow placement
         return;
       }
 
@@ -215,7 +320,27 @@ export function PlanterGrid({
       if (onPlantAdded) {
         onPlantAdded(newPlantInstance, id);
       }
+    } else {
+      // Empty cell, no plant selected — clear highlights
+      setHighlightedCells(new Set());
+      setSingleCellMode(false);
     }
+  };
+
+  const handleRightClickCell = (
+    rowIndex: number,
+    colIndex: number,
+    e: React.MouseEvent,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const currentSquare = squares[rowIndex][colIndex];
+    if (!currentSquare.plantInstance) return;
+    // Single-cell mode: highlight only this cell and open dialog
+    setHighlightedCells(new Set([`${rowIndex},${colIndex}`]));
+    setSingleCellMode(true);
+    setSelectedPlantInstance(currentSquare.plantInstance);
+    setDetailsOpen(true);
   };
 
   const handleRemovePlant = (
@@ -256,18 +381,64 @@ export function PlanterGrid({
         (square) =>
           square.plantInstance?.instanceId === updatedInstance.instanceId,
       )?.plantInstance;
-    const newSquares = squares.map((row) =>
-      row.map((square) => {
+
+    const newSquares = squares.map((row, rIdx) =>
+      row.map((square, cIdx) => {
         if (square.plantInstance?.instanceId === updatedInstance.instanceId) {
           return { plantInstance: updatedInstance };
+        }
+        // Propagate pest events, health state, and growth stage to other members of the same metaplant group
+        if (
+          !singleCellMode &&
+          highlightedCells.size > 1 &&
+          highlightedCells.has(`${rIdx},${cIdx}`) &&
+          square.plantInstance &&
+          square.plantInstance.plant.name === updatedInstance.plant.name
+        ) {
+          const prevHealthState = previousPlantInstance?.healthState ?? null;
+          const prevGrowthStage = previousPlantInstance?.growthStage ?? null;
+          const cellHealthState = square.plantInstance.healthState ?? null;
+          const cellGrowthStage = square.plantInstance.growthStage ?? null;
+          return {
+            plantInstance: {
+              ...square.plantInstance,
+              pestEvents: updatedInstance.pestEvents,
+              // Only propagate health if this cell had the same health state as the original (before update)
+              healthState:
+                cellHealthState === prevHealthState
+                  ? updatedInstance.healthState
+                  : square.plantInstance.healthState,
+              // Only propagate growth stage override if this cell had the same stage as the original
+              ...(updatedInstance.growthStageOverride &&
+                cellGrowthStage === prevGrowthStage && {
+                  growthStage: updatedInstance.growthStage,
+                  growthStageOverride: updatedInstance.growthStageOverride,
+                }),
+              // Also clear override on other cells if user switched back to auto
+              ...(!updatedInstance.growthStageOverride &&
+                (square.plantInstance.growthStageOverride ?? false) &&
+                cellGrowthStage === prevGrowthStage && {
+                  growthStage: null,
+                  growthStageOverride: false,
+                }),
+            },
+          };
         }
         return square;
       }),
     );
+
     setSquares(newSquares);
     onSquaresChange?.(newSquares, id);
+
     if (onPlantUpdated) {
       onPlantUpdated(updatedInstance, previousPlantInstance ?? null, id);
+    }
+    if (
+      onHealthStateChange &&
+      updatedInstance.healthState !== (previousPlantInstance?.healthState ?? null)
+    ) {
+      onHealthStateChange(updatedInstance, id);
     }
   };
 
@@ -402,6 +573,16 @@ export function PlanterGrid({
                         onClick={(e) =>
                           handleSquareClick(rowIndex, colIndex, e)
                         }
+                        onContextMenu={(e) =>
+                          handleRightClickCell(rowIndex, colIndex, e)
+                        }
+                        onMouseEnter={() => {
+                          if (square.plantInstance) {
+                            const group = findMetaplantGroup(squares, rowIndex, colIndex);
+                            setHoveredCells(new Set(group.map(([r, c]) => `${r},${c}`)));
+                          }
+                        }}
+                        onMouseLeave={() => setHoveredCells(new Set())}
                         title={
                           square.plantInstance
                             ? `${square.plantInstance.plant.name}${square.plantInstance.plant.spacingCm ? ` · ${square.plantInstance.plant.spacingCm}cm spacing` : ""}`
@@ -415,10 +596,20 @@ export function PlanterGrid({
                               : `Row ${rowIndex + 1}, column ${colIndex + 1} — empty`
                         }
                         className={cn(
-                          "w-12 h-12 rounded-lg relative transition-[transform,background-color,box-shadow] duration-150 hover:scale-105 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
+                          "w-12 h-12 rounded-lg relative transition-[transform,background-color,box-shadow,outline] duration-150 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
                           square.plantInstance
                             ? "bg-white/90"
                             : "bg-white/40 hover:bg-white/80",
+                          // Group hover zoom (applied to all cells in the hovered group)
+                          hoveredCells.has(`${rowIndex},${colIndex}`) && "scale-105",
+                          // Group highlight (green ring)
+                          highlightedCells.has(`${rowIndex},${colIndex}`) &&
+                            !singleCellMode &&
+                            "ring-2 ring-primary/60 ring-offset-1 scale-105",
+                          // Single-cell highlight (amber ring)
+                          highlightedCells.has(`${rowIndex},${colIndex}`) &&
+                            singleCellMode &&
+                            "ring-2 ring-amber-400/80 ring-offset-1",
                         )}
                         style={{
                           borderTop: hasThickTop
@@ -436,14 +627,39 @@ export function PlanterGrid({
                         }}
                       >
                         {square.plantInstance ? (
-                          <div className="flex flex-col items-center justify-center h-full relative animate-plant-place">
+                          <div className={cn(
+                            "flex flex-col items-center justify-center h-full relative animate-plant-place",
+                            square.plantInstance.healthState === "dead" && "grayscale opacity-50",
+                          )}>
                             <span className="text-xl drop-shadow-sm select-none">
                               {square.plantInstance.plant.icon}
                             </span>
                             <span className="text-[7px] font-black uppercase text-muted-foreground/60 truncate w-full px-1 text-center mt-0.5">
-                              {square.plantInstance.variety ||
-                                square.plantInstance.plant.name}
+                              {abbreviatePlantName(
+                                square.plantInstance.variety ||
+                                  square.plantInstance.plant.name,
+                              )}
                             </span>
+                            {square.plantInstance.healthState &&
+                              square.plantInstance.healthState !== "healthy" && (
+                                <span
+                                  className={cn(
+                                    "absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full border border-white/80",
+                                    square.plantInstance.healthState === "stressed" && "bg-yellow-400",
+                                    square.plantInstance.healthState === "damaged" && "bg-orange-500",
+                                    square.plantInstance.healthState === "diseased" && "bg-red-500",
+                                    square.plantInstance.healthState === "dead" && "bg-gray-400",
+                                  )}
+                                  title={`Health: ${square.plantInstance.healthState}`}
+                                />
+                              )}
+                            {/* Group membership indicator: shown before any click */}
+                            {(groupSizeMap.get(`${rowIndex},${colIndex}`) ?? 1) > 1 && (
+                              <span
+                                className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-primary/40"
+                                title="Part of a metaplant group"
+                              />
+                            )}
                           </div>
                         ) : (
                           !viewOnly &&
@@ -500,6 +716,8 @@ export function PlanterGrid({
         onOpenChange={setDetailsOpen}
         plantInstance={selectedPlantInstance}
         onUpdate={handleUpdatePlant}
+        groupSize={highlightedCells.size}
+        singleCellMode={singleCellMode}
       />
     </>
   );

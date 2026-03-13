@@ -47,6 +47,8 @@ function makePlacedPlant(overrides: Partial<PlacedPlant> = {}): PlacedPlant {
     areaId: "area-1",
     areaName: "Garden",
     adjacentPlantNames: [],
+    growthStage: null,
+    healthState: null,
     ...overrides,
   };
 }
@@ -1124,7 +1126,7 @@ describe("buildRuleContext", () => {
           squares: [
             [
               {
-                plantInstance: { instanceId: "inst-1", plant, pestEvents: [] },
+                plantInstance: { instanceId: "inst-1", plant, pestEvents: [], growthStage: null, growthStageOverride: false, healthState: null },
               },
               { plantInstance: null },
             ],
@@ -1145,6 +1147,7 @@ describe("buildRuleContext", () => {
       lat: 52.3,
       lng: 4.9,
       profileId: "default",
+      isEditMode: false,
     };
 
     const ctx = buildRuleContext({
@@ -1176,7 +1179,7 @@ describe("buildRuleContext", () => {
           squares: [
             [
               {
-                plantInstance: { instanceId: "inst-1", plant, pestEvents: [] },
+                plantInstance: { instanceId: "inst-1", plant, pestEvents: [], growthStage: null, growthStageOverride: false, healthState: null },
               },
             ],
           ],
@@ -1203,6 +1206,7 @@ describe("buildRuleContext", () => {
       aiModel: "google/gemini-2.0-flash",
       locale: "en",
       profileId: "default",
+      isEditMode: false,
     };
 
     const ctx = buildRuleContext({

@@ -22,7 +22,7 @@ const AiChatRequestSchema = z.object({
 
 const SettingsPatchRequestSchema = z
   .object({
-    growthZone: z.string().optional(),
+    growthZone: z.string().max(20).optional(),
     aiModel: z.string().max(200).optional(),
     locale: z.string().max(20).optional(),
   })

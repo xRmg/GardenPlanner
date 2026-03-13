@@ -166,27 +166,56 @@ export function PlanterDialog({
           {/* Basic Configuration */}
           <div className="space-y-4">
             <div>
+<<<<<<< HEAD
               <label htmlFor="planter-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.planterDialog.planterName")}
+=======
+              <label
+                htmlFor="planter-name"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
+                Planter Name *
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               </label>
               <input
                 id="planter-name"
                 type="text"
                 value={name}
+<<<<<<< HEAD
                 onChange={(e) => { setName(e.target.value); setNameError(""); }}
                 placeholder={t("dialogs.planterDialog.namePlaceholder")}
+=======
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setNameError("");
+                }}
+                placeholder="e.g., Raised Bed 1, Herb Pot..."
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                 aria-describedby={nameError ? "planter-name-error" : undefined}
                 aria-invalid={!!nameError}
                 className={`w-full px-4 py-3 bg-background border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm ${nameError ? "border-destructive" : ""}`}
               />
               {nameError && (
-                <p id="planter-name-error" className="text-destructive text-xs mt-1 ml-1 animate-error-appear">{nameError}</p>
+                <p
+                  id="planter-name-error"
+                  className="text-destructive text-xs mt-1 ml-1 animate-error-appear"
+                >
+                  {nameError}
+                </p>
               )}
             </div>
 
             <div>
+<<<<<<< HEAD
               <label htmlFor="planter-tagline" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.planterDialog.tagline")}
+=======
+              <label
+                htmlFor="planter-tagline"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
+                Short Tag-line
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
               </label>
               <input
                 id="planter-tagline"
@@ -232,8 +261,16 @@ export function PlanterDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
+<<<<<<< HEAD
                 <label htmlFor="planter-rows" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                   {t("dialogs.planterDialog.rows")}
+=======
+                <label
+                  htmlFor="planter-rows"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+                >
+                  Number of Rows *
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                 </label>
                 <div className="flex gap-2">
                   <button
@@ -265,8 +302,16 @@ export function PlanterDialog({
               </div>
 
               <div>
+<<<<<<< HEAD
                 <label htmlFor="planter-cols" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                   {t("dialogs.planterDialog.columns")}
+=======
+                <label
+                  htmlFor="planter-cols"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+                >
+                  Number of Columns *
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                 </label>
                 <div className="flex gap-2">
                   <button
@@ -305,7 +350,16 @@ export function PlanterDialog({
 
           {/* Virtual Sections Section */}
           <div className="border-t pt-6">
+<<<<<<< HEAD
             <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">{t("dialogs.planterDialog.virtualSections")}</h3>
+=======
+            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">
+              Virtual Sections{" "}
+              <span className="font-medium normal-case tracking-normal text-muted-foreground">
+                (Optional)
+              </span>
+            </h3>
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
             <p className="text-xs text-muted-foreground mb-4">
               {t("dialogs.planterDialog.virtualSectionsHint")}
             </p>
@@ -314,26 +368,58 @@ export function PlanterDialog({
             <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 mb-4">
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
+<<<<<<< HEAD
                   <label htmlFor="vsection-name" className="text-xs text-muted-foreground block mb-1">
                     {t("dialogs.planterDialog.sectionName")}
+=======
+                  <label
+                    htmlFor="vsection-name"
+                    className="text-xs text-muted-foreground block mb-1"
+                  >
+                    Section Name
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                   </label>
                   <input
                     id="vsection-name"
                     type="text"
                     value={newVirtualSectionName}
+<<<<<<< HEAD
                     onChange={(e) => { setNewVirtualSectionName(e.target.value); setSectionNameError(""); }}
                     placeholder={t("dialogs.planterDialog.sectionNamePlaceholder")}
                     aria-describedby={sectionNameError ? "vsection-name-error" : undefined}
+=======
+                    onChange={(e) => {
+                      setNewVirtualSectionName(e.target.value);
+                      setSectionNameError("");
+                    }}
+                    placeholder="e.g., Tomato Section"
+                    aria-describedby={
+                      sectionNameError ? "vsection-name-error" : undefined
+                    }
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                     aria-invalid={!!sectionNameError}
                     className={`w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary ${sectionNameError ? "border-destructive" : "border-border/60"}`}
                   />
                   {sectionNameError && (
-                    <p id="vsection-name-error" className="text-destructive text-xs mt-1 animate-error-appear">{sectionNameError}</p>
+                    <p
+                      id="vsection-name-error"
+                      className="text-destructive text-xs mt-1 animate-error-appear"
+                    >
+                      {sectionNameError}
+                    </p>
                   )}
                 </div>
                 <div>
+<<<<<<< HEAD
                   <label htmlFor="vsection-type" className="text-xs text-muted-foreground block mb-1">
                     {t("dialogs.planterDialog.divisionType")}
+=======
+                  <label
+                    htmlFor="vsection-type"
+                    className="text-xs text-muted-foreground block mb-1"
+                  >
+                    Division Type
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                   </label>
                   <select
                     id="vsection-type"
@@ -359,8 +445,16 @@ export function PlanterDialog({
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
+<<<<<<< HEAD
                   <label htmlFor="vsection-start" className="text-xs text-muted-foreground block mb-1">
                     {newVirtualSectionType === "rows" ? t("dialogs.planterDialog.startRow") : t("dialogs.planterDialog.startColumn")}
+=======
+                  <label
+                    htmlFor="vsection-start"
+                    className="text-xs text-muted-foreground block mb-1"
+                  >
+                    Start {newVirtualSectionType === "rows" ? "Row" : "Column"}
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                   </label>
                   <input
                     id="vsection-start"
@@ -376,8 +470,16 @@ export function PlanterDialog({
                   />
                 </div>
                 <div>
+<<<<<<< HEAD
                   <label htmlFor="vsection-end" className="text-xs text-muted-foreground block mb-1">
                     {newVirtualSectionType === "rows" ? t("dialogs.planterDialog.endRow") : t("dialogs.planterDialog.endColumn")}
+=======
+                  <label
+                    htmlFor="vsection-end"
+                    className="text-xs text-muted-foreground block mb-1"
+                  >
+                    End {newVirtualSectionType === "rows" ? "Row" : "Column"}
+>>>>>>> 80d649d27e83e7021ba729bca0ba39777fd3e54c
                   </label>
                   <input
                     id="vsection-end"
@@ -394,7 +496,9 @@ export function PlanterDialog({
                 </div>
               </div>
               {sectionRangeError && (
-                <p className="text-destructive text-xs mb-2 animate-error-appear">{sectionRangeError}</p>
+                <p className="text-destructive text-xs mb-2 animate-error-appear">
+                  {sectionRangeError}
+                </p>
               )}
 
               <button

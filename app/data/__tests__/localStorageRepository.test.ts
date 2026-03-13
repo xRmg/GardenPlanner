@@ -65,6 +65,7 @@ function makeSettings(): Settings {
     aiModel: "google/gemini-2.0-flash",
     locale: "en",
     profileId: "default",
+    isEditMode: false,
   };
 }
 
@@ -132,6 +133,9 @@ describe("LocalStorageRepository — areas", () => {
                   instanceId: "inst-1",
                   plant: makePlant(),
                   pestEvents: [],
+                  growthStage: null,
+                  growthStageOverride: false,
+                  healthState: null,
                 },
               },
               { plantInstance: null },

@@ -21,6 +21,7 @@ const EVENT_LABELS: Record<GardenEvent["type"], string> = {
   removed: "Removed",
   pest: "Pest noted",
   treatment: "Treatment logged",
+  observation: "Observation",
 };
 
 const HARVEST_STATE_ORDER = {
