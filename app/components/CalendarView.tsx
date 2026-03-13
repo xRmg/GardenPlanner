@@ -489,7 +489,7 @@ export function CalendarView({
           </section>
 
           <aside className="space-y-4">
-            <section className="rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm">
+            <section className="rounded-2xl border border-border/40 bg-card p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
@@ -548,7 +548,7 @@ export function CalendarView({
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm">
+            <section className="rounded-2xl border border-border/40 bg-card p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
                   <Leaf className="h-4 w-4 text-emerald-600" />
@@ -664,14 +664,25 @@ function DayDetailPanel({
       }).format(parseDateKey(day.dateKey))
     : "";
 
-  const handleQuickAdd = (type: GardenEvent["type"]) => {
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteText, setNoteText] = useState("");
+
+  const handleQuickAdd = (type: GardenEvent["type"], note?: string) => {
     if (!day || !onAddEvent) return;
     onAddEvent({
       type,
       date: parseDateKey(day.dateKey).toISOString(),
       profileId: "default",
+      ...(note ? { note } : {}),
     });
-    onClose();
+  };
+
+  const handleAddNote = () => {
+    const trimmed = noteText.trim();
+    if (!trimmed) return;
+    handleQuickAdd("observation", trimmed);
+    setNoteText("");
+    setShowNoteInput(false);
   };
 
   return (
@@ -827,8 +838,8 @@ function DayDetailPanel({
                   <Plus className="h-3 w-3" />
                   Quick Add
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {QUICK_ADD_ACTIONS.map((action) => (
+                <div className="flex flex-wrap gap-2 px-1">
+                  {QUICK_ADD_ACTIONS.filter((a) => a.type !== "observation").map((action) => (
                     <button
                       key={action.type}
                       type="button"
@@ -838,7 +849,52 @@ function DayDetailPanel({
                       {action.label}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => { setShowNoteInput((v) => !v); setNoteText(""); }}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
+                      showNoteInput
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border/30 bg-muted/30 hover:bg-primary/10 hover:border-primary/30 hover:text-primary",
+                    )}
+                  >
+                    ✏️ Note
+                  </button>
                 </div>
+                {showNoteInput && (
+                  <div className="mt-2.5 px-1 flex flex-col gap-2">
+                    <textarea
+                      autoFocus
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddNote(); }
+                        if (e.key === "Escape") { setShowNoteInput(false); setNoteText(""); }
+                      }}
+                      placeholder="Write your observation…"
+                      rows={2}
+                      className="w-full resize-none rounded-xl border border-border/40 bg-white/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground/50"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAddNote}
+                        disabled={!noteText.trim()}
+                        className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/20 disabled:opacity-40"
+                      >
+                        Add Note
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowNoteInput(false); setNoteText(""); }}
+                        className="rounded-full border border-border/30 bg-muted/30 px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted/50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </section>
             )}
           </div>

@@ -210,6 +210,8 @@ export function PlanterGrid({
   );
   // true = user right-clicked (single-cell override); false = group selection
   const [singleCellMode, setSingleCellMode] = useState(false);
+  // Set of "row,col" keys whose group is currently hovered (for group-wide zoom)
+  const [hoveredCells, setHoveredCells] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!detailsOpen) {
@@ -385,7 +387,7 @@ export function PlanterGrid({
         if (square.plantInstance?.instanceId === updatedInstance.instanceId) {
           return { plantInstance: updatedInstance };
         }
-        // Propagate pestEvents to other members of the same metaplant group
+        // Propagate pest events, health state, and growth stage to other members of the same metaplant group
         if (
           !singleCellMode &&
           highlightedCells.size > 1 &&
@@ -393,10 +395,32 @@ export function PlanterGrid({
           square.plantInstance &&
           square.plantInstance.plant.name === updatedInstance.plant.name
         ) {
+          const prevHealthState = previousPlantInstance?.healthState ?? null;
+          const prevGrowthStage = previousPlantInstance?.growthStage ?? null;
+          const cellHealthState = square.plantInstance.healthState ?? null;
+          const cellGrowthStage = square.plantInstance.growthStage ?? null;
           return {
             plantInstance: {
               ...square.plantInstance,
               pestEvents: updatedInstance.pestEvents,
+              // Only propagate health if this cell had the same health state as the original (before update)
+              healthState:
+                cellHealthState === prevHealthState
+                  ? updatedInstance.healthState
+                  : square.plantInstance.healthState,
+              // Only propagate growth stage override if this cell had the same stage as the original
+              ...(updatedInstance.growthStageOverride &&
+                cellGrowthStage === prevGrowthStage && {
+                  growthStage: updatedInstance.growthStage,
+                  growthStageOverride: updatedInstance.growthStageOverride,
+                }),
+              // Also clear override on other cells if user switched back to auto
+              ...(!updatedInstance.growthStageOverride &&
+                (square.plantInstance.growthStageOverride ?? false) &&
+                cellGrowthStage === prevGrowthStage && {
+                  growthStage: null,
+                  growthStageOverride: false,
+                }),
             },
           };
         }
@@ -552,6 +576,13 @@ export function PlanterGrid({
                         onContextMenu={(e) =>
                           handleRightClickCell(rowIndex, colIndex, e)
                         }
+                        onMouseEnter={() => {
+                          if (square.plantInstance) {
+                            const group = findMetaplantGroup(squares, rowIndex, colIndex);
+                            setHoveredCells(new Set(group.map(([r, c]) => `${r},${c}`)));
+                          }
+                        }}
+                        onMouseLeave={() => setHoveredCells(new Set())}
                         title={
                           square.plantInstance
                             ? `${square.plantInstance.plant.name}${square.plantInstance.plant.spacingCm ? ` · ${square.plantInstance.plant.spacingCm}cm spacing` : ""}`
@@ -565,10 +596,12 @@ export function PlanterGrid({
                               : `Row ${rowIndex + 1}, column ${colIndex + 1} — empty`
                         }
                         className={cn(
-                          "w-12 h-12 rounded-lg relative transition-[transform,background-color,box-shadow,outline] duration-150 hover:scale-105 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
+                          "w-12 h-12 rounded-lg relative transition-[transform,background-color,box-shadow,outline] duration-150 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
                           square.plantInstance
                             ? "bg-white/90"
                             : "bg-white/40 hover:bg-white/80",
+                          // Group hover zoom (applied to all cells in the hovered group)
+                          hoveredCells.has(`${rowIndex},${colIndex}`) && "scale-105",
                           // Group highlight (green ring)
                           highlightedCells.has(`${rowIndex},${colIndex}`) &&
                             !singleCellMode &&

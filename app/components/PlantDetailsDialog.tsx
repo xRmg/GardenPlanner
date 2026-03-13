@@ -226,7 +226,7 @@ export function PlantDetailsDialog({
               />
               {singleCellMode
                 ? `Single-plant mode — changes apply to this plant only`
-                : `Part of a group of ${groupSize} ${plantInstance.plant.name} plants — pest events will apply to all`}
+                : `Part of a group of ${groupSize} ${plantInstance.plant.name} plants — pest events, health state, and growth stage will apply to plants with the same current state`}
             </div>
           )}
           {/* Plant Description */}
