@@ -171,6 +171,13 @@ const MODE_BADGE_CLASSES: Record<SuggestionMode, string> = {
   static: "bg-gray-50 text-gray-500 border border-gray-200",
 };
 
+const MODE_BADGE_I18N_KEYS = {
+  "ai+weather": "eventsBar.modeBadges.aiWeather",
+  "rules+weather": "eventsBar.modeBadges.rulesWeather",
+  rules: "eventsBar.modeBadges.rules",
+  static: "eventsBar.modeBadges.static",
+} as const satisfies Record<SuggestionMode, string>;
+
 export function EventsBar({
   events,
   suggestions,
@@ -332,12 +339,7 @@ export function EventsBar({
                 <span
                   className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${MODE_BADGE_CLASSES[suggestionsMode]}`}
                 >
-                  {t(
-                    suggestionsMode === "ai+weather" ? "eventsBar.modeBadges.aiWeather"
-                    : suggestionsMode === "rules+weather" ? "eventsBar.modeBadges.rulesWeather"
-                    : suggestionsMode === "rules" ? "eventsBar.modeBadges.rules"
-                    : "eventsBar.modeBadges.static"
-                  )}
+                  {t(MODE_BADGE_I18N_KEYS[suggestionsMode])}
                 </span>
               )}
             </div>

@@ -13,7 +13,7 @@
 | ------ | ----------------------------------------------- | -------------- |
 | **1**  | Foundation + smart suggestions (local-first)    | ✅ Complete    |
 | **1B** | Plant intelligence & garden UX polish           | ⬜ Next        |
-| **2**  | Internationalization (i18next, en + nl)         | ⬜ Queued      |
+| **2**  | Internationalization (i18next, en + nl)         | ✅ Complete   |
 | **3**  | Backend, intelligence proxy & multi-user auth   | ⬜ Future      |
 
 ---
@@ -102,14 +102,15 @@
 
 **Goal**: Full i18n infrastructure, English + Dutch translations, locale-aware formatting.
 
-> Design spec: `docs/i18n-and-plant-library-architecture.md`
+> Design spec: `docs/i18n-and-plant-library-architecture.md`  
+> How to add a new language: `docs/adding-a-new-language.md`
 
-- [ ] **2.1** — Install `i18next`, `react-i18next`, `i18next-browser-languagedetector`; configure TypeScript namespace augmentation
-- [ ] **2.2** — Extract ~140 hardcoded strings from `App.tsx`, `EventsBar`, `ToolBar`, and all dialogs into `app/i18n/locales/en/{ui,plants,calendar,errors}.json`
-- [ ] **2.3** — Replace `MONTH_ABBR` array with `Intl.DateTimeFormat`; use `Intl.NumberFormat` for cm/mm values throughout
-- [ ] **2.4** — Dutch (nl) translations: `ui.json`, `plants.json`, `errors.json`
-- [ ] **2.5** — Plant name translations: en + nl entries for all built-in plants
-- [ ] **2.6** — Language switcher in Settings (detect browser language on first visit; persist choice in Dexie)
+- [x] **2.1** — Install `i18next`, `react-i18next`, `i18next-browser-languagedetector`; configure TypeScript namespace augmentation (`app/i18n/config.ts`, `app/i18n/i18next.d.ts`)
+- [x] **2.2** — Extract ~373 hardcoded strings from `App.tsx`, `EventsBar`, `ToolBar`, and all dialogs into `app/i18n/locales/en/{ui,plants,calendar,errors}.json`; all components updated to use `useTranslation()`
+- [x] **2.3** — Replace hardcoded `["J","F","M","A","M","J","J","A","S","O","N","D"]` month array with `Intl.DateTimeFormat` via `formatMonthNarrow()` in `app/i18n/utils/formatting.ts`
+- [x] **2.4** — Dutch (nl) translations: `ui.json`, `plants.json`, `calendar.json`, `errors.json`
+- [x] **2.5** — Plant name translations: en + nl entries for all built-in plants (68 plants) in `app/i18n/locales/{en,nl}/plants.json`
+- [x] **2.6** — Language switcher in Settings tab (browser language detection on first visit via `i18next-browser-languagedetector`; persist choice to `settings.locale` in Dexie + `gp_locale` in localStorage; sets `<html lang>`)
 
 ---
 
@@ -155,9 +156,9 @@
 
 | Package                               | Phase | Purpose                        |
 | ------------------------------------- | ----- | ------------------------------ |
-| `i18next@^24`                         | 2     | i18n framework                 |
-| `react-i18next@^15`                   | 2     | React bindings for i18next     |
-| `i18next-browser-languagedetector@^8` | 2     | Auto-detect user language      |
+| ~~`i18next@^24`~~                     | ~~2~~ | ✅ installed (`^25`)           |
+| ~~`react-i18next@^15`~~               | ~~2~~ | ✅ installed (`^16`)           |
+| ~~`i18next-browser-languagedetector@^8`~~ | ~~2~~ | ✅ installed             |
 | `hono@^4.7`                           | 3     | Backend framework (Workers)    |
 | `@hono/zod-validator@^0.5`            | 3     | Request validation             |
 | `wrangler@^4`                         | 3     | Cloudflare Workers CLI         |
