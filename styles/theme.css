@@ -46,7 +46,7 @@
 
   /* Chart colors — keep the warm naturalistic set */
   --chart-1: oklch(71% 0.21 147);
-  --chart-2: oklch(66% 0.20 42);
+  --chart-2: oklch(66% 0.2 42);
   --chart-3: oklch(75% 0.18 85);
   --chart-4: oklch(78% 0.19 130);
   --chart-5: oklch(65% 0.17 162);
@@ -93,7 +93,7 @@
   --muted-foreground: oklch(65% 0.07 145);
   --accent: oklch(22% 0.032 145);
   --accent-foreground: oklch(96% 0.012 145);
-  --destructive: oklch(55% 0.20 25);
+  --destructive: oklch(55% 0.2 25);
   --destructive-foreground: oklch(96% 0 0);
   --border: oklch(25% 0.035 145);
   --input: oklch(22% 0.032 145);
@@ -104,7 +104,7 @@
   --chart-2: oklch(68% 0.18 162);
   --chart-3: oklch(76% 0.19 88);
   --chart-4: oklch(73% 0.21 130);
-  --chart-5: oklch(68% 0.20 25);
+  --chart-5: oklch(68% 0.2 25);
   --sidebar: oklch(18% 0.03 145);
   --sidebar-foreground: oklch(96% 0.012 145);
   --sidebar-primary: oklch(71% 0.21 147);

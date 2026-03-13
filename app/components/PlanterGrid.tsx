@@ -97,8 +97,7 @@ function abbreviatePlantName(name: string): string {
     return name.slice(0, 8) + ".";
   }
   if (words.length === 2) {
-    const first =
-      words[0].length > 6 ? words[0].slice(0, 5) + "." : words[0];
+    const first = words[0].length > 6 ? words[0].slice(0, 5) + "." : words[0];
     return first + " " + words[1][0].toUpperCase() + ".";
   }
   // 3+ words → all initials

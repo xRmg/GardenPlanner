@@ -159,89 +159,91 @@ export function ToolBar({
             onScroll={updateScrollState}
             className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide px-0.5"
           >
-          <button
-            onClick={onAddPlant}
-            className="h-8 px-3 rounded-lg border border-dashed border-primary text-primary hover:bg-primary/5 transition-[background-color] shrink-0 flex items-center gap-1.5 text-xs font-bold"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add
-          </button>
-          <div className="w-px h-6 bg-border self-center mx-1 shrink-0" />
+            <button
+              onClick={onAddPlant}
+              className="h-8 px-3 rounded-lg border border-dashed border-primary text-primary hover:bg-primary/5 transition-[background-color] shrink-0 flex items-center gap-1.5 text-xs font-bold"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add
+            </button>
+            <div className="w-px h-6 bg-border self-center mx-1 shrink-0" />
 
-          {filtered.length === 0 ? (
-            <span className="self-center text-[10px] text-muted-foreground/50 italic px-2">
-              No{" "}
-              {filter === "seeds"
-                ? "seeds"
-                : filter === "plants"
-                  ? "plants"
-                  : "items"}{" "}
-              yet
-            </span>
-          ) : (
-            filtered.map((plant) => {
-              const isSelected = selectedPlant?.id === plant.id;
-              const isDepleted = plant.isSeed && plant.amount === 0;
-              const isInfinite =
-                plant.amount === undefined || plant.amount === null;
-              const showBadge = plant.isSeed && !isInfinite;
+            {filtered.length === 0 ? (
+              <span className="self-center text-[10px] text-muted-foreground/50 italic px-2">
+                No{" "}
+                {filter === "seeds"
+                  ? "seeds"
+                  : filter === "plants"
+                    ? "plants"
+                    : "items"}{" "}
+                yet
+              </span>
+            ) : (
+              filtered.map((plant) => {
+                const isSelected = selectedPlant?.id === plant.id;
+                const isDepleted = plant.isSeed && plant.amount === 0;
+                const isInfinite =
+                  plant.amount === undefined || plant.amount === null;
+                const showBadge = plant.isSeed && !isInfinite;
 
-              return (
-                <button
-                  key={plant.id}
-                  onClick={() => onSelectPlant(isDepleted ? null : plant)}
-                  disabled={isDepleted}
-                  title={
-                    isDepleted
-                      ? `${plant.name} – out of seeds`
-                      : plant.isSeed
-                        ? `${plant.name} (${isInfinite ? "∞" : plant.amount} seeds)`
-                        : plant.name
-                  }
-                  className={`h-8 px-3 rounded-lg border transition-[background-color,border-color,box-shadow] flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in duration-300 relative ${
-                    isDepleted
-                      ? "border-red-200 bg-red-50/50 opacity-50 cursor-not-allowed grayscale"
-                      : isSelected
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/5 shadow-sm"
-                        : "border-border/60 bg-white/70 hover:bg-white hover:border-border shadow-sm"
-                  }`}
-                >
-                  <span className="text-base drop-shadow-sm">{plant.icon}</span>
-                  <span
-                    className={`text-xs font-semibold ${
-                      isSelected && !isDepleted
-                        ? "text-primary font-bold"
-                        : "text-foreground"
+                return (
+                  <button
+                    key={plant.id}
+                    onClick={() => onSelectPlant(isDepleted ? null : plant)}
+                    disabled={isDepleted}
+                    title={
+                      isDepleted
+                        ? `${plant.name} – out of seeds`
+                        : plant.isSeed
+                          ? `${plant.name} (${isInfinite ? "∞" : plant.amount} seeds)`
+                          : plant.name
+                    }
+                    className={`h-8 px-3 rounded-lg border transition-[background-color,border-color,box-shadow] flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in duration-300 relative ${
+                      isDepleted
+                        ? "border-red-200 bg-red-50/50 opacity-50 cursor-not-allowed grayscale"
+                        : isSelected
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/5 shadow-sm"
+                          : "border-border/60 bg-white/70 hover:bg-white hover:border-border shadow-sm"
                     }`}
                   >
-                    {plant.name}
-                  </span>
-                  {/* Inventory badge */}
-                  {showBadge && !isDepleted && (
+                    <span className="text-base drop-shadow-sm">
+                      {plant.icon}
+                    </span>
                     <span
-                      className={`text-xs font-black px-1 py-px rounded leading-none ${
-                        (plant.amount ?? 0) <= LOW_STOCK_THRESHOLD
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-blue-50 text-blue-600"
+                      className={`text-xs font-semibold ${
+                        isSelected && !isDepleted
+                          ? "text-primary font-bold"
+                          : "text-foreground"
                       }`}
                     >
-                      {plant.amount}
+                      {plant.name}
                     </span>
-                  )}
-                  {plant.isSeed && isInfinite && (
-                    <span className="text-xs font-black px-1 py-px rounded leading-none bg-emerald-50 text-emerald-600">
-                      ∞
-                    </span>
-                  )}
-                  {isDepleted && (
-                    <span className="text-[7px] font-black px-1 py-px rounded leading-none bg-red-100 text-red-600 uppercase">
-                      Empty
-                    </span>
-                  )}
-                </button>
-              );
-            })
-          )}
+                    {/* Inventory badge */}
+                    {showBadge && !isDepleted && (
+                      <span
+                        className={`text-xs font-black px-1 py-px rounded leading-none ${
+                          (plant.amount ?? 0) <= LOW_STOCK_THRESHOLD
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-blue-50 text-blue-600"
+                        }`}
+                      >
+                        {plant.amount}
+                      </span>
+                    )}
+                    {plant.isSeed && isInfinite && (
+                      <span className="text-xs font-black px-1 py-px rounded leading-none bg-emerald-50 text-emerald-600">
+                        ∞
+                      </span>
+                    )}
+                    {isDepleted && (
+                      <span className="text-[7px] font-black px-1 py-px rounded leading-none bg-red-100 text-red-600 uppercase">
+                        Empty
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
           </div>
 
           {/* Right fade + arrow */}
