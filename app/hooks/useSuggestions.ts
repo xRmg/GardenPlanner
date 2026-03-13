@@ -102,7 +102,16 @@ export function useSuggestions({
           setSuggestions(result.suggestions);
           setMode(result.mode);
           setLastRefreshed(new Date());
-          dismissErrorToast(ERROR_TOAST_IDS.suggestions);
+          if (result.aiError) {
+            notifyErrorToast({
+              id: ERROR_TOAST_IDS.suggestions,
+              title: "AI suggestions failed",
+              error: result.aiError,
+              fallback: "AI suggestions could not be loaded. Showing rule-based suggestions.",
+            });
+          } else {
+            dismissErrorToast(ERROR_TOAST_IDS.suggestions);
+          }
         }
       } catch (err) {
         if (!controller.signal.aborted) {

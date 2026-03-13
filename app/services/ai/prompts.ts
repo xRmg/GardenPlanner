@@ -184,6 +184,18 @@ export const PLANT_LOOKUP_SCHEMA = {
 };
 
 // ---------------------------------------------------------------------------
+// Truncation helper — prevents oversized user-controlled strings from
+// inflating prompts or enabling injection attacks.
+// An optional fieldName improves debuggability.
+// ---------------------------------------------------------------------------
+
+export function truncate(s: string, max: number, fieldName?: string): string {
+  if (s.length <= max) return s;
+  console.warn(`[prompts] Truncated ${fieldName ?? "string"} from ${s.length} to ${max} chars`);
+  return s.slice(0, max);
+}
+
+// ---------------------------------------------------------------------------
 // User prompt builder
 // ---------------------------------------------------------------------------
 
@@ -194,8 +206,8 @@ export function buildPlantLookupUserPrompt(input: {
   latitude?: number;
   longitude?: number;
 }): string {
-  const lines = [`Plant: "${input.plantName}"`];
-  if (input.variety) lines.push(`Variety: "${input.variety}"`);
+  const lines = [`Plant: "${truncate(input.plantName, 80, "plantName")}"`];
+  if (input.variety) lines.push(`Variety: "${truncate(input.variety, 80, "variety")}"`);
   if (input.koeppenZone) {
     lines.push(`Köppen–Geiger climate zone: ${input.koeppenZone}`);
   }

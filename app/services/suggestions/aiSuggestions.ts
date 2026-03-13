@@ -11,7 +11,8 @@
  * — those are owned by the rules engine.
  */
 
-import { OpenRouterClient, MODEL_CHAIN } from "../ai/openrouter";
+import { OpenRouterClient } from "../ai/openrouter";
+import { truncate } from "../ai/prompts";
 import { RateLimiter } from "../ai/rateLimiter";
 import type {
   RuleContext,
@@ -156,6 +157,8 @@ export function buildAISuggestionContext(
   }
 
   // Plants (deduplicated by instanceId)
+  // Truncation here is defense-in-depth: schema .max() was added after data may
+  // already exist in IndexedDB without those constraints.
   const plants = ctx.placedPlants.map((p) => {
     let plantedDaysAgo: number | undefined;
     if (p.plantingDate) {
@@ -165,8 +168,8 @@ export function buildAISuggestionContext(
       );
     }
     return {
-      name: p.plant.name,
-      planterName: p.planterName,
+      name: truncate(p.plant.name, 80, "plant.name"),
+      planterName: truncate(p.planterName, 80, "planterName"),
       plantedDaysAgo,
       daysToHarvest: p.plant.daysToHarvest,
       harvestMonths: p.plant.harvestMonths,
@@ -179,7 +182,7 @@ export function buildAISuggestionContext(
 
   // Seedlings
   const seedlings = ctx.seedlings.map((s) => ({
-    name: s.plant.name,
+    name: truncate(s.plant.name, 80, "seedling.name"),
     status: s.status,
     daysSinceSeeded: Math.floor(
       (today.getTime() - new Date(s.plantedDate).getTime()) /
@@ -202,7 +205,7 @@ export function buildAISuggestionContext(
           daysAgo: Math.floor(
             (today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
           ),
-          planterName,
+          planterName: planterName !== undefined ? truncate(planterName, 80, "recentEvent.planterName") : undefined,
         });
       }
     });
@@ -310,7 +313,8 @@ function parseAIResponse(
 
 /**
  * Generate AI-powered suggestions using OpenRouter.
- * Returns an empty array on any failure (non-throwing, degradation-friendly).
+ * Uses only `settings.aiModel` — no fallback chain. Throws on any failure
+ * so callers can surface the error to the user.
  */
 export async function getAISuggestions(
   ctx: RuleContext,
@@ -348,60 +352,41 @@ export async function getAISuggestions(
 
   const userMessage = JSON.stringify(aiContext, null, 0);
 
+  const response = await client.chatCompletion(
+    settings.aiModel,
+    [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userMessage },
+    ],
+    {
+      temperature: 0.3,
+      maxTokens: 8192,
+      responseFormat: { type: "json_object" },
+      signal,
+    },
+  );
+
+  const content = response.choices[0]?.message?.content;
+  if (!content) return [];
+
+  let parsed: unknown;
   try {
-    // Try primary model, then fall through the fallback chain
-    let lastError: unknown;
-    for (const model of [
-      settings.aiModel,
-      ...MODEL_CHAIN.filter((m) => m !== settings.aiModel),
-    ]) {
-      try {
-        const response = await client.chatCompletion(
-          model,
-          [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userMessage },
-          ],
-          {
-            temperature: 0.3,
-            maxTokens: 8192,
-            responseFormat: { type: "json_object" },
-            signal,
-          },
-        );
-
-        const content = response.choices[0]?.message?.content;
-        if (!content) continue;
-
-        let parsed: unknown;
-        try {
-          const stripped = (content as string).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-          parsed = JSON.parse(stripped);
-        } catch {
-          console.warn("[aiSuggestions] Failed to parse AI response JSON");
-          continue;
-        }
-
-        const results = parseAIResponse(parsed, aiContext, allPlants);
-
-        // Cache raw suggestions for next call
-        if (Array.isArray((parsed as Record<string, unknown>)?.suggestions)) {
-          await cacheAISuggestions(
-            aiContext,
-            (parsed as { suggestions: unknown[] }).suggestions,
-          );
-        }
-
-        return results;
-      } catch (err) {
-        lastError = err;
-        console.warn(`[aiSuggestions] Model ${model} failed:`, err);
-      }
-    }
-    console.warn("[aiSuggestions] All models failed:", lastError);
-    return [];
-  } catch (err) {
-    console.warn("[aiSuggestions] Unexpected error:", err);
+    const stripped = (content as string).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    parsed = JSON.parse(stripped);
+  } catch {
+    console.warn("[aiSuggestions] Failed to parse AI response JSON");
     return [];
   }
+
+  const results = parseAIResponse(parsed, aiContext, allPlants);
+
+  // Cache raw suggestions for next call
+  if (Array.isArray((parsed as Record<string, unknown>)?.suggestions)) {
+    await cacheAISuggestions(
+      aiContext,
+      (parsed as { suggestions: unknown[] }).suggestions,
+    );
+  }
+
+  return results;
 }

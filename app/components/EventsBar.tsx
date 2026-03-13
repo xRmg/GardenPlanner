@@ -31,7 +31,8 @@ export interface GardenEvent {
     | "sprouted"
     | "removed"
     | "pest"
-    | "treatment";
+    | "treatment"
+    | "observation";
   plant?: Plant;
   date: string;
   gardenId?: string;
@@ -85,7 +86,7 @@ interface EventsBarProps {
   suggestionsLoading?: boolean;
 }
 
-const eventIcons = {
+const eventIcons: Partial<Record<GardenEvent["type"], { icon: React.ElementType; color: string }>> = {
   planted: { icon: Sprout, color: "text-green-600" },
   watered: { icon: Droplets, color: "text-blue-600" },
   composted: { icon: Package, color: "text-amber-700" },
@@ -96,6 +97,7 @@ const eventIcons = {
   removed: { icon: Trash2, color: "text-red-600" },
   pest: { icon: Bug, color: "text-red-600" },
   treatment: { icon: Sparkles, color: "text-emerald-600" },
+  observation: { icon: Calendar, color: "text-teal-600" },
 };
 
 const suggestionIcons: Record<
@@ -139,6 +141,7 @@ const eventBg: Partial<Record<GardenEvent["type"], string>> = {
   removed: "bg-red-50",
   pest: "bg-red-50",
   treatment: "bg-emerald-50",
+  observation: "bg-teal-50",
 };
 
 const suggestionBg: Record<string, string> = {
@@ -478,8 +481,9 @@ export function EventsBar({
           </h3>
           <div className="space-y-1.5 ">
               {groupedEvents.map((group, groupIdx) => {
-              const IconComponent = eventIcons[group.type].icon;
-              const iconColor = eventIcons[group.type].color;
+              const eventIcon = eventIcons[group.type] ?? DEFAULT_SUGGESTION_ICON;
+              const IconComponent = eventIcon.icon;
+              const iconColor = eventIcon.color;
 
               return (
                 <div

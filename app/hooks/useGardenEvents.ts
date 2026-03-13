@@ -121,8 +121,6 @@ export function useGardenEvents({
       (event) => !previousEventIds.has(event.id),
     );
 
-    if (addedPestEvents.length === 0) return;
-
     const journalEntries: GardenEvent[] = addedPestEvents.map((event) => ({
       id: `${event.type}-${event.id}`,
       type: event.type,
@@ -132,6 +130,23 @@ export function useGardenEvents({
       note: event.description,
     }));
 
+    // Log an observation event when health state changes
+    if (
+      plantInstance.healthState !== (previousPlantInstance?.healthState ?? null) &&
+      plantInstance.healthState != null
+    ) {
+      journalEntries.push({
+        id: `observation-health-${Date.now()}-${Math.random()}`,
+        type: "observation",
+        plant: plantInstance.plant,
+        date: new Date().toISOString(),
+        gardenId: planterId,
+        note: `Health state changed to: ${plantInstance.healthState}`,
+      });
+    }
+
+    if (journalEntries.length === 0) return;
+
     setEvents((prev) => [...journalEntries, ...prev]);
     void Promise.all(
       journalEntries.map((entry) =>
@@ -140,12 +155,12 @@ export function useGardenEvents({
     )
       .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
       .catch((error) => {
-        console.error("[Events] Failed to save pest journal entries:", error);
+        console.error("[Events] Failed to save journal entries:", error);
         notifyErrorToast({
           id: ERROR_TOAST_IDS.eventsSync,
-          title: "Could not save pest history",
+          title: "Could not save journal entries",
           error,
-          fallback: "The pest journal update may not be fully persisted.",
+          fallback: "The journal update may not be fully persisted.",
         });
       });
   };

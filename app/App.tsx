@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PlanterGrid, PlantInstance } from "./components/PlanterGrid";
 import {
   EventsBar,
@@ -73,13 +73,30 @@ export default function App() {
 
   // ── UI-only state kept in App as orchestration layer ──────────────────────
   const [activeTab, setActiveTab] = useState("areas");
-  const [isEditMode, setIsEditMode] = useState(true);
   const [selectedPlant, setSelectedPlant] = useState<
     PlantInstance["plant"] | null
   >(null);
   const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false);
   const [treatmentTarget, setTreatmentTarget] =
     useState<TreatmentSuggestionTarget | null>(null);
+
+  // ── View mode — derived from settings and persisted to Dexie ──────────────
+  const isEditMode = settings.isEditMode ?? false;
+  const setIsEditMode = (value: boolean | ((prev: boolean) => boolean)) => {
+    setSettings((prev) => ({
+      ...prev,
+      isEditMode: typeof value === "function" ? value(prev.isEditMode ?? false) : value,
+    }));
+  };
+
+  // Track the last interacted area/planter so we can restore scroll position
+  const setLastSelected = (areaId: string, planterId?: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      lastSelectedAreaId: areaId,
+      lastSelectedPlanterId: planterId ?? prev.lastSelectedPlanterId,
+    }));
+  };
 
   // ── Settings sub-hooks ────────────────────────────────────────────────────
   const {
@@ -187,6 +204,24 @@ export default function App() {
   });
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
+
+  // Scroll to last-selected area when the DB finishes loading.
+  // We fire the effect when `settings.lastSelectedAreaId` changes (which happens
+  // when data loads from DB). We check hasLoadedFromDB.current inside to guard
+  // against firing before persistence is ready, and a one-shot ref to avoid
+  // scrolling again when the user navigates back to the Areas tab.
+  const scrolledToLastSelected = useRef(false);
+  useEffect(() => {
+    if (!hasLoadedFromDB.current || scrolledToLastSelected.current) return;
+    const areaId = settings.lastSelectedAreaId;
+    if (!areaId) return;
+    scrolledToLastSelected.current = true;
+    // Brief timeout lets the DOM paint before scrolling
+    setTimeout(() => {
+      const el = document.getElementById(`area-${areaId}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+  }, [settings.lastSelectedAreaId]); // hasLoadedFromDB is a ref; check its .current inside
 
   const getLatestTreatmentContext = (pestEvents: PestEvent[]) => {
     const sorted = [...pestEvents].sort(
@@ -430,6 +465,7 @@ export default function App() {
                     areas.map((area, areaIdx) => (
                       <div
                         key={area.id}
+                        id={`area-${area.id}`}
                         className="bg-card rounded-2xl border border-border/20 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
                       >
                         <div
@@ -555,6 +591,7 @@ export default function App() {
                                   onPlantRemoved={handlePlantRemoved}
                                   onPlantUpdated={handlePlantUpdated}
                                   onSquaresChange={(newSquares, planterId) => {
+                                    setLastSelected(area.id, planterId);
                                     setAreas((prev) =>
                                       prev.map((a) => ({
                                         ...a,
@@ -636,6 +673,21 @@ export default function App() {
                 settings={settings}
                 suggestionsMode={suggestionsMode}
                 suggestionsLoading={suggestionsLoading}
+                onAddEvent={(partialEvent) => {
+                  const newEvent = {
+                    ...partialEvent,
+                    id: crypto.randomUUID(),
+                  };
+                  // EventsBar uses its own GardenEvent interface (subset of schema);
+                  // the schema type is a superset so this cast is safe.
+                  setEvents((prev) => [
+                    ...prev,
+                    newEvent as (typeof prev)[number],
+                  ]);
+                  void repositoryRef.current.saveEvent(
+                    newEvent as unknown as import("./data/schema").GardenEvent,
+                  );
+                }}
               />
             </TabsContent>
 
