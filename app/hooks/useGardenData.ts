@@ -93,14 +93,6 @@ export function useGardenData(): GardenDataState {
         console.info(
           `[DB] Loaded: ${loadedAreas.length} areas, ${loadedPlants.length} plants, ${loadedSeedlings.length} seedlings, ${loadedEvents.length} events`,
         );
-        console.info('[DB] Loaded settings:', JSON.stringify({
-          location: loadedSettings.location,
-          growthZone: loadedSettings.growthZone,
-          aiProviderType: (loadedSettings.aiProvider as any)?.type,
-          aiModel: loadedSettings.aiModel,
-          lat: loadedSettings.lat,
-          lng: loadedSettings.lng,
-        }));
         setAreas(loadedAreas as unknown as Area[]);
         setCustomPlants(loadedPlants as unknown as Plant[]);
         setSeedlings(loadedSeedlings as unknown as Seedling[]);
@@ -159,14 +151,6 @@ export function useGardenData(): GardenDataState {
   useEffect(() => {
     if (!hasLoadedFromDB.current) return;
     const repo = repositoryRef.current;
-    console.info('[DB] Persisting settings change:', JSON.stringify({
-      location: settings.location,
-      growthZone: settings.growthZone,
-      aiProviderType: (settings.aiProvider as any)?.type,
-      aiModel: settings.aiModel,
-      lat: settings.lat,
-      lng: settings.lng,
-    }));
     repo
       .saveSettings(settings)
       .then(flashSaved)

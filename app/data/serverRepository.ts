@@ -26,6 +26,7 @@ const API_GARDEN = `${API_BASE}/api/garden`;
 class ServerRepository implements GardenRepository {
   private dexie: DexieRepository;
   private syncInProgress = false;
+  private syncQueued = false;
 
   constructor() {
     this.dexie = new DexieRepository();
@@ -43,8 +44,8 @@ class ServerRepository implements GardenRepository {
       await this.syncFromServer();
       console.log("✓ Synced from server on startup");
     } catch (error) {
-      console.error(
-        "✗ Server sync on startup FAILED — will use empty local Dexie:",
+      console.warn(
+        "⚠ Server sync on startup failed; using local Dexie only:",
         error,
       );
       // Still mark as ready — we'll use local Dexie as fallback
@@ -99,17 +100,7 @@ class ServerRepository implements GardenRepository {
 
     // Save settings
     if (settings) {
-      console.log('[syncFromServer] Settings from server:', JSON.stringify({
-        location: settings.location,
-        growthZone: settings.growthZone,
-        aiProviderType: (settings.aiProvider as any)?.type,
-        aiModel: settings.aiModel,
-        lat: settings.lat,
-        lng: settings.lng,
-      }));
       await this.dexie.saveSettings(settings);
-    } else {
-      console.warn('[syncFromServer] No settings in server response');
     }
   }
 
@@ -119,7 +110,8 @@ class ServerRepository implements GardenRepository {
    */
   private async syncToServer(): Promise<void> {
     if (this.syncInProgress) {
-      console.debug("Sync already in progress, skipping");
+      console.debug("Sync already in progress, queuing follow-up");
+      this.syncQueued = true;
       return;
     }
 
@@ -163,10 +155,15 @@ class ServerRepository implements GardenRepository {
       console.log("✓ Server sync successful:", result);
     } catch (error) {
       console.error("✗ Failed to sync to server:", error);
-      // Emit event or show toast here if needed
-      // For now, just log — local Dexie is safe
     } finally {
       this.syncInProgress = false;
+      // If another sync was requested while this one was running,
+      // run it now to pick up the latest Dexie state.
+      if (this.syncQueued) {
+        this.syncQueued = false;
+        console.debug("[Server Sync] Processing queued sync");
+        await this.syncToServer();
+      }
     }
   }
 
@@ -229,16 +226,7 @@ class ServerRepository implements GardenRepository {
   // ─────────────────────────────────────────────────────────────────────────
 
   async getSettings(): Promise<Settings> {
-    const s = await this.dexie.getSettings();
-    console.log('[ServerRepo.getSettings] Returning:', JSON.stringify({
-      location: s.location,
-      growthZone: s.growthZone,
-      aiProviderType: (s.aiProvider as any)?.type,
-      aiModel: s.aiModel,
-      lat: s.lat,
-      lng: s.lng,
-    }));
-    return s;
+    return this.dexie.getSettings();
   }
 
   async saveSettings(settings: Settings): Promise<void> {

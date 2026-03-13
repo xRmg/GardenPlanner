@@ -1043,10 +1043,10 @@ export default function App() {
                         className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
                         value={settings.growthZone}
                         onChange={(e) =>
-                          setSettings({
-                            ...settings,
+                          setSettings((prev) => ({
+                            ...prev,
                             growthZone: e.target.value,
-                          })
+                          }))
                         }
                       >
                         <optgroup label="A — Tropical">
@@ -1224,7 +1224,7 @@ export default function App() {
                         className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner font-mono"
                         value={settings.aiModel}
                         onChange={(e) =>
-                          setSettings({ ...settings, aiModel: e.target.value })
+                          setSettings((prev) => ({ ...prev, aiModel: e.target.value }))
                         }
                         placeholder="google/gemini-2.0-flash"
                       />
