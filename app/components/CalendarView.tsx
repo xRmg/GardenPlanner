@@ -687,7 +687,7 @@ function DayDetailPanel({
 
   return (
     <Sheet open={day !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-md overflow-y-auto pl-[10px]">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2 text-base font-black uppercase tracking-wider">
             <CalendarDays className="h-4 w-4 text-primary" />
@@ -838,7 +838,7 @@ function DayDetailPanel({
                   <Plus className="h-3 w-3" />
                   Quick Add
                 </h3>
-                <div className="flex flex-wrap gap-2 px-1">
+                <div className="flex flex-wrap gap-2">
                   {QUICK_ADD_ACTIONS.filter((a) => a.type !== "observation").map((action) => (
                     <button
                       key={action.type}
@@ -863,7 +863,7 @@ function DayDetailPanel({
                   </button>
                 </div>
                 {showNoteInput && (
-                  <div className="mt-2.5 px-1 flex flex-col gap-2">
+                  <div className="mt-2.5 flex flex-col gap-2">
                     <textarea
                       autoFocus
                       value={noteText}
