@@ -375,7 +375,10 @@ export function PlantDialog({
             </div>
             <div className="ml-auto flex items-center gap-3">
               <div className="flex flex-col items-end gap-1">
-                <label htmlFor="plant-amount" className="text-sm font-black text-muted-foreground uppercase tracking-widest block">
+                <label
+                  htmlFor="plant-amount"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest block"
+                >
                   {isSeed ? "Seed Count" : "Quantity"}
                 </label>
                 <div className="flex items-center gap-2">
@@ -411,7 +414,10 @@ export function PlantDialog({
           {/* Plant Name + icon preview */}
           <div className="grid grid-cols-4 gap-4">
             <div className="col-span-3">
-              <label htmlFor="plant-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-name"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 Plant Name *
               </label>
               <input
@@ -435,7 +441,12 @@ export function PlantDialog({
                 className={`w-full px-4 py-3 bg-muted/30 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner ${nameError ? "border-destructive" : "border-white/20"}`}
               />
               {nameError && (
-                <p id="plant-name-error" className="text-destructive text-xs mt-1 ml-1 animate-error-appear">{nameError}</p>
+                <p
+                  id="plant-name-error"
+                  className="text-destructive text-xs mt-1 ml-1 animate-error-appear"
+                >
+                  {nameError}
+                </p>
               )}
             </div>
             <div>
@@ -541,7 +552,10 @@ export function PlantDialog({
 
           {/* Latin Name */}
           <div>
-            <label htmlFor="plant-latin-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label
+              htmlFor="plant-latin-name"
+              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+            >
               Latin Name
               <ConfidenceBadge confidence={confidence?.latinName} />
             </label>
@@ -561,7 +575,10 @@ export function PlantDialog({
           {/* Variety, Days to Harvest, Spacing */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label htmlFor="plant-variety" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-variety"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 Variety
               </label>
               <input
@@ -574,7 +591,10 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label htmlFor="plant-days-to-harvest" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-days-to-harvest"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 Days to Harvest
                 <ConfidenceBadge confidence={confidence?.daysToHarvest} />
               </label>
@@ -590,7 +610,10 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label htmlFor="plant-spacing" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-spacing"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 Spacing (cm)
                 <ConfidenceBadge confidence={confidence?.spacingCm} />
               </label>
@@ -661,7 +684,10 @@ export function PlantDialog({
           </div>
 
           <div>
-            <label htmlFor="plant-watering" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label
+              htmlFor="plant-watering"
+              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+            >
               Watering
               <ConfidenceBadge confidence={confidence?.watering} />
             </label>
@@ -678,7 +704,10 @@ export function PlantDialog({
           </div>
 
           <div>
-            <label htmlFor="plant-growing-tips" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label
+              htmlFor="plant-growing-tips"
+              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+            >
               Growing Tips
               <ConfidenceBadge confidence={confidence?.growingTips} />
             </label>
@@ -796,7 +825,10 @@ export function PlantDialog({
           {/* Companions / Antagonists */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="plant-companions" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-companions"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 Good With
                 <ConfidenceBadge confidence={confidence?.companions} />
               </label>
@@ -813,7 +845,10 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label htmlFor="plant-antagonists" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-antagonists"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 Avoid Near
                 <ConfidenceBadge confidence={confidence?.antagonists} />
               </label>
@@ -833,7 +868,10 @@ export function PlantDialog({
 
           {/* Description */}
           <div>
-            <label htmlFor="plant-description" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label
+              htmlFor="plant-description"
+              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+            >
               Short Description
               <ConfidenceBadge confidence={confidence?.description} />
             </label>

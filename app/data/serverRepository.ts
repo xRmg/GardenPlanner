@@ -61,7 +61,8 @@ class ServerRepository implements GardenRepository {
         id: ERROR_TOAST_IDS.startupSync,
         title: "Server sync unavailable",
         error,
-        fallback: "Using local garden data only until the backend responds again.",
+        fallback:
+          "Using local garden data only until the backend responds again.",
         description:
           "Using local garden data only until the backend responds again.",
       });

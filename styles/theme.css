@@ -2,44 +2,65 @@
 
 :root {
   --font-size: 16px;
-  /* More vibrant vegetable-inspired color palette */
-  --background: #f8fafc;
-  --foreground: #0c1c15;
-  --card: #ffffff;
-  --card-foreground: #0c1c15;
-  --popover: #ffffff;
-  --popover-foreground: #0c1c15;
-  --primary: #22c55e;
-  --primary-foreground: #ffffff;
-  --secondary: #a3e635;
-  --secondary-foreground: #064e3b;
-  --muted: #f0fdf4;
-  --muted-foreground: #059669;
-  --accent: #fef3ce;
-  --accent-foreground: #92400e;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: rgba(34, 197, 94, 0.1);
+
+  /* ── Modern Botanical — OKLCH perceptual palette ─────────── */
+  /* Background: rich botanical sage — the living canvas.
+     Moving from cold near-white to green-tinted sage is the
+     single biggest visual lift: all surfaces now feel alive. */
+  --background: oklch(95.5% 0.022 145);
+  --foreground: oklch(16% 0.04 145);
+
+  /* Cards float above the sage bg with a barely-there tint */
+  --card: oklch(99% 0.007 145);
+  --card-foreground: oklch(16% 0.04 145);
+  --popover: oklch(99% 0.007 145);
+  --popover-foreground: oklch(16% 0.04 145);
+
+  /* Brand green — same perceived intensity as #22c55e, tuned in OKLCH */
+  --primary: oklch(71% 0.21 147);
+  --primary-foreground: oklch(100% 0 0);
+
+  /* Lime accent — #a3e635 territory */
+  --secondary: oklch(86% 0.18 131);
+  --secondary-foreground: oklch(24% 0.07 145);
+
+  /* Deeper sage surfaces — elevated from bg, distinct from card */
+  --muted: oklch(92.5% 0.026 144);
+  --muted-foreground: oklch(44% 0.09 147);
+
+  /* Warm botanical gold — #fef3ce territory */
+  --accent: oklch(94% 0.065 88);
+  --accent-foreground: oklch(34% 0.09 75);
+
+  --destructive: oklch(59% 0.22 25);
+  --destructive-foreground: oklch(100% 0 0);
+
+  /* Borders: green-tinted and visible — not invisible rgba ghosts */
+  --border: oklch(90% 0.028 144);
   --input: transparent;
-  --input-background: #ffffff;
-  --switch-background: #86efac;
+  --input-background: oklch(99% 0.007 145);
+  --switch-background: oklch(83% 0.13 143);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #22c55e;
-  --chart-1: #22c55e;
-  --chart-2: #f97316;
-  --chart-3: #eab308;
-  --chart-4: #84cc16;
-  --chart-5: #10b981;
+  --ring: oklch(71% 0.21 147);
+
+  /* Chart colors — keep the warm naturalistic set */
+  --chart-1: oklch(71% 0.21 147);
+  --chart-2: oklch(66% 0.2 42);
+  --chart-3: oklch(75% 0.18 85);
+  --chart-4: oklch(78% 0.19 130);
+  --chart-5: oklch(65% 0.17 162);
+
   --radius: 0.5rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0c1c15;
-  --sidebar-primary: #22c55e;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0fdf4;
-  --sidebar-accent-foreground: #064e3b;
-  --sidebar-border: rgba(34, 197, 94, 0.08);
-  --sidebar-ring: #22c55e;
+
+  --sidebar: oklch(99% 0.007 145);
+  --sidebar-foreground: oklch(16% 0.04 145);
+  --sidebar-primary: oklch(71% 0.21 147);
+  --sidebar-primary-foreground: oklch(100% 0 0);
+  --sidebar-accent: oklch(92.5% 0.026 144);
+  --sidebar-accent-foreground: oklch(24% 0.07 145);
+  --sidebar-border: oklch(90% 0.028 144);
+  --sidebar-ring: oklch(71% 0.21 147);
 
   /* Animation tokens */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
@@ -53,40 +74,45 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  /* ── Dark mode: deep forest, brand green preserved ─── */
+  /* Audit issue M-3 fix: brand green survives dark mode */
+  --background: oklch(14% 0.025 145);
+  --foreground: oklch(96% 0.012 145);
+  --card: oklch(18% 0.03 145);
+  --card-foreground: oklch(96% 0.012 145);
+  --popover: oklch(18% 0.03 145);
+  --popover-foreground: oklch(96% 0.012 145);
+
+  /* Brand green lives — not replaced with white */
+  --primary: oklch(71% 0.21 147);
+  --primary-foreground: oklch(15% 0.04 145);
+
+  --secondary: oklch(24% 0.04 145);
+  --secondary-foreground: oklch(96% 0.012 145);
+  --muted: oklch(22% 0.032 145);
+  --muted-foreground: oklch(65% 0.07 145);
+  --accent: oklch(22% 0.032 145);
+  --accent-foreground: oklch(96% 0.012 145);
+  --destructive: oklch(55% 0.2 25);
+  --destructive-foreground: oklch(96% 0 0);
+  --border: oklch(25% 0.035 145);
+  --input: oklch(22% 0.032 145);
+  --ring: oklch(71% 0.21 147);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --chart-1: oklch(71% 0.21 147);
+  --chart-2: oklch(68% 0.18 162);
+  --chart-3: oklch(76% 0.19 88);
+  --chart-4: oklch(73% 0.21 130);
+  --chart-5: oklch(68% 0.2 25);
+  --sidebar: oklch(18% 0.03 145);
+  --sidebar-foreground: oklch(96% 0.012 145);
+  --sidebar-primary: oklch(71% 0.21 147);
+  --sidebar-primary-foreground: oklch(15% 0.04 145);
+  --sidebar-accent: oklch(22% 0.032 145);
+  --sidebar-accent-foreground: oklch(96% 0.012 145);
+  --sidebar-border: oklch(25% 0.035 145);
+  --sidebar-ring: oklch(71% 0.21 147);
 }
 
 @theme inline {
