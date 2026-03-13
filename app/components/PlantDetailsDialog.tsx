@@ -64,7 +64,9 @@ export function PlantDetailsDialog({
     plantInstance?.pestEvents || [],
   );
   const [newEventDescription, setNewEventDescription] = useState("");
-  const [newEventType, setNewEventType] = useState<"pest" | "treatment">("pest");
+  const [newEventType, setNewEventType] = useState<"pest" | "treatment">(
+    "pest",
+  );
 
   const fallbackPlant = useMemo(
     () => getBundledPlantByMatch(plantInstance.plant),
@@ -222,14 +224,18 @@ export function PlantDetailsDialog({
                 <Sun className="w-4 h-4 mt-0.5 text-yellow-600" />
                 <div>
                   <div className="text-xs text-gray-600">Sunlight</div>
-                  <div className="text-sm">{formatSunlight(mergedPlant.sunRequirement)}</div>
+                  <div className="text-sm">
+                    {formatSunlight(mergedPlant.sunRequirement)}
+                  </div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Droplets className="w-4 h-4 mt-0.5 text-blue-600" />
                 <div>
                   <div className="text-xs text-gray-600">Watering</div>
-                  <div className="text-sm">{mergedPlant.watering || "Not recorded"}</div>
+                  <div className="text-sm">
+                    {mergedPlant.watering || "Not recorded"}
+                  </div>
                 </div>
               </div>
               <div className="flex items-start gap-2">

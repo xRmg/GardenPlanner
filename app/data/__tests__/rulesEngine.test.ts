@@ -6,8 +6,14 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { runRules, buildRuleContext } from "../../services/suggestions/rulesEngine";
-import type { RuleContext, PlacedPlant } from "../../services/suggestions/types";
+import {
+  runRules,
+  buildRuleContext,
+} from "../../services/suggestions/rulesEngine";
+import type {
+  RuleContext,
+  PlacedPlant,
+} from "../../services/suggestions/types";
 import type { Area, GardenEvent, Plant, Settings } from "../schema";
 
 // ---------------------------------------------------------------------------
@@ -60,12 +66,21 @@ function makeContext(overrides: Partial<RuleContext> = {}): RuleContext {
   };
 }
 
-function makeWeather(overrides: Partial<import("../../services/weather").WeatherData> = {}): import("../../services/weather").WeatherData {
+function makeWeather(
+  overrides: Partial<import("../../services/weather").WeatherData> = {},
+): import("../../services/weather").WeatherData {
   const today = "2026-05-15";
   // Past 7 days + today + next 6 days
   const dailyDates = [
-    "2026-05-13", "2026-05-14", today,
-    "2026-05-16", "2026-05-17", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21",
+    "2026-05-13",
+    "2026-05-14",
+    today,
+    "2026-05-16",
+    "2026-05-17",
+    "2026-05-18",
+    "2026-05-19",
+    "2026-05-20",
+    "2026-05-21",
   ];
   return {
     fetchedAt: new Date().toISOString(),
@@ -103,15 +118,96 @@ describe("watering rule", () => {
     const weather = makeWeather({
       daily: [
         // Past 5 days: very little rain, high ET
-        { date: "2026-05-10", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-11", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-12", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-13", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-14", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: today, tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-16", tempMaxC: 25, tempMinC: 12, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 5, weatherCode: 1 },
-        { date: "2026-05-17", tempMaxC: 25, tempMinC: 12, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 5, weatherCode: 1 },
-        { date: "2026-05-18", tempMaxC: 25, tempMinC: 12, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 5, weatherCode: 1 },
+        {
+          date: "2026-05-10",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-11",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-12",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-13",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-14",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: today,
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-16",
+          tempMaxC: 25,
+          tempMinC: 12,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 5,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-17",
+          tempMaxC: 25,
+          tempMinC: 12,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 5,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-18",
+          tempMaxC: 25,
+          tempMinC: 12,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 5,
+          weatherCode: 1,
+        },
       ],
     });
 
@@ -129,26 +225,113 @@ describe("watering rule", () => {
   it("does not fire when recently watered (cooldown)", () => {
     const weather = makeWeather({
       daily: [
-        { date: "2026-05-10", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-11", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-12", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-13", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-14", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-15", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-16", tempMaxC: 25, tempMinC: 12, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 5, weatherCode: 1 },
-        { date: "2026-05-17", tempMaxC: 25, tempMinC: 12, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 5, weatherCode: 1 },
-        { date: "2026-05-18", tempMaxC: 25, tempMinC: 12, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 5, weatherCode: 1 },
+        {
+          date: "2026-05-10",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-11",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-12",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-13",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-14",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-15",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-16",
+          tempMaxC: 25,
+          tempMinC: 12,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 5,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-17",
+          tempMaxC: 25,
+          tempMinC: 12,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 5,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-18",
+          tempMaxC: 25,
+          tempMinC: 12,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 5,
+          weatherCode: 1,
+        },
       ],
     });
 
     const lastEvents = new Map<string, Map<string, Date>>();
     // Watered yesterday
-    lastEvents.set("planter-1:global", new Map([["watered", new Date("2026-05-14T08:00:00Z")]]));
+    lastEvents.set(
+      "planter-1:global",
+      new Map([["watered", new Date("2026-05-14T08:00:00Z")]]),
+    );
 
     const ctx = makeContext({
       placedPlants: [makePlacedPlant()],
       weather,
-      lastEvents: lastEvents as Map<string, Map<import("../schema").GardenEventType, Date>>,
+      lastEvents: lastEvents as Map<
+        string,
+        Map<import("../schema").GardenEventType, Date>
+      >,
     });
 
     const results = runRules(ctx);
@@ -178,16 +361,97 @@ describe("no-water rule", () => {
     const weather = makeWeather({
       daily: [
         // Past: dry and hot → would trigger watering
-        { date: "2026-05-10", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-11", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-12", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-13", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
-        { date: "2026-05-14", tempMaxC: 28, tempMinC: 15, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 6, weatherCode: 1 },
+        {
+          date: "2026-05-10",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-11",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-12",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-13",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-14",
+          tempMaxC: 28,
+          tempMinC: 15,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 6,
+          weatherCode: 1,
+        },
         // Today: rain forecast with high probability
-        { date: today, tempMaxC: 20, tempMinC: 12, precipSumMm: 12, rainSumMm: 12, precipProbabilityMax: 85, et0Fao: 2, weatherCode: 63 },
-        { date: "2026-05-16", tempMaxC: 18, tempMinC: 10, precipSumMm: 8, rainSumMm: 8, precipProbabilityMax: 80, et0Fao: 1, weatherCode: 61 },
-        { date: "2026-05-17", tempMaxC: 18, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 20, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-18", tempMaxC: 20, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 15, et0Fao: 3, weatherCode: 1 },
+        {
+          date: today,
+          tempMaxC: 20,
+          tempMinC: 12,
+          precipSumMm: 12,
+          rainSumMm: 12,
+          precipProbabilityMax: 85,
+          et0Fao: 2,
+          weatherCode: 63,
+        },
+        {
+          date: "2026-05-16",
+          tempMaxC: 18,
+          tempMinC: 10,
+          precipSumMm: 8,
+          rainSumMm: 8,
+          precipProbabilityMax: 80,
+          et0Fao: 1,
+          weatherCode: 61,
+        },
+        {
+          date: "2026-05-17",
+          tempMaxC: 18,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 20,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-18",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 15,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
       ],
     });
 
@@ -213,12 +477,18 @@ describe("weeding rule", () => {
   it("fires during growing season without weather when overdue", () => {
     const lastEvents = new Map<string, Map<string, Date>>();
     // Last weeded 20 days ago
-    lastEvents.set("planter-1:global", new Map([["weeded", new Date("2026-04-25T08:00:00Z")]]));
+    lastEvents.set(
+      "planter-1:global",
+      new Map([["weeded", new Date("2026-04-25T08:00:00Z")]]),
+    );
 
     const ctx = makeContext({
       currentMonth: 5,
       placedPlants: [makePlacedPlant()],
-      lastEvents: lastEvents as Map<string, Map<import("../schema").GardenEventType, Date>>,
+      lastEvents: lastEvents as Map<
+        string,
+        Map<import("../schema").GardenEventType, Date>
+      >,
     });
 
     const results = runRules(ctx);
@@ -242,12 +512,18 @@ describe("weeding rule", () => {
   it("respects 7-day cooldown", () => {
     const lastEvents = new Map<string, Map<string, Date>>();
     // Weeded 3 days ago
-    lastEvents.set("planter-1:global", new Map([["weeded", new Date("2026-05-12T08:00:00Z")]]));
+    lastEvents.set(
+      "planter-1:global",
+      new Map([["weeded", new Date("2026-05-12T08:00:00Z")]]),
+    );
 
     const ctx = makeContext({
       currentMonth: 5,
       placedPlants: [makePlacedPlant()],
-      lastEvents: lastEvents as Map<string, Map<import("../schema").GardenEventType, Date>>,
+      lastEvents: lastEvents as Map<
+        string,
+        Map<import("../schema").GardenEventType, Date>
+      >,
     });
 
     const results = runRules(ctx);
@@ -301,11 +577,17 @@ describe("harvesting rule", () => {
 
     const lastEvents = new Map<string, Map<string, Date>>();
     // Harvested 10 days ago
-    lastEvents.set("planter-1:inst-1", new Map([["harvested", new Date("2026-05-05T08:00:00Z")]]));
+    lastEvents.set(
+      "planter-1:inst-1",
+      new Map([["harvested", new Date("2026-05-05T08:00:00Z")]]),
+    );
 
     const ctx = makeContext({
       placedPlants: [placed],
-      lastEvents: lastEvents as Map<string, Map<import("../schema").GardenEventType, Date>>,
+      lastEvents: lastEvents as Map<
+        string,
+        Map<import("../schema").GardenEventType, Date>
+      >,
     });
 
     const results = runRules(ctx);
@@ -346,12 +628,18 @@ describe("fertilization rule", () => {
   it("does not fire when recently composted", () => {
     const lastEvents = new Map<string, Map<string, Date>>();
     // Composted 10 days ago
-    lastEvents.set("planter-1:global", new Map([["composted", new Date("2026-05-05T08:00:00Z")]]));
+    lastEvents.set(
+      "planter-1:global",
+      new Map([["composted", new Date("2026-05-05T08:00:00Z")]]),
+    );
 
     const ctx = makeContext({
       currentMonth: 5,
       placedPlants: [makePlacedPlant()],
-      lastEvents: lastEvents as Map<string, Map<import("../schema").GardenEventType, Date>>,
+      lastEvents: lastEvents as Map<
+        string,
+        Map<import("../schema").GardenEventType, Date>
+      >,
     });
 
     const results = runRules(ctx);
@@ -363,16 +651,97 @@ describe("fertilization rule", () => {
     const today = "2026-05-15";
     const weather = makeWeather({
       daily: [
-        { date: "2026-05-13", tempMaxC: 20, tempMinC: 10, precipSumMm: 2, rainSumMm: 2, precipProbabilityMax: 30, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-14", tempMaxC: 20, tempMinC: 10, precipSumMm: 2, rainSumMm: 2, precipProbabilityMax: 30, et0Fao: 3, weatherCode: 1 },
+        {
+          date: "2026-05-13",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 2,
+          rainSumMm: 2,
+          precipProbabilityMax: 30,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-14",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 2,
+          rainSumMm: 2,
+          precipProbabilityMax: 30,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
         // Today and tomorrow: heavy rain forecast
-        { date: today, tempMaxC: 15, tempMinC: 8, precipSumMm: 10, rainSumMm: 10, precipProbabilityMax: 90, et0Fao: 1, weatherCode: 63 },
-        { date: "2026-05-16", tempMaxC: 15, tempMinC: 8, precipSumMm: 8, rainSumMm: 8, precipProbabilityMax: 85, et0Fao: 1, weatherCode: 61 },
-        { date: "2026-05-17", tempMaxC: 18, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 15, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-18", tempMaxC: 20, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-19", tempMaxC: 20, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-20", tempMaxC: 20, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-21", tempMaxC: 20, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 3, weatherCode: 1 },
+        {
+          date: today,
+          tempMaxC: 15,
+          tempMinC: 8,
+          precipSumMm: 10,
+          rainSumMm: 10,
+          precipProbabilityMax: 90,
+          et0Fao: 1,
+          weatherCode: 63,
+        },
+        {
+          date: "2026-05-16",
+          tempMaxC: 15,
+          tempMinC: 8,
+          precipSumMm: 8,
+          rainSumMm: 8,
+          precipProbabilityMax: 85,
+          et0Fao: 1,
+          weatherCode: 61,
+        },
+        {
+          date: "2026-05-17",
+          tempMaxC: 18,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 15,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-18",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-19",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-20",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-21",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
       ],
     });
 
@@ -436,8 +805,8 @@ describe("sowing rule", () => {
     // The sow rule should NOT fire because "tomato" is already in placedPlants
     const sowResults = results.filter((r) => r.type === "sow");
     // All sow suggestions for "tomato" should be absent
-    const tomatoSow = sowResults.find((r) =>
-      r.key.includes("tomato") || r.key.includes("Tomato"),
+    const tomatoSow = sowResults.find(
+      (r) => r.key.includes("tomato") || r.key.includes("Tomato"),
     );
     expect(tomatoSow).toBeUndefined();
   });
@@ -459,15 +828,96 @@ describe("frost protection rule", () => {
     const today = "2026-05-15";
     const weather = makeWeather({
       daily: [
-        { date: "2026-05-13", tempMaxC: 15, tempMinC: 8, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-14", tempMaxC: 15, tempMinC: 8, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 3, weatherCode: 1 },
-        { date: today, tempMaxC: 10, tempMinC: 1, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 10, et0Fao: 1, weatherCode: 1 }, // frost!
-        { date: "2026-05-16", tempMaxC: 12, tempMinC: -1, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 1, weatherCode: 1 },
-        { date: "2026-05-17", tempMaxC: 15, tempMinC: 4, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 2, weatherCode: 1 },
-        { date: "2026-05-18", tempMaxC: 18, tempMinC: 8, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-19", tempMaxC: 20, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-20", tempMaxC: 20, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-21", tempMaxC: 20, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 3, weatherCode: 1 },
+        {
+          date: "2026-05-13",
+          tempMaxC: 15,
+          tempMinC: 8,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-14",
+          tempMaxC: 15,
+          tempMinC: 8,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: today,
+          tempMaxC: 10,
+          tempMinC: 1,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 10,
+          et0Fao: 1,
+          weatherCode: 1,
+        }, // frost!
+        {
+          date: "2026-05-16",
+          tempMaxC: 12,
+          tempMinC: -1,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 1,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-17",
+          tempMaxC: 15,
+          tempMinC: 4,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 2,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-18",
+          tempMaxC: 18,
+          tempMinC: 8,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-19",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-20",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-21",
+          tempMaxC: 20,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
       ],
     });
 
@@ -492,15 +942,96 @@ describe("frost protection rule", () => {
     const today = "2026-05-15";
     const weather = makeWeather({
       daily: [
-        { date: "2026-05-13", tempMaxC: 8, tempMinC: 1, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 1, weatherCode: 1 },
-        { date: "2026-05-14", tempMaxC: 8, tempMinC: 1, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 1, weatherCode: 1 },
-        { date: today, tempMaxC: 8, tempMinC: 1, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 1, weatherCode: 1 },
-        { date: "2026-05-16", tempMaxC: 8, tempMinC: -1, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 1, weatherCode: 1 },
-        { date: "2026-05-17", tempMaxC: 10, tempMinC: 2, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 2, weatherCode: 1 },
-        { date: "2026-05-18", tempMaxC: 12, tempMinC: 4, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 2, weatherCode: 1 },
-        { date: "2026-05-19", tempMaxC: 14, tempMinC: 6, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-20", tempMaxC: 16, tempMinC: 8, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 3, weatherCode: 1 },
-        { date: "2026-05-21", tempMaxC: 18, tempMinC: 10, precipSumMm: 0, rainSumMm: 0, precipProbabilityMax: 5, et0Fao: 3, weatherCode: 1 },
+        {
+          date: "2026-05-13",
+          tempMaxC: 8,
+          tempMinC: 1,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 1,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-14",
+          tempMaxC: 8,
+          tempMinC: 1,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 1,
+          weatherCode: 1,
+        },
+        {
+          date: today,
+          tempMaxC: 8,
+          tempMinC: 1,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 1,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-16",
+          tempMaxC: 8,
+          tempMinC: -1,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 1,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-17",
+          tempMaxC: 10,
+          tempMinC: 2,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 2,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-18",
+          tempMaxC: 12,
+          tempMinC: 4,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 2,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-19",
+          tempMaxC: 14,
+          tempMinC: 6,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-20",
+          tempMaxC: 16,
+          tempMinC: 8,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
+        {
+          date: "2026-05-21",
+          tempMaxC: 18,
+          tempMinC: 10,
+          precipSumMm: 0,
+          rainSumMm: 0,
+          precipProbabilityMax: 5,
+          et0Fao: 3,
+          weatherCode: 1,
+        },
       ],
     });
 
@@ -592,13 +1123,12 @@ describe("buildRuleContext", () => {
           cols: 2,
           squares: [
             [
-              { plantInstance: { instanceId: "inst-1", plant, pestEvents: [] } },
+              {
+                plantInstance: { instanceId: "inst-1", plant, pestEvents: [] },
+              },
               { plantInstance: null },
             ],
-            [
-              { plantInstance: null },
-              { plantInstance: null },
-            ],
+            [{ plantInstance: null }, { plantInstance: null }],
           ],
           virtualSections: [],
         },
@@ -643,7 +1173,13 @@ describe("buildRuleContext", () => {
           name: "Raised Bed A",
           rows: 1,
           cols: 1,
-          squares: [[{ plantInstance: { instanceId: "inst-1", plant, pestEvents: [] } }]],
+          squares: [
+            [
+              {
+                plantInstance: { instanceId: "inst-1", plant, pestEvents: [] },
+              },
+            ],
+          ],
           virtualSections: [],
         },
       ],

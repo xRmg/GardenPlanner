@@ -23,10 +23,7 @@ export interface GardenEventsState {
     daysUntilHarvest: number;
     areaName: string;
   }>;
-  handlePlantAdded: (
-    plantInstance: PlantInstance,
-    planterId: string,
-  ) => void;
+  handlePlantAdded: (plantInstance: PlantInstance, planterId: string) => void;
   handlePlantRemoved: (
     plantInstance: PlantInstance,
     planterId: string,
@@ -131,13 +128,14 @@ export function useGardenEvents({
           ? "harvested"
           : suggestion.type === "treatment"
             ? "treatment"
-          : suggestion.type === "fertilize" || suggestion.type === "compost"
-            ? "composted"
-            : suggestion.type === "weed"
-              ? "weeded"
-              : suggestion.type === "sow" || suggestion.type === "succession_sow"
-                ? "sown"
-                : "composted";
+            : suggestion.type === "fertilize" || suggestion.type === "compost"
+              ? "composted"
+              : suggestion.type === "weed"
+                ? "weeded"
+                : suggestion.type === "sow" ||
+                    suggestion.type === "succession_sow"
+                  ? "sown"
+                  : "composted";
 
     const completedEvent: GardenEvent = {
       id: `event-${Date.now()}-${Math.random()}`,

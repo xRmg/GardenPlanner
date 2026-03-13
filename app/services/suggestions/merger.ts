@@ -42,7 +42,10 @@ function ruleResultToSuggestion(result: SuggestionResult): Suggestion {
   };
 }
 
-function aiResultToSuggestion(result: AISuggestionResult, index: number): Suggestion {
+function aiResultToSuggestion(
+  result: AISuggestionResult,
+  index: number,
+): Suggestion {
   return {
     id: `ai:${result.type}:${result.plant?.name ?? "global"}:${index}`,
     type: result.type,
@@ -73,14 +76,16 @@ const STATIC_TIPS: Suggestion[] = [
     id: "static:start-seeds",
     type: "sow",
     priority: "low",
-    description: "Add some plants to your planters to get personalised suggestions",
+    description:
+      "Add some plants to your planters to get personalised suggestions",
     source: "static",
   },
   {
     id: "static:companion-planting",
     type: "companion_conflict",
     priority: "low",
-    description: "Try companion planting — basil and tomatoes grow well together",
+    description:
+      "Try companion planting — basil and tomatoes grow well together",
     source: "static",
   },
 ];

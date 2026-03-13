@@ -103,7 +103,9 @@ export function useGardenData(): GardenDataState {
           console.info(
             `[DB] Plant catalogue empty; seeding ${BUNDLED_PLANTS.length} bundled plants`,
           );
-          await Promise.all(BUNDLED_PLANTS.map((plant) => repo.savePlant(plant)));
+          await Promise.all(
+            BUNDLED_PLANTS.map((plant) => repo.savePlant(plant)),
+          );
           nextPlants = BUNDLED_PLANTS;
         }
 

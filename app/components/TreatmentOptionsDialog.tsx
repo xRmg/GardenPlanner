@@ -94,7 +94,8 @@ export function TreatmentOptionsDialog({
     if (!target) return null;
     return buildTreatmentOptionsPrompt({
       plantName: target.plantInstance.plant.name,
-      variety: target.plantInstance.variety ?? target.plantInstance.plant.variety,
+      variety:
+        target.plantInstance.variety ?? target.plantInstance.plant.variety,
       location: settings.location,
       growthZone: settings.growthZone,
       latestPestNote: target.latestPest.description,
@@ -148,7 +149,10 @@ export function TreatmentOptionsDialog({
         setResult(parseTreatmentOptionsResponse(content));
       })
       .catch((loadError) => {
-        if (loadError instanceof DOMException && loadError.name === "AbortError") {
+        if (
+          loadError instanceof DOMException &&
+          loadError.name === "AbortError"
+        ) {
           return;
         }
         setError(
@@ -197,7 +201,8 @@ export function TreatmentOptionsDialog({
             Treatment Options
           </DialogTitle>
           <DialogDescription>
-            {target.plantInstance.plant.name} in {target.planterName}, {target.areaName}
+            {target.plantInstance.plant.name} in {target.planterName},{" "}
+            {target.areaName}
           </DialogDescription>
         </DialogHeader>
 
@@ -225,14 +230,17 @@ export function TreatmentOptionsDialog({
           </div>
 
           <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
-            Biological and low-toxicity options are shown first. Synthetic options, if any, are last-resort only.
+            Biological and low-toxicity options are shown first. Synthetic
+            options, if any, are last-resort only.
           </div>
 
           {loading && (
             <div className="rounded-xl border border-border/50 bg-white/70 p-5 flex items-center gap-3">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
               <div>
-                <div className="text-sm font-semibold">Generating treatment options</div>
+                <div className="text-sm font-semibold">
+                  Generating treatment options
+                </div>
                 <div className="text-xs text-muted-foreground">
                   Using a short plant and pest snapshot only.
                 </div>
@@ -245,7 +253,9 @@ export function TreatmentOptionsDialog({
               <div className="flex items-start gap-2 text-red-700">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                 <div>
-                  <div className="text-sm font-semibold">Could not load AI treatment options</div>
+                  <div className="text-sm font-semibold">
+                    Could not load AI treatment options
+                  </div>
                   <div className="text-xs text-red-700/80 mt-1">{error}</div>
                 </div>
               </div>
@@ -282,7 +292,8 @@ export function TreatmentOptionsDialog({
 
               {result.verifyFirst && (
                 <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
-                  Verify the pest identification before applying stronger treatments.
+                  Verify the pest identification before applying stronger
+                  treatments.
                 </div>
               )}
 
@@ -300,15 +311,22 @@ export function TreatmentOptionsDialog({
                         {option.summary}
                       </div>
                     </div>
-                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${METHOD_BADGES[option.methodType]}`}>
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${METHOD_BADGES[option.methodType]}`}
+                    >
                       {METHOD_LABELS[option.methodType]}
                     </span>
                   </div>
 
                   <div className="mt-3 space-y-2">
                     {option.steps.map((step, stepIndex) => (
-                      <div key={stepIndex} className="text-sm text-foreground flex items-start gap-2">
-                        <span className="mt-0.5 text-[10px] font-black text-primary">{stepIndex + 1}.</span>
+                      <div
+                        key={stepIndex}
+                        className="text-sm text-foreground flex items-start gap-2"
+                      >
+                        <span className="mt-0.5 text-[10px] font-black text-primary">
+                          {stepIndex + 1}.
+                        </span>
                         <span>{step}</span>
                       </div>
                     ))}
@@ -321,12 +339,17 @@ export function TreatmentOptionsDialog({
                   )}
                   {typeof option.followUpDays === "number" && (
                     <div className="mt-1 text-xs text-muted-foreground">
-                      Recheck in {option.followUpDays} day{option.followUpDays === 1 ? "" : "s"}.
+                      Recheck in {option.followUpDays} day
+                      {option.followUpDays === 1 ? "" : "s"}.
                     </div>
                   )}
 
                   <div className="mt-4 flex justify-end">
-                    <Button type="button" size="sm" onClick={() => applySuggestedOption(option)}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => applySuggestedOption(option)}
+                    >
                       Apply This Treatment
                     </Button>
                   </div>
@@ -337,21 +360,27 @@ export function TreatmentOptionsDialog({
 
           {!hasAi && (
             <div className="rounded-xl border border-border/60 bg-white/80 p-4 text-sm text-muted-foreground">
-              AI treatment suggestions are unavailable because AI is not configured. You can still log a custom treatment below.
+              AI treatment suggestions are unavailable because AI is not
+              configured. You can still log a custom treatment below.
             </div>
           )}
 
           <div className="rounded-xl border border-border/60 bg-white/80 p-4 space-y-3">
             <div>
-              <div className="text-sm font-semibold text-foreground">Custom Treatment</div>
+              <div className="text-sm font-semibold text-foreground">
+                Custom Treatment
+              </div>
               <div className="text-xs text-muted-foreground mt-1">
-                Always available if you want to record your own treatment choice.
+                Always available if you want to record your own treatment
+                choice.
               </div>
             </div>
             <textarea
               value={customNote}
               onChange={(event) => {
-                setCustomNote(event.target.value.slice(0, CUSTOM_NOTE_MAX_LENGTH));
+                setCustomNote(
+                  event.target.value.slice(0, CUSTOM_NOTE_MAX_LENGTH),
+                );
                 if (customError) setCustomError("");
               }}
               placeholder="e.g. Added beneficial nematodes and replaced the mulch around affected plants"
@@ -361,11 +390,18 @@ export function TreatmentOptionsDialog({
               <div className="text-xs text-muted-foreground">
                 {customNote.trim().length}/{CUSTOM_NOTE_MAX_LENGTH}
               </div>
-              <Button type="button" size="sm" variant="secondary" onClick={applyCustomOption}>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={applyCustomOption}
+              >
                 Apply Custom Treatment
               </Button>
             </div>
-            {customError && <div className="text-xs text-red-600">{customError}</div>}
+            {customError && (
+              <div className="text-xs text-red-600">{customError}</div>
+            )}
           </div>
         </div>
       </DialogContent>

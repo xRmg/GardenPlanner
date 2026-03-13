@@ -217,7 +217,8 @@ export default function App() {
   ): TreatmentSuggestionTarget | null => {
     for (const area of areas) {
       for (const planter of area.planters) {
-        if (suggestion.planterId && planter.id !== suggestion.planterId) continue;
+        if (suggestion.planterId && planter.id !== suggestion.planterId)
+          continue;
 
         for (const row of planter.squares ?? []) {
           for (const square of row) {

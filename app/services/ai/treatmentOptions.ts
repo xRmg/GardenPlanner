@@ -96,10 +96,14 @@ export function buildTreatmentOptionsPrompt(
     lines.push(`Variety: "${sanitizeTreatmentObservation(input.variety, 80)}"`);
   }
   if (input.location) {
-    lines.push(`Location: "${sanitizeTreatmentObservation(input.location, 100)}"`);
+    lines.push(
+      `Location: "${sanitizeTreatmentObservation(input.location, 100)}"`,
+    );
   }
   if (input.growthZone) {
-    lines.push(`Koppen-Geiger zone: ${sanitizeTreatmentObservation(input.growthZone, 20)}`);
+    lines.push(
+      `Koppen-Geiger zone: ${sanitizeTreatmentObservation(input.growthZone, 20)}`,
+    );
   }
   if (input.latestTreatmentNote) {
     lines.push(

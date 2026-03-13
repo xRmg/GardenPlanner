@@ -23,7 +23,11 @@ import type { Seedling } from "../../data/schema";
 /** Derive last frost month (spring) for Northern Hemisphere.
  * Returns 0 as a sentinel for frost-free zones (always < any valid month 1-12). */
 function approxLastFrostMonthNH(koeppenZone: string): number {
-  if (koeppenZone.startsWith("A") || (koeppenZone.startsWith("B") && !koeppenZone.includes("k"))) return 0; // no frost
+  if (
+    koeppenZone.startsWith("A") ||
+    (koeppenZone.startsWith("B") && !koeppenZone.includes("k"))
+  )
+    return 0; // no frost
   if (koeppenZone.startsWith("ET") || koeppenZone.startsWith("EF")) return 6;
   if (koeppenZone.startsWith("D")) return 5;
   const sub = koeppenZone[2];
@@ -55,7 +59,11 @@ function getLastEvent(
   return ctx.lastEvents.get(key)?.get(eventType as never);
 }
 
-function getLastGlobalEvent(ctx: RuleContext, planterId: string, eventType: string): Date | undefined {
+function getLastGlobalEvent(
+  ctx: RuleContext,
+  planterId: string,
+  eventType: string,
+): Date | undefined {
   const key = `${planterId}:global`;
   return ctx.lastEvents.get(key)?.get(eventType as never);
 }
@@ -78,15 +86,22 @@ function precipLast(ctx: RuleContext, days: number): number {
 function tempMaxLast(ctx: RuleContext, days: number): number {
   if (!ctx.weather) return 0;
   const todayStr = ctx.today.toISOString().slice(0, 10);
-  const pastDays = ctx.weather.daily.filter((d) => d.date <= todayStr).slice(-days);
+  const pastDays = ctx.weather.daily
+    .filter((d) => d.date <= todayStr)
+    .slice(-days);
   return Math.max(...pastDays.map((d) => d.tempMaxC), 0);
 }
 
 /** Forecast precipitation over the next N forecast days (from today). */
-function precipForecast(ctx: RuleContext, days: number): { total: number; maxProb: number } {
+function precipForecast(
+  ctx: RuleContext,
+  days: number,
+): { total: number; maxProb: number } {
   if (!ctx.weather) return { total: 0, maxProb: 0 };
   const todayStr = ctx.today.toISOString().slice(0, 10);
-  const futureDays = ctx.weather.daily.filter((d) => d.date >= todayStr).slice(0, days);
+  const futureDays = ctx.weather.daily
+    .filter((d) => d.date >= todayStr)
+    .slice(0, days);
   return {
     total: futureDays.reduce((sum, d) => sum + d.precipSumMm, 0),
     maxProb: Math.max(...futureDays.map((d) => d.precipProbabilityMax), 0),
@@ -97,7 +112,9 @@ function precipForecast(ctx: RuleContext, days: number): { total: number; maxPro
 function tempMinForecast(ctx: RuleContext, days: number): number {
   if (!ctx.weather) return 99;
   const todayStr = ctx.today.toISOString().slice(0, 10);
-  const futureDays = ctx.weather.daily.filter((d) => d.date >= todayStr).slice(0, days);
+  const futureDays = ctx.weather.daily
+    .filter((d) => d.date >= todayStr)
+    .slice(0, days);
   return Math.min(...futureDays.map((d) => d.tempMinC), 99);
 }
 
@@ -111,7 +128,9 @@ const weedingRule = {
   cooldownDays: 7,
   evaluate(ctx: RuleContext): SuggestionResult[] {
     const isNH = (ctx.lat ?? 45) >= 0;
-    const growingMonths = isNH ? [4, 5, 6, 7, 8, 9, 10] : [10, 11, 12, 1, 2, 3, 4];
+    const growingMonths = isNH
+      ? [4, 5, 6, 7, 8, 9, 10]
+      : [10, 11, 12, 1, 2, 3, 4];
     if (!growingMonths.includes(ctx.currentMonth)) return [];
 
     const avgMaxTemp = tempMaxLast(ctx, 3);
@@ -143,7 +162,9 @@ const weedingRule = {
         priority = daysAgo >= 14 ? "medium" : "low";
       }
 
-      const planterName = ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ?? planterId;
+      const planterName =
+        ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ??
+        planterId;
       results.push({
         key: `weed:${planterId}:global`,
         type: "weed",
@@ -192,7 +213,10 @@ const sowingRule = {
         .map((p) => p.plant.name.toLowerCase()),
     );
 
-    const activePlantNames = new Set([...activeSeedlingNames, ...activePlantedNames]);
+    const activePlantNames = new Set([
+      ...activeSeedlingNames,
+      ...activePlantedNames,
+    ]);
 
     // Find unique plants (by name) from placed plants to generate sowing suggestions
     const seenPlants = new Set<string>();
@@ -203,9 +227,12 @@ const sowingRule = {
       seenPlants.add(nameLower);
 
       // Indoor sowing window
-      if (plant.sowIndoorMonths.includes(ctx.currentMonth) && !activePlantNames.has(nameLower)) {
+      if (
+        plant.sowIndoorMonths.includes(ctx.currentMonth) &&
+        !activePlantNames.has(nameLower)
+      ) {
         const windowEnd = Math.max(...plant.sowIndoorMonths);
-        const weeksToClose = ((windowEnd - ctx.currentMonth) * 4);
+        const weeksToClose = (windowEnd - ctx.currentMonth) * 4;
         const priority: SuggestionResult["priority"] =
           weeksToClose <= 2 ? "high" : weeksToClose <= 4 ? "medium" : "low";
 
@@ -256,19 +283,35 @@ const harvestingRule = {
   cooldownDays: 0,
   evaluate(ctx: RuleContext): SuggestionResult[] {
     const results: SuggestionResult[] = [];
-    const FAST_BOLTING = ["lettuce", "spinach", "rocket", "arugula", "beans", "courgette", "zucchini", "radish"];
+    const FAST_BOLTING = [
+      "lettuce",
+      "spinach",
+      "rocket",
+      "arugula",
+      "beans",
+      "courgette",
+      "zucchini",
+      "radish",
+    ];
 
     for (const placed of ctx.placedPlants) {
       const { plant, planterId, plantingDate } = placed;
 
       // Check harvest cooldown per instance
-      const lastHarvested = getLastEvent(ctx, planterId, placed.instanceId, "harvested");
+      const lastHarvested = getLastEvent(
+        ctx,
+        planterId,
+        placed.instanceId,
+        "harvested",
+      );
       if (lastHarvested) {
         const daysAgo = daysSince(lastHarvested, ctx.today);
         if (daysAgo < 30) continue; // Recently harvested
       }
 
-      const isFastBolting = FAST_BOLTING.some((fb) => plant.name.toLowerCase().includes(fb));
+      const isFastBolting = FAST_BOLTING.some((fb) =>
+        plant.name.toLowerCase().includes(fb),
+      );
 
       let shouldSuggest = false;
       let priority: SuggestionResult["priority"] = "low";
@@ -277,7 +320,8 @@ const harvestingRule = {
       // Trigger by daysToHarvest elapsed since planting
       if (plantingDate && plant.daysToHarvest) {
         const daysSincePlanted = Math.floor(
-          (ctx.today.getTime() - new Date(plantingDate).getTime()) / (1000 * 60 * 60 * 24),
+          (ctx.today.getTime() - new Date(plantingDate).getTime()) /
+            (1000 * 60 * 60 * 24),
         );
         const daysOverdue = daysSincePlanted - plant.daysToHarvest;
         if (daysOverdue >= -7) {
@@ -329,7 +373,9 @@ const fertilizationRule = {
   cooldownDays: 21,
   evaluate(ctx: RuleContext): SuggestionResult[] {
     const isNH = (ctx.lat ?? 45) >= 0;
-    const growingMonths = isNH ? [3, 4, 5, 6, 7, 8, 9] : [9, 10, 11, 12, 1, 2, 3];
+    const growingMonths = isNH
+      ? [3, 4, 5, 6, 7, 8, 9]
+      : [9, 10, 11, 12, 1, 2, 3];
     if (!growingMonths.includes(ctx.currentMonth)) return [];
 
     // Suppress if heavy rain forecast
@@ -352,7 +398,9 @@ const fertilizationRule = {
         priority = "high";
       }
 
-      const planterName = ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ?? planterId;
+      const planterName =
+        ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ??
+        planterId;
       results.push({
         key: `fertilize:${planterId}:global`,
         type: "fertilize",
@@ -405,7 +453,9 @@ const wateringRule = {
         priority = "medium";
       }
 
-      const planterName = ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ?? planterId;
+      const planterName =
+        ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ??
+        planterId;
       results.push({
         key: `water:${planterId}:global`,
         type: "water",
@@ -428,7 +478,10 @@ const noWaterRule = {
   id: "no_water",
   label: "No-Watering",
   cooldownDays: 0,
-  evaluate(ctx: RuleContext, wateringSuggestionKeys: Set<string>): SuggestionResult[] {
+  evaluate(
+    ctx: RuleContext,
+    wateringSuggestionKeys: Set<string>,
+  ): SuggestionResult[] {
     if (!ctx.weather) return [];
 
     const forecast24h = precipForecast(ctx, 1);
@@ -448,7 +501,9 @@ const noWaterRule = {
       // Only emit no-water if a watering suggestion would otherwise fire
       if (!wateringSuggestionKeys.has(`water:${planterId}:global`)) continue;
 
-      const planterName = ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ?? planterId;
+      const planterName =
+        ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ??
+        planterId;
       const mm = Math.round(forecast48h.total);
       results.push({
         key: `no_water:${planterId}:global`,
@@ -603,7 +658,10 @@ export function runRules(ctx: RuleContext): SuggestionResult[] {
     if (rule.id === "water") {
       // Skip watering for planters where no-water fires
       for (const result of waterResults) {
-        if (!noWaterPlanterKeys.has(result.planterId) && !seenKeys.has(result.key)) {
+        if (
+          !noWaterPlanterKeys.has(result.planterId) &&
+          !seenKeys.has(result.key)
+        ) {
           seenKeys.add(result.key);
           allResults.push(result);
         }
@@ -638,7 +696,13 @@ export function runRules(ctx: RuleContext): SuggestionResult[] {
  * Returns a map from instanceId → adjacent plant names.
  */
 function buildAdjacentPlantNames(
-  squares: Array<Array<{ plantInstance: { instanceId: string; plant: { name: string } } | null }>> | undefined,
+  squares:
+    | Array<
+        Array<{
+          plantInstance: { instanceId: string; plant: { name: string } } | null;
+        }>
+      >
+    | undefined,
   rows: number,
   cols: number,
 ): Map<string, string[]> {
@@ -651,7 +715,12 @@ function buildAdjacentPlantNames(
       if (!cell) continue;
 
       const adj: string[] = [];
-      const deltas = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+      const deltas = [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ];
       for (const [dr, dc] of deltas) {
         const nr = r + dr;
         const nc = c + dc;
@@ -687,11 +756,16 @@ export function buildRuleContext(params: {
   const placedPlants: PlacedPlant[] = [];
   for (const area of areas) {
     for (const planter of area.planters) {
-      const adjacentMap = buildAdjacentPlantNames(planter.squares, planter.rows, planter.cols);
+      const adjacentMap = buildAdjacentPlantNames(
+        planter.squares,
+        planter.rows,
+        planter.cols,
+      );
       for (const row of planter.squares ?? []) {
         for (const cell of row) {
           if (!cell.plantInstance) continue;
-          const { instanceId, plant, plantingDate, harvestDate } = cell.plantInstance;
+          const { instanceId, plant, plantingDate, harvestDate } =
+            cell.plantInstance;
           placedPlants.push({
             instanceId,
             plant,
@@ -728,7 +802,8 @@ export function buildRuleContext(params: {
       for (const placed of placedPlants) {
         if (placed.plant.name === event.plant.name) {
           const instanceKey = `${placed.planterId}:${placed.instanceId}`;
-          if (!lastEvents.has(instanceKey)) lastEvents.set(instanceKey, new Map());
+          if (!lastEvents.has(instanceKey))
+            lastEvents.set(instanceKey, new Map());
           const existing = lastEvents.get(instanceKey)!.get(event.type);
           const evDate = new Date(event.date);
           if (!existing || evDate > existing) {
@@ -747,7 +822,10 @@ export function buildRuleContext(params: {
     lng: settings.lng,
     placedPlants,
     seedlings,
-    lastEvents: lastEvents as Map<string, Map<import("../../data/schema").GardenEventType, Date>>,
+    lastEvents: lastEvents as Map<
+      string,
+      Map<import("../../data/schema").GardenEventType, Date>
+    >,
     weather,
   };
 }

@@ -443,7 +443,9 @@ router.post("/settings/ai-key", async (req: Request, res: Response) => {
       aiLastValidatedAt: new Date().toISOString(),
       aiValidationError: null,
     });
-    console.log(`[API:POST /settings/ai-key] ${formatSettingsForLog(settings)}`);
+    console.log(
+      `[API:POST /settings/ai-key] ${formatSettingsForLog(settings)}`,
+    );
     res.json(settings);
   } catch (error) {
     const message =
@@ -461,7 +463,9 @@ router.delete("/settings/ai-key", (req: Request, res: Response) => {
       aiLastValidatedAt: null,
       aiValidationError: null,
     });
-    console.log(`[API:DELETE /settings/ai-key] ${formatSettingsForLog(settings)}`);
+    console.log(
+      `[API:DELETE /settings/ai-key] ${formatSettingsForLog(settings)}`,
+    );
     res.json(settings);
   } catch (error) {
     console.error("[API:DELETE /settings/ai-key] Error clearing key:", error);

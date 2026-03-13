@@ -73,7 +73,11 @@ interface PlanterGridProps {
   viewOnly?: boolean;
   getAvailableStock?: (plantId: string) => number;
   onPlantAdded?: (plantInstance: PlantInstance, planterId: string) => void;
-  onPlantRemoved?: (plantInstance: PlantInstance, planterId: string, eventType?: "harvested" | "removed") => void;
+  onPlantRemoved?: (
+    plantInstance: PlantInstance,
+    planterId: string,
+    eventType?: "harvested" | "removed",
+  ) => void;
   onPlantUpdated?: (
     plantInstance: PlantInstance,
     previousPlantInstance: PlantInstance | null,
@@ -128,7 +132,11 @@ export function PlanterGrid({
   const [selectedPlantInstance, setSelectedPlantInstance] =
     useState<PlantInstance | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [plantToRemove, setPlantToRemove] = useState<{ plantInstance: PlantInstance; rowIndex: number; colIndex: number } | null>(null);
+  const [plantToRemove, setPlantToRemove] = useState<{
+    plantInstance: PlantInstance;
+    rowIndex: number;
+    colIndex: number;
+  } | null>(null);
 
   // Helper function to determine which virtual section a square belongs to
   const getVirtualSection = (
@@ -218,14 +226,18 @@ export function PlanterGrid({
     e.stopPropagation();
     const currentSquare = squares[rowIndex][colIndex];
     if (currentSquare.plantInstance) {
-      setPlantToRemove({ plantInstance: currentSquare.plantInstance, rowIndex, colIndex });
+      setPlantToRemove({
+        plantInstance: currentSquare.plantInstance,
+        rowIndex,
+        colIndex,
+      });
     }
   };
 
   const handleRemovalConfirm = (eventType: "harvested" | "removed") => {
     if (!plantToRemove) return;
     const { plantInstance, rowIndex, colIndex } = plantToRemove;
-    
+
     if (onPlantRemoved) {
       onPlantRemoved(plantInstance, id, eventType);
     }
