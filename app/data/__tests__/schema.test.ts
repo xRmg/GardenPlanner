@@ -11,6 +11,7 @@ import {
   AreaSchema,
   SeedlingSchema,
   SettingsSchema,
+  StoredSettingsSchema,
   GardenEventSchema,
   PlanterSchema,
   PlantInstanceSchema,
@@ -82,12 +83,19 @@ describe("PlanterSchema", () => {
           .fill(null)
           .map(() => ({ plantInstance: null })),
       );
-    const result = PlanterSchema.safeParse({ ...validPlanter, rows: 2, cols: 2, squares });
+    const result = PlanterSchema.safeParse({
+      ...validPlanter,
+      rows: 2,
+      cols: 2,
+      squares,
+    });
     expect(result.success).toBe(true);
   });
 
   it("rejects rows > 20", () => {
-    expect(PlanterSchema.safeParse({ ...validPlanter, rows: 21 }).success).toBe(false);
+    expect(PlanterSchema.safeParse({ ...validPlanter, rows: 21 }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -112,7 +120,9 @@ describe("AreaSchema", () => {
   });
 
   it("rejects an area with empty name", () => {
-    expect(AreaSchema.safeParse({ ...validArea, name: "" }).success).toBe(false);
+    expect(AreaSchema.safeParse({ ...validArea, name: "" }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -165,15 +175,22 @@ describe("SettingsSchema", () => {
     expect(result.aiProvider).toEqual({ type: "none" });
   });
 
-  it("accepts a BYOK AI provider", () => {
+  it("rejects a stored BYOK AI provider in the frontend-safe settings DTO", () => {
     const result = SettingsSchema.safeParse({
+      aiProvider: { type: "byok", key: "sk-test-key" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a BYOK AI provider in the stored settings schema", () => {
+    const result = StoredSettingsSchema.safeParse({
       aiProvider: { type: "byok", key: "sk-test-key" },
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects a BYOK AI provider with empty key", () => {
-    const result = SettingsSchema.safeParse({
+  it("rejects a BYOK AI provider with empty key in the stored settings schema", () => {
+    const result = StoredSettingsSchema.safeParse({
       aiProvider: { type: "byok", key: "" },
     });
     expect(result.success).toBe(false);

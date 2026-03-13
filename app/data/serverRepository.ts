@@ -2,26 +2,30 @@
  * app/data/serverRepository.ts
  *
  * Implements GardenRepository with server-side SQLite persistence.
- * 
+ *
  * Strategy:
  * - Maintains local Dexie cache for fast reads and offline support
- * - POSTs full garden state to /api/garden/sync on every mutation
- * - Syncs server state on app startup via GET /api/garden
+ * - POSTs garden data mutations to /api/garden/sync
+ * - Reads and writes settings through dedicated /api/settings endpoints
  * - Gracefully degrades if server is unavailable (keeps local Dexie)
  */
 
 import { DexieRepository } from "./dexieRepository";
-import type {
-  Area,
-  GardenEvent,
-  Plant,
-  Seedling,
-  Settings,
+import {
+  SettingsSchema,
+  parseWithDefaults,
+  type Area,
+  type GardenEvent,
+  type Plant,
+  type Seedling,
+  type Settings,
+  type SettingsPatch,
 } from "./schema";
 import type { GardenRepository } from "./repository";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const API_GARDEN = `${API_BASE}/api/garden`;
+const API_SETTINGS = `${API_BASE}/api/settings`;
 
 class ServerRepository implements GardenRepository {
   private dexie: DexieRepository;
@@ -56,9 +60,15 @@ class ServerRepository implements GardenRepository {
    * Fetch full garden state from server and hydrate local Dexie.
    */
   private async syncFromServer(): Promise<void> {
-    const response = await fetch(API_GARDEN);
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
+    const [gardenResponse, settingsResponse] = await Promise.all([
+      fetch(API_GARDEN),
+      fetch(API_SETTINGS),
+    ]);
+    if (!gardenResponse.ok) {
+      throw new Error(`Garden API returned ${gardenResponse.status}`);
+    }
+    if (!settingsResponse.ok) {
+      throw new Error(`Settings API returned ${settingsResponse.status}`);
     }
 
     const {
@@ -66,14 +76,16 @@ class ServerRepository implements GardenRepository {
       plants = [],
       seedlings = [],
       events = [],
-      settings,
-    } = await response.json() as {
+    } = (await gardenResponse.json()) as {
       areas?: Area[];
       plants?: Plant[];
       seedlings?: Seedling[];
       events?: GardenEvent[];
-      settings?: Settings;
     };
+    const settings = parseWithDefaults(
+      SettingsSchema,
+      await settingsResponse.json(),
+    );
 
     // Clear local Dexie and repopulate from server
     await this.dexie.clearAll();
@@ -90,18 +102,55 @@ class ServerRepository implements GardenRepository {
 
     // Bulk insert seedlings
     if (seedlings.length > 0) {
-      await Promise.all(seedlings.map((s: Seedling) => this.dexie.saveSeedling(s)));
+      await Promise.all(
+        seedlings.map((s: Seedling) => this.dexie.saveSeedling(s)),
+      );
     }
 
     // Bulk insert events
     if (events.length > 0) {
-      await Promise.all(events.map((e: GardenEvent) => this.dexie.saveEvent(e)));
+      await Promise.all(
+        events.map((e: GardenEvent) => this.dexie.saveEvent(e)),
+      );
     }
 
     // Save settings
-    if (settings) {
-      await this.dexie.saveSettings(settings);
+    await this.dexie.saveSettings(settings);
+  }
+
+  private buildSettingsPatch(settings: Settings): SettingsPatch {
+    return {
+      growthZone: settings.growthZone,
+      aiModel: settings.aiModel,
+      locale: settings.locale,
+    };
+  }
+
+  private async requestSettings(
+    method: "PATCH" | "POST" | "DELETE",
+    url: string,
+    body?: unknown,
+  ): Promise<Settings> {
+    const response = await fetch(url, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    if (!response.ok) {
+      let message = `Settings request failed: ${response.status}`;
+      try {
+        const error = (await response.json()) as { error?: string };
+        if (error.error) message = error.error;
+      } catch {
+        // Ignore JSON parse failures — keep the generic status message.
+      }
+      throw new Error(message);
     }
+
+    const settings = parseWithDefaults(SettingsSchema, await response.json());
+    await this.dexie.saveSettings(settings);
+    return settings;
   }
 
   /**
@@ -117,22 +166,23 @@ class ServerRepository implements GardenRepository {
 
     this.syncInProgress = true;
     try {
-      const [areas, plants, seedlings, events, settings] = await Promise.all([
+      const [areas, plants, seedlings, events] = await Promise.all([
         this.dexie.getAreas(),
         this.dexie.getCustomPlants(),
         this.dexie.getSeedlings(),
         this.dexie.getEvents(),
-        this.dexie.getSettings(),
       ]);
 
       // Also fetch bundled plants from app state
       // For now, we'll just send custom plants — backend will merge on startup
       const allPlants = plants;
 
-      console.log(
-        `[Server Sync] Sending to ${API_GARDEN}/sync:`,
-        { areas: areas.length, plants: allPlants.length, seedlings: seedlings.length, events: events.length }
-      );
+      console.log(`[Server Sync] Sending to ${API_GARDEN}/sync:`, {
+        areas: areas.length,
+        plants: allPlants.length,
+        seedlings: seedlings.length,
+        events: events.length,
+      });
 
       const response = await fetch(API_GARDEN + "/sync", {
         method: "POST",
@@ -142,7 +192,6 @@ class ServerRepository implements GardenRepository {
           plants: allPlants,
           seedlings,
           events,
-          settings,
         }),
       });
 
@@ -231,7 +280,25 @@ class ServerRepository implements GardenRepository {
 
   async saveSettings(settings: Settings): Promise<void> {
     await this.dexie.saveSettings(settings);
-    await this.syncToServer();
+    await this.requestSettings(
+      "PATCH",
+      API_SETTINGS,
+      this.buildSettingsPatch(settings),
+    );
+  }
+
+  async storeAiKey(key: string): Promise<Settings> {
+    return this.requestSettings("POST", `${API_SETTINGS}/ai-key`, { key });
+  }
+
+  async clearAiKey(): Promise<Settings> {
+    return this.requestSettings("DELETE", `${API_SETTINGS}/ai-key`);
+  }
+
+  async resolveLocation(query: string): Promise<Settings> {
+    return this.requestSettings("POST", `${API_SETTINGS}/location/resolve`, {
+      query,
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────

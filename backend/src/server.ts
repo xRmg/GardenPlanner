@@ -13,9 +13,16 @@ app.use((req, res, next) => {
   res.send = function (data: any) {
     const duration = Date.now() - startTime;
     const statusCode = res.statusCode;
-    const logColor = statusCode >= 500 ? '\x1b[31m' : statusCode >= 400 ? '\x1b[33m' : '\x1b[32m';
-    const resetColor = '\x1b[0m';
-    console.log(`${logColor}[${statusCode}]${resetColor} ${req.method} ${req.path} (${duration}ms)`);
+    const logColor =
+      statusCode >= 500
+        ? "\x1b[31m"
+        : statusCode >= 400
+          ? "\x1b[33m"
+          : "\x1b[32m";
+    const resetColor = "\x1b[0m";
+    console.log(
+      `${logColor}[${statusCode}]${resetColor} ${req.method} ${req.path} (${duration}ms)`,
+    );
     return originalSend.call(this, data);
   };
 
@@ -29,7 +36,10 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // CORS headers (allow frontend to connect from different origins)
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  );
   res.header("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") {
     res.sendStatus(200);
@@ -72,7 +82,9 @@ app.use(
 
 // Start server
 const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n🌱 Garden Planner backend listening on http://0.0.0.0:${PORT}\n`);
+  console.log(
+    `\n🌱 Garden Planner backend listening on http://0.0.0.0:${PORT}\n`,
+  );
 });
 
 // Graceful shutdown

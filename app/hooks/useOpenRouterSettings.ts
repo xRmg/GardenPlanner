@@ -1,22 +1,13 @@
 /**
  * app/hooks/useOpenRouterSettings.ts
  *
- * Manages OpenRouter API-key draft state, show/hide toggle, and
- * the validate-against-API flow. Syncs the key draft once when
- * settings are first loaded from the database.
- *
- * The key entered here is synced to the backend SQLite via
- * POST /api/garden/sync. The backend proxy (/api/ai/chat) reads
- * it server-side for all AI inference calls — the key never leaves
- * the server for inference.
- *
- * Exception: the key is sent to openrouter.ai/api/v1/auth/key
- * directly from the browser solely for the one-time validation step
- * that gives the user immediate ✓/✗ feedback. It is never stored
- * anywhere during that call.
+ * Manages the Settings UI state for storing / replacing the OpenRouter API key.
+ * Validation and persistence happen via backend settings endpoints so the
+ * browser never talks to OpenRouter directly.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import type { GardenRepository } from "../data/repository";
 import type { Settings } from "../data/schema";
 
 export interface OpenRouterSettingsState {
@@ -36,64 +27,51 @@ export interface OpenRouterSettingsState {
 export function useOpenRouterSettings(
   settings: Settings,
   setSettings: React.Dispatch<React.SetStateAction<Settings>>,
+  repositoryRef: React.MutableRefObject<GardenRepository>,
 ): OpenRouterSettingsState {
-  const [orKeyDraft, setOrKeyDraft] = useState(
-    settings.aiProvider.type === "byok" ? settings.aiProvider.key : "",
-  );
+  const [orKeyDraft, setOrKeyDraft] = useState("");
   const [orStatus, setOrStatus] = useState<
     "idle" | "checking" | "valid" | "invalid"
-  >(settings.aiProvider.type === "byok" || settings.aiProvider.type === "server" ? "valid" : "idle");
-  const [orError, setOrError] = useState("");
+  >(
+    settings.aiProvider.type === "server"
+      ? settings.aiValidationError
+        ? "invalid"
+        : "valid"
+      : "idle",
+  );
+  const [orError, setOrError] = useState(settings.aiValidationError ?? "");
   const [showOrKey, setShowOrKey] = useState(false);
 
-  // Sync draft once when settings are first loaded from the database.
-  const hasInitialized = useRef(false);
   useEffect(() => {
-    if (!hasInitialized.current && settings.aiProvider.type === "byok") {
-      setOrKeyDraft(settings.aiProvider.key);
-      setOrStatus("valid");
-      hasInitialized.current = true;
-    } else if (!hasInitialized.current && settings.aiProvider.type === "server") {
-      // Key is stored server-side; show as valid with empty draft
-      setOrKeyDraft("");
-      setOrStatus("valid");
-      hasInitialized.current = true;
-    } else if (!hasInitialized.current && settings.aiProvider.type !== "none") {
-      hasInitialized.current = true;
+    if (orKeyDraft.trim()) return;
+    if (settings.aiProvider.type === "server") {
+      setOrStatus(settings.aiValidationError ? "invalid" : "valid");
+      setOrError(settings.aiValidationError ?? "");
+      return;
     }
-  }, [settings.aiProvider]);
+    setOrStatus("idle");
+    setOrError("");
+  }, [settings.aiProvider.type, settings.aiValidationError, orKeyDraft]);
 
   const handleValidateOpenRouter = async () => {
     const key = orKeyDraft.trim();
     if (!key) return;
+
     setOrStatus("checking");
     setOrError("");
+
     try {
-      const res = await fetch("https://openrouter.ai/api/v1/auth/key", {
-        headers: { Authorization: `Bearer ${key}` },
-      });
-      if (res.status === 401) {
-        setOrStatus("invalid");
-        setOrError("Invalid API key — check your key at openrouter.ai.");
-        setSettings((prev) => ({ ...prev, aiProvider: { type: "none" } }));
-        return;
-      }
-      if (!res.ok) {
-        setOrStatus("invalid");
-        setOrError(
-          `OpenRouter returned status ${res.status}. Try again later.`,
-        );
-        setSettings((prev) => ({ ...prev, aiProvider: { type: "none" } }));
-        return;
-      }
+      const savedSettings = await repositoryRef.current.storeAiKey(key);
+      setSettings(savedSettings);
+      setOrKeyDraft("");
+      setShowOrKey(false);
       setOrStatus("valid");
-      setSettings((prev) => ({
-        ...prev,
-        aiProvider: { type: "byok", key },
-      }));
-    } catch {
+      setOrError("");
+    } catch (error) {
       setOrStatus("invalid");
-      setOrError("Cannot reach OpenRouter. Check your network connection.");
+      setOrError(
+        error instanceof Error ? error.message : "Failed to validate API key.",
+      );
     }
   };
 

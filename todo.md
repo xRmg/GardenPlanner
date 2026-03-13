@@ -44,23 +44,23 @@
 
 > Findings from code review of AI plumbing (plant lookup + suggestion engine + backend proxy). Fix before adding new AI features.
 
-- [ ] **AI-1** *(CRITICAL — security)* `app/hooks/usePlantAILookup.ts` — add `if (!API_BASE) return` guard at the top of the lookup call, identical to the guard added to `aiSuggestions.ts`. Without it, the hook falls back to a direct browser→OpenRouter call, bypassing the proxy and exposing the key from Dexie.
+- [x] **AI-1** *(resolved)* `app/hooks/usePlantAILookup.ts` now routes through the backend-only client path; missing proxy configuration fails closed instead of falling back to a direct browser→OpenRouter call.
 
-- [ ] **AI-2** *(HIGH — security)* `app/hooks/usePlantAILookup.ts` — pass `apiKey: ""` to `OpenRouterClient` unconditionally when a proxy URL is set. Currently the user's real key is passed to the constructor even when the proxy route is active (constructor should receive empty string or be refactored to not accept `apiKey` when `proxyUrl` is set).
+- [x] **AI-2** *(resolved)* `app/hooks/usePlantAILookup.ts` passes an empty `apiKey` when using the backend proxy; the browser no longer carries the user key for inference calls.
 
-- [ ] **AI-3** *(HIGH — misleading comment)* `app/hooks/useOpenRouterSettings.ts` — fix JSDoc that states "the API key never leaves the server". The validation call (`GET openrouter.ai/api/v1/auth/key`) and the client-side status check both run in the browser with the raw key. The comment should clarify that the key leaves the browser for validation only, and never for inference calls.
+- [x] **AI-3** *(resolved)* `app/hooks/useOpenRouterSettings.ts` now documents and uses backend validation/storage; the browser no longer calls OpenRouter directly.
 
-- [ ] **AI-4** *(MEDIUM — security)* `backend/src/routes.ts` `/api/ai/chat` endpoint — add input validation (Zod or manual) on the request body fields: `messages` (must be non-empty array), `model` (string), `temperature` (0–2 range), `maxTokens` (positive integer cap). Currently any payload shape is forwarded to OpenRouter.
+- [x] **AI-4** *(resolved)* `backend/src/routes.ts` validates `/api/ai/chat` requests with Zod before forwarding them upstream.
 
-- [ ] **AI-5** *(MEDIUM — stale comment)* `backend/src/routes.ts` — remove/update the comment that references `aiProvider.type === "server"`. The `"server"` type was removed from `AiProviderSchema`; only `"none"` and `"byok"` currently exist.
+- [x] **AI-5** *(resolved)* Backend comments and settings transport now distinguish stored `byok` state from frontend-safe `server` state.
 
-- [ ] **AI-6** *(MEDIUM — dead code)* `app/data/schema.ts` — the `"proxy"` variant of `AiProviderSchema` (with `proxyUrl` + optional `token` fields) is never set by the UI and never read by any call path. Either remove it or document it as a planned future option with a `TODO` comment so it isn't a source of confusion.
+- [x] **AI-6** *(resolved)* The unused frontend `"proxy"` variant was removed from the active settings schema; future hosted proxy tiers remain documented separately in product-planning docs.
 
-- [ ] **AI-7** *(LOW — inconsistency)* `app/hooks/usePlantAILookup.ts` — the AI-disabled guard uses `settings.aiProvider.type !== "byok"`, while `aiSuggestions.ts` uses `=== "none"`. Standardise on `=== "none"` so both paths skip AI consistently when `type` is `"proxy"` (even if dead code today).
+- [x] **AI-7** *(resolved)* AI-enabled guards now use the sanitized frontend settings state consistently.
 
 - [ ] **AI-8** *(LOW — inconsistency)* `app/hooks/usePlantAILookup.ts` uses `chatCompletionWithFallback` which does **not** implement the multi-model retry loop, while `aiSuggestions.ts` has an explicit fallback chain (`mistral-small` → `llama-3.3-70b`). Both surfaces should share the same resilience strategy; consider unifying on the explicit fallback loop.
 
-- [ ] **AI-9** *(LOW — stale docs)* `docs/ai-integration-design.md` — the code examples still show the pre-proxy pattern (direct `Authorization: Bearer <key>` calls from the browser). Update examples to reflect the `VITE_API_BASE` / `proxyUrl` approach and document how the key flows: Settings UI → Dexie → `POST /api/garden/sync` → backend SQLite → `/api/ai/chat`.
+- [x] **AI-9** *(resolved)* The AI design docs now describe the proxy-only flow and the dedicated backend settings endpoints.
 
 ---
 

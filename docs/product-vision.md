@@ -40,7 +40,7 @@ Tier 1–3 (local):          Tier 4 (hosted):
 **Architecture requirements**:
 - `GardenRepository` must work 100% offline with no external calls
 - All AI calls must be optional — non-AI fallback for every feature
-- Settings: `aiProvider: { type: 'byok' | 'proxy' | 'none', key?: string }`
+- Settings: stored backend settings may hold a BYOK key, while frontend-safe settings expose only sanitized AI state (`none` or `server`) in local UI state
 - Start with mode **1a** but include `profileId` in DB schema so 1b/1c is a config flip
 - Permission checks (`canEdit`, `canView`) must be centralised even when always returning `true`
 

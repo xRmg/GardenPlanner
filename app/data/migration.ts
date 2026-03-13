@@ -15,9 +15,10 @@ import {
   GardenEventSchema,
   PlantSchema,
   SeedlingSchema,
-  SettingsSchema,
+  StoredSettingsSchema,
   parseWithDefaults,
   safeParse,
+  toFrontendSettings,
 } from "./schema";
 import type { GardenRepository } from "./repository";
 
@@ -78,7 +79,8 @@ export async function migrateLocalStorageToDexie(
   } catch {
     /* use defaults */
   }
-  const settings = parseWithDefaults(SettingsSchema, settingsRaw);
+  const storedSettings = parseWithDefaults(StoredSettingsSchema, settingsRaw);
+  const settings = toFrontendSettings(storedSettings);
 
   // Write to Dexie
   await Promise.all([
@@ -88,6 +90,10 @@ export async function migrateLocalStorageToDexie(
     ...events.map((e) => repo.saveEvent(e)),
     repo.saveSettings(settings),
   ]);
+
+  if (storedSettings.aiProvider.type === "byok") {
+    await repo.storeAiKey(storedSettings.aiProvider.key);
+  }
 
   // Mark migration complete and clean up legacy keys
   localStorage.setItem(MIGRATED_FLAG, "1");

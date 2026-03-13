@@ -228,20 +228,16 @@ export class OpenRouterClient {
       signal?: AbortSignal;
     } = {},
   ): Promise<OpenRouterResponse> {
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+    const response = await fetch(this.config.proxyUrl!, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": this.config.siteUrl || window.location.origin,
-        "X-Title": this.config.siteName || "Garden Planner",
       },
       body: JSON.stringify({
         model,
         messages,
         temperature: options.temperature ?? 0.3,
-        max_tokens: options.maxTokens ?? 1024,
-        response_format: options.responseFormat,
+        maxTokens: options.maxTokens ?? 1024,
       }),
       signal: options.signal,
     });

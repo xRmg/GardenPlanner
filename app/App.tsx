@@ -1,8 +1,5 @@
 import { useState } from "react";
-import {
-  PlanterGrid,
-  PlantInstance,
-} from "./components/PlanterGrid";
+import { PlanterGrid, PlantInstance } from "./components/PlanterGrid";
 import { EventsBar } from "./components/EventsBar";
 import { ToolBar } from "./components/ToolBar";
 import { PlanterDialog } from "./components/PlanterDialog";
@@ -94,7 +91,7 @@ export default function App() {
     locationError,
     setLocationError,
     handleVerifyLocation,
-  } = useLocationSettings(settings, setSettings);
+  } = useLocationSettings(settings, setSettings, repositoryRef);
 
   const {
     orKeyDraft,
@@ -106,7 +103,7 @@ export default function App() {
     showOrKey,
     setShowOrKey,
     handleValidateOpenRouter,
-  } = useOpenRouterSettings(settings, setSettings);
+  } = useOpenRouterSettings(settings, setSettings, repositoryRef);
 
   // ── Area + planter management ─────────────────────────────────────────────
   const {
@@ -1157,8 +1154,9 @@ export default function App() {
                               if (e.key === "Enter") handleValidateOpenRouter();
                             }}
                             placeholder={
-                              orStatus === "valid" && !orKeyDraft.trim()
-                                ? "API key stored — enter a new key to replace"
+                              settings.aiProvider.type === "server" &&
+                              !orKeyDraft.trim()
+                                ? "API key stored server-side — enter a new key to replace"
                                 : "sk-or-…"
                             }
                             autoComplete="off"
@@ -1191,7 +1189,7 @@ export default function App() {
                           {orStatus === "checking" ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            "Validate"
+                            "Validate & Save"
                           )}
                         </button>
                       </div>
@@ -1200,10 +1198,19 @@ export default function App() {
                           {orError}
                         </p>
                       )}
+                      {settings.aiProvider.type === "server" &&
+                        settings.aiLastValidatedAt && (
+                          <p className="text-[11px] text-green-700 ml-1">
+                            Last validated{" "}
+                            {new Date(
+                              settings.aiLastValidatedAt,
+                            ).toLocaleString()}
+                          </p>
+                        )}
                       <p className="text-[11px] text-muted-foreground ml-1">
-                        Required for AI plant lookup and suggestions. The key is
-                        stored server-side and never used directly from the
-                        browser.{" "}
+                        Required for AI plant lookup and suggestions. Key
+                        validation and all AI requests are routed through the
+                        backend.{" "}
                         <a
                           href="https://openrouter.ai/keys"
                           target="_blank"
@@ -1224,7 +1231,10 @@ export default function App() {
                         className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner font-mono"
                         value={settings.aiModel}
                         onChange={(e) =>
-                          setSettings((prev) => ({ ...prev, aiModel: e.target.value }))
+                          setSettings((prev) => ({
+                            ...prev,
+                            aiModel: e.target.value,
+                          }))
                         }
                         placeholder="google/gemini-2.0-flash"
                       />

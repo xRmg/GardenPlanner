@@ -26,8 +26,10 @@ import {
   PlantSchema,
   SeedlingSchema,
   SettingsSchema,
+  StoredSettingsSchema,
   parseWithDefaults,
   safeParse,
+  toFrontendSettings,
   type Area,
   type GardenEvent,
   type Plant,
@@ -144,7 +146,9 @@ export class GardenPlannerDB extends Dexie {
     });
     // v5: fix planters saved with id: undefined (spread-order bug in handleSavePlanter)
     this.version(5).upgrade((trans) => {
-      console.info("[DB] Running v5 migration: fixing planters with undefined id");
+      console.info(
+        "[DB] Running v5 migration: fixing planters with undefined id",
+      );
       return trans
         .table("areas")
         .toCollection()
@@ -259,11 +263,36 @@ export class DexieRepository implements GardenRepository {
 
   async getSettings(): Promise<Settings> {
     const row = await this.db.settings.get("singleton");
-    return parseWithDefaults(SettingsSchema, row?.value ?? {});
+    const value = row?.value ?? {};
+    const frontend = SettingsSchema.safeParse(value);
+    if (frontend.success) return frontend.data;
+    const legacy = StoredSettingsSchema.safeParse(value);
+    if (legacy.success) return toFrontendSettings(legacy.data);
+    return parseWithDefaults(SettingsSchema, {});
   }
 
   async saveSettings(settings: Settings): Promise<void> {
     await this.db.settings.put({ key: "singleton", value: settings });
+  }
+
+  async storeAiKey(): Promise<Settings> {
+    throw new Error("AI key storage requires the backend repository.");
+  }
+
+  async clearAiKey(): Promise<Settings> {
+    const current = await this.getSettings();
+    const next: Settings = {
+      ...current,
+      aiProvider: { type: "none" },
+      aiLastValidatedAt: undefined,
+      aiValidationError: undefined,
+    };
+    await this.saveSettings(next);
+    return next;
+  }
+
+  async resolveLocation(): Promise<Settings> {
+    throw new Error("Location resolution requires the backend repository.");
   }
 
   // ── Events ───────────────────────────────────────────────────────────────

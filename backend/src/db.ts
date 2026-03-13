@@ -14,6 +14,19 @@ if (!fs.existsSync(dbDir)) {
 
 export const db: BetterDatabase = new Database(dbPath);
 
+function hasColumn(table: string, column: string): boolean {
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string;
+  }>;
+  return rows.some((row) => row.name === column);
+}
+
+function ensureColumn(table: string, column: string, definition: string): void {
+  if (!hasColumn(table, column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 /**
  * Initialize database schema.
  * Creates tables if they don't exist.
@@ -121,20 +134,23 @@ export function initializeSchema(): void {
       locale TEXT DEFAULT 'en',
       lat REAL,
       lng REAL,
+      aiLastValidatedAt TEXT,
+      aiValidationError TEXT,
       profileId TEXT DEFAULT 'default',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
+  ensureColumn("settings", "aiLastValidatedAt", "TEXT");
+  ensureColumn("settings", "aiValidationError", "TEXT");
+
   // Ensure settings row exists
   const settingsExists = db
     .prepare("SELECT 1 FROM settings WHERE id = 'default'")
     .get();
   if (!settingsExists) {
-    db.prepare(
-      "INSERT INTO settings (id) VALUES ('default')",
-    ).run();
+    db.prepare("INSERT INTO settings (id) VALUES ('default')").run();
   }
 
   console.log("✓ Database schema initialized");

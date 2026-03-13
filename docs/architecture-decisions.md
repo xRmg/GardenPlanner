@@ -41,7 +41,7 @@
 | Auto-derivation       | Requires user lookup            | Derived from lat/lng ✅     |
 | AI knowledge          | Trained on both                 | Increasingly used in literature |
 
-**Derivation**: On location save, look up zone from lat/lng using a pre-computed 0.5° grid lookup table embedded in the app (~260 KB, offline, no API call required).
+**Derivation**: On location save, the backend resolves the place name to lat/lng and derives the zone server-side before returning sanitized settings to the frontend.
 
 **Plant cache key**: `${name}|${latinName}|${koeppenZone}` — same plant can have different sow/harvest windows per climate.
 
@@ -49,30 +49,33 @@
 
 ## AI Provider: BYOK Key, Server-Side Proxy
 
-**Decision**: User supplies their own OpenRouter key (BYOK) via the Settings UI, but all AI *inference* calls are routed through the backend proxy. The key leaves the browser only for initial entry validation (see exceptions below).
+**Decision**: User supplies their own OpenRouter key (BYOK) via the Settings UI, but validation, persistence, and all AI calls are routed through the backend. The browser never calls OpenRouter directly.
 
 | Phase | Approach                                         | Notes                                  |
 | ----- | ------------------------------------------------ | -------------------------------------- |
-| 1     | User enters key in Settings → synced to backend SQLite → used via `/api/ai/chat` proxy | Key stored server-side |
+| 1     | User enters key in Settings → backend validates/stores it → AI uses `/api/ai/chat` proxy | Key stored server-side |
 | 3     | Cloudflare Worker proxy — key in env secrets     | Same pattern, different host           |
 
 **How it works**:
-1. User enters OpenRouter key in Settings UI; validated client-side against `openrouter.ai/api/v1/auth/key`.
-2. Key saved as `aiProvider: { type: "byok", key }` in Dexie and synced to backend SQLite via `POST /api/garden/sync`.
-3. For every AI call (plant lookup or suggestion engine), the frontend POSTs to `${VITE_API_BASE}/api/ai/chat` — **no key in the request body**.
-4. The backend reads the key from its own SQLite settings row and forwards to OpenRouter server-side.
-5. Full request + response is logged in the backend terminal for debugging.
-6. If `VITE_API_BASE` is not set, the suggestion engine silently skips AI (falls back to rules).
+1. User enters an OpenRouter key in Settings.
+2. Frontend POSTs the key to `POST /api/settings/ai-key`.
+3. The backend validates the key against OpenRouter, stores it in SQLite, and returns sanitized settings with `aiProvider: { type: "server" }`.
+4. Frontend reads sanitized settings from `GET /api/settings`; the raw key is never returned to the browser.
+5. For every AI call (plant lookup or suggestion engine), the frontend POSTs to `${VITE_API_BASE}/api/ai/chat` — **no key in the request body**.
+6. The backend reads the key from its own SQLite settings row and forwards to OpenRouter server-side.
 
 **Security rules**:
 - Never use `import.meta.env.VITE_OPENROUTER_KEY` — anything starting with `VITE_` is compiled into the bundle
 - Never include the API key in error reports, JSON exports, or browser-visible logs
-- The `OpenRouterClient` with `proxyUrl` set does **not** send `apiKey` in the proxied request body
-- Validate key on entry via `GET openrouter.ai/api/v1/auth/key`; show green ✓ or red ✗ in Settings
+- The frontend always routes AI requests through the backend proxy and never falls back to direct browser calls
+- Validate and store keys via `POST /api/settings/ai-key`; show green ✓ or red ✗ based on the backend response
 
-**Exceptions — key does leave the browser in these cases** (all intentional):
-1. **Key validation** (`useOpenRouterSettings`) — `GET openrouter.ai/api/v1/auth/key` is called from the browser to give the user immediate ✓/✗ feedback; the key is never stored anywhere during this call.
-2. **usePlantAILookup fallback** (⚠️ bug — see `todo.md` AI-1/AI-2) — when `VITE_API_BASE` is unset, the plant lookup hook falls back to a direct browser call. This is a known issue to be fixed.
+**Current backend-owned settings endpoints**:
+1. `GET /api/settings` — returns sanitized settings only
+2. `PATCH /api/settings` — persists editable non-secret settings such as locale, growth zone, and model
+3. `POST /api/settings/ai-key` — validates and stores a new OpenRouter key server-side
+4. `DELETE /api/settings/ai-key` — clears the stored key
+5. `POST /api/settings/location/resolve` — resolves a location query to canonical location, coordinates, and growth zone server-side
 
 
 **Docker self-hosted key injection** (for deployers):

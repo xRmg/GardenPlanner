@@ -203,35 +203,28 @@ export const SeedlingSchema = z.object({
 // Settings — user preferences and configuration
 // ---------------------------------------------------------------------------
 
-export const AiProviderSchema = z.discriminatedUnion("type", [
+export const StoredAiProviderSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("none") }),
   z.object({
     type: z.literal("byok"),
     /**
      * User-supplied OpenRouter API key.
-     * Entered in the Settings UI, synced to the backend SQLite DB via
-     * POST /api/garden/sync. The backend reads it server-side for all
-     * AI calls via the /api/ai/chat proxy — the key never leaves the server.
+     * Entered in the Settings UI and stored by the backend via
+     * POST /api/settings/ai-key. The backend reads it server-side for all
+     * AI calls via the /api/ai/chat proxy.
      */
     key: z.string().min(1),
   }),
-  /** Indicates an API key is stored server-side. Returned by GET /api/garden
-   *  so the frontend knows AI is configured without exposing the actual key. */
-  z.object({ type: z.literal("server") }),
-  z.object({
-    type: z.literal("proxy"),
-    /**
-     * TODO (Phase 3): A bring-your-own-proxy option where the frontend
-     * routes AI calls through a user-supplied URL with an optional bearer
-     * token. Not used by any code path today — reserved for future
-     * self-hosted / Cloudflare Worker deployment tiers.
-     */
-    proxyUrl: z.string().url(),
-    token: z.string().optional(),
-  }),
 ]);
 
-export const SettingsSchema = z.object({
+export const AiProviderSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("none") }),
+  /** Indicates an API key is stored server-side. Returned by GET /api/settings
+   *  so the frontend knows AI is configured without exposing the actual key. */
+  z.object({ type: z.literal("server") }),
+]);
+
+export const StoredSettingsSchema = z.object({
   location: z.string().default(""),
   /**
    * Köppen–Geiger climate zone code, e.g. 'Cfb'.
@@ -239,7 +232,7 @@ export const SettingsSchema = z.object({
    * Field name kept as `growthZone` for backwards compatibility.
    */
   growthZone: z.string().default("Cfb"),
-  aiProvider: AiProviderSchema.default({ type: "none" }),
+  aiProvider: StoredAiProviderSchema.default({ type: "none" }),
   /** OpenRouter model identifier, e.g. 'google/gemini-2.0-flash'. */
   aiModel: z.string().default("google/gemini-2.0-flash"),
   /** BCP 47 locale tag, e.g. 'en', 'nl'. */
@@ -247,9 +240,58 @@ export const SettingsSchema = z.object({
   /** Geocoded coordinates derived from `location` via Open-Meteo Geocoding API. */
   lat: z.number().optional(),
   lng: z.number().optional(),
+  /** Last successful backend validation time for the stored AI key. */
+  aiLastValidatedAt: z.string().datetime({ offset: true }).optional(),
+  /** Last backend validation error for the stored AI key, if any. */
+  aiValidationError: z.string().optional(),
   /** Forward-compatibility for Tier 1c / Tier 4 multi-profile. */
   profileId: z.string().default("default"),
 });
+
+export const SettingsSchema = z.object({
+  location: z.string().default(""),
+  growthZone: z.string().default("Cfb"),
+  aiProvider: AiProviderSchema.default({ type: "none" }),
+  aiModel: z.string().default("google/gemini-2.0-flash"),
+  locale: z.string().default("en"),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+  aiLastValidatedAt: z.string().datetime({ offset: true }).optional(),
+  aiValidationError: z.string().optional(),
+  profileId: z.string().default("default"),
+});
+
+export const SettingsPatchSchema = z
+  .object({
+    growthZone: z.string().optional(),
+    aiModel: z.string().optional(),
+    locale: z.string().optional(),
+  })
+  .strict();
+
+export const AiKeySubmissionSchema = z.object({
+  key: z.string().min(1),
+});
+
+export const LocationResolutionSchema = z.object({
+  query: z.string().min(1),
+});
+
+export function toFrontendSettings(stored: StoredSettings): Settings {
+  return {
+    location: stored.location,
+    growthZone: stored.growthZone,
+    aiProvider:
+      stored.aiProvider.type === "byok" ? { type: "server" } : { type: "none" },
+    aiModel: stored.aiModel,
+    locale: stored.locale,
+    lat: stored.lat,
+    lng: stored.lng,
+    aiLastValidatedAt: stored.aiLastValidatedAt,
+    aiValidationError: stored.aiValidationError,
+    profileId: stored.profileId,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // GardenEvent — a logged action in the garden
@@ -316,8 +358,13 @@ export type PlanterSquare = z.infer<typeof PlanterSquareSchema>;
 export type Planter = z.infer<typeof PlanterSchema>;
 export type Area = z.infer<typeof AreaSchema>;
 export type Seedling = z.infer<typeof SeedlingSchema>;
+export type StoredAiProvider = z.infer<typeof StoredAiProviderSchema>;
 export type AiProvider = z.infer<typeof AiProviderSchema>;
+export type StoredSettings = z.infer<typeof StoredSettingsSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
+export type SettingsPatch = z.infer<typeof SettingsPatchSchema>;
+export type AiKeySubmission = z.infer<typeof AiKeySubmissionSchema>;
+export type LocationResolution = z.infer<typeof LocationResolutionSchema>;
 export type GardenEvent = z.infer<typeof GardenEventSchema>;
 export type Suggestion = z.infer<typeof SuggestionSchema>;
 
