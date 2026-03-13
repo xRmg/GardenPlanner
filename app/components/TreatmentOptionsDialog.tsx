@@ -11,6 +11,12 @@ import { AlertCircle, Bug, Leaf, Loader2, Sparkles } from "lucide-react";
 import type { PlantInstance } from "./PlanterGrid";
 import type { Suggestion } from "./EventsBar";
 import type { PestEvent, Settings } from "../data/schema";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  isAbortError,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import { OpenRouterClient } from "../services/ai/openrouter";
 import {
   buildTreatmentOptionsPrompt,
@@ -147,12 +153,10 @@ export function TreatmentOptionsDialog({
       )
       .then(({ content }) => {
         setResult(parseTreatmentOptionsResponse(content));
+        dismissErrorToast(ERROR_TOAST_IDS.treatmentOptions);
       })
       .catch((loadError) => {
-        if (
-          loadError instanceof DOMException &&
-          loadError.name === "AbortError"
-        ) {
+        if (isAbortError(loadError)) {
           return;
         }
         setError(
@@ -160,6 +164,12 @@ export function TreatmentOptionsDialog({
             ? loadError.message
             : "Failed to load treatment options.",
         );
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.treatmentOptions,
+          title: "Could not load AI treatment options",
+          error: loadError,
+          fallback: "Treatment guidance could not be generated.",
+        });
       })
       .finally(() => {
         if (!controller.signal.aborted) {

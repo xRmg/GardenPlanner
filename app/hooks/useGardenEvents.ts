@@ -15,6 +15,11 @@ import type { GardenRepository } from "../data/repository";
 import type { GardenEvent as SchemaGardenEvent } from "../data/schema";
 import type { PlantInstance } from "../components/PlanterGrid";
 import type { GardenEvent, Suggestion } from "../components/EventsBar";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 
 export interface GardenEventsState {
   harvestAlerts: Array<{
@@ -64,7 +69,16 @@ export function useGardenEvents({
     setEvents((prev) => [eventLog, ...prev]);
     void repositoryRef.current.saveEvent(
       eventLog as unknown as SchemaGardenEvent,
-    );
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not save garden event",
+          error,
+          fallback: "The journal entry may not be fully persisted.",
+        });
+      });
   };
 
   const handlePlantRemoved = (
@@ -82,7 +96,16 @@ export function useGardenEvents({
     setEvents((prev) => [eventLog, ...prev]);
     void repositoryRef.current.saveEvent(
       eventLog as unknown as SchemaGardenEvent,
-    );
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not save garden event",
+          error,
+          fallback: "The journal entry may not be fully persisted.",
+        });
+      });
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -114,9 +137,17 @@ export function useGardenEvents({
       journalEntries.map((entry) =>
         repositoryRef.current.saveEvent(entry as unknown as SchemaGardenEvent),
       ),
-    ).catch((error) =>
-      console.error("[Events] Failed to save pest journal entries:", error),
-    );
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        console.error("[Events] Failed to save pest journal entries:", error);
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not save pest history",
+          error,
+          fallback: "The pest journal update may not be fully persisted.",
+        });
+      });
   };
 
   const handleCompleteSuggestion = (suggestion: Suggestion) => {
@@ -149,7 +180,16 @@ export function useGardenEvents({
     setEvents((prev) => [completedEvent, ...prev]);
     void repositoryRef.current.saveEvent(
       completedEvent as unknown as SchemaGardenEvent,
-    );
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not save completed suggestion",
+          error,
+          fallback: "The completed action may not be fully persisted.",
+        });
+      });
   };
 
   return {

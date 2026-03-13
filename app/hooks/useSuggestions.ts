@@ -16,6 +16,11 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { Area, GardenEvent, Plant, Seedling, Settings, Suggestion, SuggestionMode } from "../data/schema";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import { evaluateSuggestions } from "../services/suggestions";
 const DEBOUNCE_MS = 2_000;
 const BACKGROUND_REFRESH_MS = 15 * 60 * 1_000; // 15 minutes
@@ -97,12 +102,19 @@ export function useSuggestions({
           setSuggestions(result.suggestions);
           setMode(result.mode);
           setLastRefreshed(new Date());
+          dismissErrorToast(ERROR_TOAST_IDS.suggestions);
         }
       } catch (err) {
         if (!controller.signal.aborted) {
           const message = err instanceof Error ? err.message : "Suggestion engine error";
           setError(message);
           console.warn("[useSuggestions] Evaluation failed:", err);
+          notifyErrorToast({
+            id: ERROR_TOAST_IDS.suggestions,
+            title: "Suggestions refresh failed",
+            error: err,
+            fallback: "Suggestions could not be refreshed.",
+          });
         }
       } finally {
         if (!controller.signal.aborted) {

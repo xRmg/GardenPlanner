@@ -8,6 +8,11 @@
 
 import { useEffect, useState } from "react";
 import type { GardenRepository } from "../data/repository";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import type { Settings } from "../data/schema";
 
 export interface OpenRouterSettingsState {
@@ -67,11 +72,18 @@ export function useOpenRouterSettings(
       setShowOrKey(false);
       setOrStatus("valid");
       setOrError("");
+      dismissErrorToast(ERROR_TOAST_IDS.aiKeyValidation);
     } catch (error) {
       setOrStatus("invalid");
       setOrError(
         error instanceof Error ? error.message : "Failed to validate API key.",
       );
+      notifyErrorToast({
+        id: ERROR_TOAST_IDS.aiKeyValidation,
+        title: "OpenRouter validation failed",
+        error,
+        fallback: "The API key could not be validated.",
+      });
     }
   };
 

@@ -1,8 +1,8 @@
 # Garden Planner — TODO
 
 > **Created**: 2026-02-25
-> **Status**: Phase 1 in progress — 1.1–1.13 ✅ · remaining: 1.12, 1.14, then Phase 2
-> **Current sprint**: Tasks 1.12, 1.14 — Calendar view, error handling
+> **Status**: Phase 1 complete — 1.1–1.14 ✅ · Phase 2 next
+> **Current sprint**: Phase 1 closed · preparing Phase 2 internationalization
 > **Purpose**: Active implementation roadmap. Architecture decisions → `docs/architecture-decisions.md`. Product vision → `docs/product-vision.md`.
 
 ---
@@ -11,7 +11,7 @@
 
 | Phase | Focus                                           | Status         |
 | ----- | ----------------------------------------------- | -------------- |
-| **1** | Foundation + smart suggestions (local-first)    | 🔄 In Progress |
+| **1** | Foundation + smart suggestions (local-first)    | ✅ Complete    |
 | **2** | Internationalization (i18next, en + nl)         | ⬜ Queued      |
 | **3** | Backend, intelligence proxy & multi-user auth   | ⬜ Future      |
 
@@ -29,14 +29,16 @@
 - **1.9** — Dual-mode suggestion engine: weather service (Open-Meteo), rules engine (7 rules + frost), AI suggestions (10 types, 24h cache), merger, `useSuggestions` hook, wired into `EventsBar`, Dexie v7 (`weatherCache` + `aiSuggestionsCache`), full test suite → see [`docs/suggestion-engine-architecture.md`](docs/suggestion-engine-architecture.md)
 - **1.10** — Plant schema enrichment: added richer care fields (`watering`, `growingTips`, spacing/harvest metadata), bundled plant seeding, and `PlantDetailsDialog` care rendering
 - **1.11** — Pest + treatment events: added `pest` + `treatment` event types, plant-local pest history, journal mirroring, instance-aware treatment suggestions, and AI-backed treatment options with a custom fallback
-- **1.12** — Vitest + schema/repository/rules-engine tests
+- **Testing** — Vitest + schema/repository/rules-engine tests
 - **1.13** — Auto-derive `koeppenZone` from lat/lng via Open-Meteo 30-year climate normals; pure `classifyKoppen(T, P, lat)` function; written to `settings.growthZone` when user picks a city in Settings
+- **1.12** — Calendar view: month-navigable component showing events, suggestions, and harvest periods for planted crops
+- **1.14** — Error boundaries + Sonner toast notifications for async failures, with root crash recovery and surfaced sync/settings/AI failures
 - **Bug fixes** — Events + plant placements persisted to Dexie (previously lost on refresh)
 
-### ⬜ Remaining — Tasks 1.10–1.14
+### ✅ Phase 1 Complete
 
-- [ ] **1.12** — Calendar view: month-navigable component showing events, suggestions, and harvest periods for planted crops
-- [ ] **1.14** — Error boundaries + Sonner toast notifications for all async failures
+- [x] **1.12** — Calendar view: month-navigable component showing events, suggestions, and harvest periods for planted crops
+- [x] **1.14** — Error boundaries + Sonner toast notifications for all async failures
 
 ---
 
@@ -58,10 +60,12 @@
 
 - [x] **AI-7** *(resolved)* AI-enabled guards now use the sanitized frontend settings state consistently.
 
-- [ ] **AI-8** *(LOW — inconsistency)* `app/hooks/usePlantAILookup.ts` uses `chatCompletionWithFallback` which does **not** implement the multi-model retry loop, while `aiSuggestions.ts` has an explicit fallback chain (`mistral-small` → `llama-3.3-70b`). Both surfaces should share the same resilience strategy; consider unifying on the explicit fallback loop.
+- [ ] **AI-8** *(LOW — inconsistency)* `app/hooks/usePlantAILookup.ts` uses `chatCompletionWithFallback` which does **not** implement the multi-model retry loop, while `aiSuggestions.ts` has an explicit fallback chain (`mistral-small` → `llama-3.3-70b`). Both surfaces should share the same resilience strategy; consider unifying on the explicit fallback loop. 
 
 - [x] **AI-9** *(resolved)* The AI design docs now describe the proxy-only flow and the dedicated backend settings endpoints.
 
+
+## User supplied comment regarding: **AI-8** * DO not have fallback to other models. Present error, and do not continue
 ---
 
 ## Phase 2 — Internationalization
@@ -128,3 +132,25 @@
 | `@hono/zod-validator@^0.5`            | 3     | Request validation             |
 | `wrangler@^4`                         | 3     | Cloudflare Workers CLI         |
 | `@supabase/supabase-js@^2.49`         | 3     | Supabase client                |
+
+
+## Scratchpad.
+
+This section is for vague ideas that need to be refined into stories.
+
+### Multi plant editing / smart grouping.
+
+I'm considering that Same plants that touch will be treated as one plant for suggestions, pests and treatments.
+
+A planter full or partly full with say for example strawberry all at the same moment have pests or need fertilization, need water etc etc.
+
+I'm thinking we can do this smartly by considering idenitcal plants in adjecent cells one metaplant. (Maybe issue with varieties? to be discussed.) 
+
+### Plant State
+
+We can give a plant (being 1 cell, or metaplant as above) a specific state, maybe sprouting/flowering/fruiting/losing leaves. Maybe we need to split it into 2 states, one about sprouting/flowering etc. and one about plant health, like losing leaves, leaf damage (pests, or hail), 
+
+
+
+
+

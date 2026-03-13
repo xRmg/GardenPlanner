@@ -13,6 +13,11 @@ import { useState, useEffect, useRef } from "react";
 import { createServerRepository } from "../data/serverRepository";
 import { migrateLocalStorageToDexie } from "../data/migration";
 import { BUNDLED_PLANTS } from "../data/bundledPlants";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import { parseWithDefaults, SettingsSchema } from "../data/schema";
 import type {
   Settings,
@@ -120,10 +125,17 @@ export function useGardenData(): GardenDataState {
         setSettings(loadedSettings);
         setEvents(loadedEvents as unknown as GardenEvent[]);
         hasLoadedFromDB.current = true;
+        dismissErrorToast(ERROR_TOAST_IDS.dbInit);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error("[DB] Failed to initialize database:", err);
         setDbError(msg);
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.dbInit,
+          title: "Could not initialize garden data",
+          error: err,
+          fallback: "The database could not be opened.",
+        });
       }
     })();
   }, []);
@@ -136,8 +148,19 @@ export function useGardenData(): GardenDataState {
     Promise.all(
       areas.map((area) => repo.saveArea(area as unknown as SchemaArea)),
     )
-      .then(flashSaved)
-      .catch((err) => console.error("[DB] Failed to save area:", err));
+      .then(() => {
+        dismissErrorToast(ERROR_TOAST_IDS.areasSync);
+        flashSaved();
+      })
+      .catch((err) => {
+        console.error("[DB] Failed to save area:", err);
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.areasSync,
+          title: "Could not save garden layout",
+          error: err,
+          fallback: "Your area and planter changes may not be fully persisted.",
+        });
+      });
   }, [areas]);
 
   // Persist custom plants to Dexie
@@ -151,8 +174,19 @@ export function useGardenData(): GardenDataState {
         repo.savePlant(plant as unknown as SchemaPlant),
       ),
     )
-      .then(flashSaved)
-      .catch((err) => console.error("[DB] Failed to save plant:", err));
+      .then(() => {
+        dismissErrorToast(ERROR_TOAST_IDS.plantsSync);
+        flashSaved();
+      })
+      .catch((err) => {
+        console.error("[DB] Failed to save plant:", err);
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.plantsSync,
+          title: "Could not save plant catalogue",
+          error: err,
+          fallback: "Your plant changes may not be fully persisted.",
+        });
+      });
   }, [customPlants]);
 
   // Persist seedlings to Dexie
@@ -164,8 +198,19 @@ export function useGardenData(): GardenDataState {
         repo.saveSeedling(seedling as unknown as SchemaSeedling),
       ),
     )
-      .then(flashSaved)
-      .catch((err) => console.error("[DB] Failed to save seedling:", err));
+      .then(() => {
+        dismissErrorToast(ERROR_TOAST_IDS.seedlingsSync);
+        flashSaved();
+      })
+      .catch((err) => {
+        console.error("[DB] Failed to save seedling:", err);
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.seedlingsSync,
+          title: "Could not save seedlings",
+          error: err,
+          fallback: "Seedling changes may not be fully persisted.",
+        });
+      });
   }, [seedlings]);
 
   // Persist settings to Dexie
@@ -174,8 +219,19 @@ export function useGardenData(): GardenDataState {
     const repo = repositoryRef.current;
     repo
       .saveSettings(settings)
-      .then(flashSaved)
-      .catch((err) => console.error("[DB] Failed to save settings:", err));
+      .then(() => {
+        dismissErrorToast(ERROR_TOAST_IDS.settingsSync);
+        flashSaved();
+      })
+      .catch((err) => {
+        console.error("[DB] Failed to save settings:", err);
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.settingsSync,
+          title: "Could not save settings",
+          error: err,
+          fallback: "Settings changes may not be fully persisted.",
+        });
+      });
   }, [settings]);
 
   // Clear the initial-persist skip flag after the echo cycle completes.

@@ -13,9 +13,11 @@ import { PlanterDialog } from "./components/PlanterDialog";
 import { PlantDialog } from "./components/PlantDefinitionDialog";
 import { SowSeedsDialog } from "./components/SowSeedsDialog";
 import { AddSeedlingDialog } from "./components/AddSeedlingDialog";
+import { CalendarView } from "./components/CalendarView";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import {
+  Calendar as CalendarIcon,
   Map as MapIcon,
   Users,
   Thermometer,
@@ -41,6 +43,7 @@ import { usePlantCatalog } from "./hooks/usePlantCatalog";
 import { useSeedlingManager } from "./hooks/useSeedlingManager";
 import { useGardenEvents } from "./hooks/useGardenEvents";
 import { useSuggestions } from "./hooks/useSuggestions";
+import { useGlobalAsyncErrorToasts } from "./hooks/useGlobalAsyncErrorToasts";
 import type { PestEvent } from "./data/schema";
 
 const MONTH_ABBR = [
@@ -65,6 +68,8 @@ function formatMonthRange(months: number[]): string {
 }
 
 export default function App() {
+  useGlobalAsyncErrorToasts();
+
   // ── Core data (DB loading + persistence) ──────────────────────────────────
   const {
     dbError,
@@ -365,9 +370,12 @@ export default function App() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="bg-white/40 backdrop-blur-sm border border-white/60">
+            <TabsList className="w-full h-auto flex-wrap justify-start bg-white/40 backdrop-blur-sm border border-white/60">
               <TabsTrigger value="areas">
                 <MapIcon className="w-4 h-4 mr-2" /> Areas
+              </TabsTrigger>
+              <TabsTrigger value="calendar">
+                <CalendarIcon className="w-4 h-4 mr-2" /> Calendar
               </TabsTrigger>
               <TabsTrigger value="plants">
                 <Users className="w-4 h-4 mr-2" /> My Plants / Seeds
@@ -630,6 +638,19 @@ export default function App() {
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="calendar" className="flex-1 mt-0">
+              <CalendarView
+                areas={areas as unknown as import("./data/schema").Area[]}
+                events={events as unknown as import("./data/schema").GardenEvent[]}
+                suggestions={
+                  suggestions as unknown as import("./data/schema").Suggestion[]
+                }
+                settings={settings}
+                suggestionsMode={suggestionsMode}
+                suggestionsLoading={suggestionsLoading}
+              />
             </TabsContent>
 
             <TabsContent value="plants">

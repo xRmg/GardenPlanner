@@ -11,6 +11,11 @@
 
 import { useState, useMemo } from "react";
 import type { GardenRepository } from "../data/repository";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import type { Area } from "../types";
 import type { Plant } from "../components/PlanterGrid";
 
@@ -130,7 +135,16 @@ export function usePlantCatalog({
 
   const handleRemovePlantManually = (id: string) => {
     setCustomPlants((prev) => prev.filter((p) => p.id !== id));
-    void repositoryRef.current.deletePlant(id);
+    void repositoryRef.current.deletePlant(id)
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.plantsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.plantsSync,
+          title: "Could not save plant catalogue",
+          error,
+          fallback: "The plant removal may not be fully persisted.",
+        });
+      });
   };
 
   const handleEditPlantManually = (plant: Plant) => {

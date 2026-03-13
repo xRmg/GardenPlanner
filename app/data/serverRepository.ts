@@ -22,15 +22,19 @@ import {
   type SettingsPatch,
 } from "./schema";
 import type { GardenRepository } from "./repository";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const API_GARDEN = `${API_BASE}/api/garden`;
 const API_SETTINGS = `${API_BASE}/api/settings`;
-
 class ServerRepository implements GardenRepository {
   private dexie: DexieRepository;
-  private syncInProgress = false;
   private syncQueued = false;
+  private syncPromise: Promise<void> | null = null;
 
   constructor() {
     this.dexie = new DexieRepository();
@@ -46,12 +50,21 @@ class ServerRepository implements GardenRepository {
     // Try to sync from server on startup
     try {
       await this.syncFromServer();
+      dismissErrorToast(ERROR_TOAST_IDS.startupSync);
       console.log("✓ Synced from server on startup");
     } catch (error) {
       console.warn(
         "⚠ Server sync on startup failed; using local Dexie only:",
         error,
       );
+      notifyErrorToast({
+        id: ERROR_TOAST_IDS.startupSync,
+        title: "Server sync unavailable",
+        error,
+        fallback: "Using local garden data only until the backend responds again.",
+        description:
+          "Using local garden data only until the backend responds again.",
+      });
       // Still mark as ready — we'll use local Dexie as fallback
     }
   }
@@ -157,63 +170,67 @@ class ServerRepository implements GardenRepository {
    * POST full garden state to server for persistence.
    * Called after every mutation.
    */
+  private async performSyncToServer(): Promise<void> {
+    const [areas, plants, seedlings, events] = await Promise.all([
+      this.dexie.getAreas(),
+      this.dexie.getCustomPlants(),
+      this.dexie.getSeedlings(),
+      this.dexie.getEvents(),
+    ]);
+
+    const allPlants = plants;
+
+    console.log(`[Server Sync] Sending to ${API_GARDEN}/sync:`, {
+      areas: areas.length,
+      plants: allPlants.length,
+      seedlings: seedlings.length,
+      events: events.length,
+    });
+
+    const response = await fetch(API_GARDEN + "/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        areas,
+        plants: allPlants,
+        seedlings,
+        events,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(
+        `Local changes were saved, but backend sync failed (${response.status}): ${error}`,
+      );
+    }
+
+    const result = await response.json();
+    console.log("✓ Server sync successful:", result);
+  }
+
   private async syncToServer(): Promise<void> {
-    if (this.syncInProgress) {
+    if (this.syncPromise) {
       console.debug("Sync already in progress, queuing follow-up");
       this.syncQueued = true;
-      return;
+      return this.syncPromise;
     }
 
-    this.syncInProgress = true;
-    try {
-      const [areas, plants, seedlings, events] = await Promise.all([
-        this.dexie.getAreas(),
-        this.dexie.getCustomPlants(),
-        this.dexie.getSeedlings(),
-        this.dexie.getEvents(),
-      ]);
-
-      // Also fetch bundled plants from app state
-      // For now, we'll just send custom plants — backend will merge on startup
-      const allPlants = plants;
-
-      console.log(`[Server Sync] Sending to ${API_GARDEN}/sync:`, {
-        areas: areas.length,
-        plants: allPlants.length,
-        seedlings: seedlings.length,
-        events: events.length,
-      });
-
-      const response = await fetch(API_GARDEN + "/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          areas,
-          plants: allPlants,
-          seedlings,
-          events,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Server sync failed: ${response.status} - ${error}`);
-      }
-
-      const result = await response.json();
-      console.log("✓ Server sync successful:", result);
-    } catch (error) {
-      console.error("✗ Failed to sync to server:", error);
-    } finally {
-      this.syncInProgress = false;
-      // If another sync was requested while this one was running,
-      // run it now to pick up the latest Dexie state.
-      if (this.syncQueued) {
+    this.syncPromise = (async () => {
+      do {
         this.syncQueued = false;
-        console.debug("[Server Sync] Processing queued sync");
-        await this.syncToServer();
-      }
-    }
+        try {
+          await this.performSyncToServer();
+        } catch (error) {
+          console.error("✗ Failed to sync to server:", error);
+          throw error;
+        }
+      } while (this.syncQueued);
+    })().finally(() => {
+      this.syncPromise = null;
+    });
+
+    return this.syncPromise;
   }
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -8,6 +8,11 @@
 
 import { useEffect, useState } from "react";
 import type { GardenRepository } from "../data/repository";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import type { Settings } from "../data/schema";
 
 export interface LocationSettingsState {
@@ -50,11 +55,18 @@ export function useLocationSettings(
       setSettings(savedSettings);
       setLocationDraft(savedSettings.location);
       setLocationStatus(savedSettings.lat != null ? "valid" : "idle");
+      dismissErrorToast(ERROR_TOAST_IDS.locationVerify);
     } catch (error) {
       setLocationStatus("invalid");
       setLocationError(
         error instanceof Error ? error.message : "Failed to verify location.",
       );
+      notifyErrorToast({
+        id: ERROR_TOAST_IDS.locationVerify,
+        title: "Location verification failed",
+        error,
+        fallback: "The location could not be verified.",
+      });
     }
   };
 

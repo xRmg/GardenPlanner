@@ -15,6 +15,11 @@ import type { GardenRepository } from "../data/repository";
 import type {
   GardenEvent as SchemaGardenEvent,
 } from "../data/schema";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import type { SeedlingFormData } from "../components/AddSeedlingDialog";
 import type { GardenEvent } from "../components/EventsBar";
 import type { Plant } from "../components/PlanterGrid";
@@ -78,7 +83,16 @@ export function useSeedlingManager({
     setEvents((prev) => [sowEvent, ...prev]);
     void repositoryRef.current.saveEvent(
       sowEvent as unknown as SchemaGardenEvent,
-    );
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not log seed sowing",
+          error,
+          fallback: "The sowing event may not be fully persisted.",
+        });
+      });
   };
 
   const handleOpenSowModal = (plant: Plant) => {
@@ -141,7 +155,16 @@ export function useSeedlingManager({
     setEvents((prev) => [sowEvent, ...prev]);
     void repositoryRef.current.saveEvent(
       sowEvent as unknown as SchemaGardenEvent,
-    );
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not log seed sowing",
+          error,
+          fallback: "The sowing event may not be fully persisted.",
+        });
+      });
   };
 
   const handleUpdateSeedlingStatus = (
@@ -169,7 +192,16 @@ export function useSeedlingManager({
     setEvents((prev) => [statusEvent, ...prev]);
     void repositoryRef.current.saveEvent(
       statusEvent as unknown as SchemaGardenEvent,
-    );
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not save seedling status",
+          error,
+          fallback: "The status update may not be fully persisted.",
+        });
+      });
   };
 
   const handlePlantFromBatch = (seedling: Seedling) => {
@@ -179,7 +211,16 @@ export function useSeedlingManager({
 
   const handleRemoveSeedling = (id: string) => {
     setSeedlings((prev) => prev.filter((s) => s.id !== id));
-    void repositoryRef.current.deleteSeedling(id);
+    void repositoryRef.current.deleteSeedling(id)
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.seedlingsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.seedlingsSync,
+          title: "Could not remove seedling",
+          error,
+          fallback: "The seedling removal may not be fully persisted.",
+        });
+      });
   };
 
   return {

@@ -12,6 +12,11 @@ import { useState } from "react";
 import type { GardenRepository } from "../data/repository";
 import type { GardenEvent } from "../components/EventsBar";
 import type { PlanterConfig } from "../components/PlanterDialog";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import type { Area, Planter } from "../types";
 
 export interface AreaManagerState {
@@ -65,7 +70,16 @@ export function useAreaManager({
 
   const handleRemoveArea = (id: string) => {
     setAreas((prev) => prev.filter((a) => a.id !== id));
-    void repositoryRef.current.deleteArea(id);
+    void repositoryRef.current.deleteArea(id)
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.areasSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.areasSync,
+          title: "Could not save garden layout",
+          error,
+          fallback: "The area removal may not be fully persisted.",
+        });
+      });
   };
 
   const handleUpdateArea = (id: string, updates: Partial<Area>) => {
@@ -118,9 +132,20 @@ export function useAreaManager({
       }),
     );
     const repo = repositoryRef.current;
-    events
-      .filter((e) => e.gardenId === planterId)
-      .forEach((e) => void repo.deleteEvent(e.id));
+    void Promise.all(
+      events
+        .filter((e) => e.gardenId === planterId)
+        .map((event) => repo.deleteEvent(event.id)),
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not update garden journal",
+          error,
+          fallback: "Planter journal cleanup may not be fully persisted.",
+        });
+      });
     setEvents((prev) => prev.filter((e) => e.gardenId !== planterId));
   };
 

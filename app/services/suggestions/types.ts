@@ -13,31 +13,14 @@ import type {
   Priority,
   SuggestionType,
 } from "../../data/schema";
+import type { PlacedPlant } from "../gardenState";
 import type { WeatherData } from "../weather";
+
+export type { PlacedPlant } from "../gardenState";
 
 // ---------------------------------------------------------------------------
 // Rule context — built once per evaluation run
 // ---------------------------------------------------------------------------
-
-/** A PlantInstance augmented with its location in the garden hierarchy. */
-export interface PlacedPlant {
-  instanceId: string;
-  plant: Plant;
-  plantingDate?: string;
-  harvestDate?: string;
-  pestEvents: Array<{
-    id: string;
-    date: string;
-    type: "pest" | "treatment";
-    description: string;
-  }>;
-  planterId: string;
-  planterName: string;
-  areaId: string;
-  areaName: string;
-  /** Names of plants adjacent in the same planter (for companion-conflict checks). */
-  adjacentPlantNames: string[];
-}
 
 export interface RuleContext {
   /** Current month 1–12 (1 = January). */

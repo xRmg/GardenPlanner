@@ -14,6 +14,12 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { Settings } from "../data/schema";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  isAbortError,
+  notifyErrorToast,
+} from "../lib/asyncErrors";
 import { OpenRouterClient } from "../services/ai/openrouter";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
@@ -104,6 +110,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           setAiResult(cached);
           setAiModel("cache");
           setAiLoading(false);
+          dismissErrorToast(ERROR_TOAST_IDS.plantAiLookup);
           return;
         }
         if (isDev) console.log("[usePlantAILookup] Cache miss, calling API…");
@@ -186,6 +193,11 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           if (isDev) console.error("[usePlantAILookup]", emptyError);
           setAiError(emptyError);
           setAiLoading(false);
+          notifyErrorToast({
+            id: ERROR_TOAST_IDS.plantAiLookup,
+            title: "AI plant lookup failed",
+            description: emptyError,
+          });
           return;
         }
 
@@ -232,8 +244,9 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 
         setAiResult(filtered);
         setAiModel(model);
+        dismissErrorToast(ERROR_TOAST_IDS.plantAiLookup);
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (isAbortError(error)) {
           // User cancelled — treat as silent, clear loading
           if (isDev) console.log("[usePlantAILookup] Lookup cancelled by user");
           setAiLoading(false);
@@ -243,6 +256,12 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           error instanceof Error ? error.message : "Unknown error from AI";
         setAiError(`AI lookup failed: ${msg}`);
         console.error("[usePlantAILookup] Error:", error);
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.plantAiLookup,
+          title: "AI plant lookup failed",
+          error,
+          fallback: "Plant details could not be generated.",
+        });
       } finally {
         setAiLoading(false);
       }

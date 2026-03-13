@@ -13,8 +13,9 @@
  *   6. No-Watering — rain forecast overrides watering suggestion
  */
 
-import type { RuleContext, SuggestionResult, PlacedPlant } from "./types";
-import type { Seedling } from "../../data/schema";
+import type { RuleContext, SuggestionResult } from "./types";
+import type { Area, GardenEvent, Seedling, Settings } from "../../data/schema";
+import { buildPlacedPlants } from "../gardenState";
 
 // ---------------------------------------------------------------------------
 // Hemisphere detection from Köppen zone + lat
@@ -692,53 +693,6 @@ export function runRules(ctx: RuleContext): SuggestionResult[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Build adjacentPlantNames for each PlantInstance in a planter's grid.
- * Returns a map from instanceId → adjacent plant names.
- */
-function buildAdjacentPlantNames(
-  squares:
-    | Array<
-        Array<{
-          plantInstance: { instanceId: string; plant: { name: string } } | null;
-        }>
-      >
-    | undefined,
-  rows: number,
-  cols: number,
-): Map<string, string[]> {
-  const result = new Map<string, string[]>();
-  if (!squares) return result;
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const cell = squares[r]?.[c]?.plantInstance;
-      if (!cell) continue;
-
-      const adj: string[] = [];
-      const deltas = [
-        [-1, 0],
-        [1, 0],
-        [0, -1],
-        [0, 1],
-      ];
-      for (const [dr, dc] of deltas) {
-        const nr = r + dr;
-        const nc = c + dc;
-        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
-        const neighbor = squares[nr]?.[nc]?.plantInstance;
-        if (neighbor && neighbor.instanceId !== cell.instanceId) {
-          adj.push(neighbor.plant.name);
-        }
-      }
-      result.set(cell.instanceId, adj);
-    }
-  }
-  return result;
-}
-
-import type { Area, GardenEvent, Settings } from "../../data/schema";
-
-/**
  * Build a RuleContext from the current application state.
  */
 export function buildRuleContext(params: {
@@ -752,36 +706,7 @@ export function buildRuleContext(params: {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Flatten placed plants
-  const placedPlants: PlacedPlant[] = [];
-  for (const area of areas) {
-    for (const planter of area.planters) {
-      const adjacentMap = buildAdjacentPlantNames(
-        planter.squares,
-        planter.rows,
-        planter.cols,
-      );
-      for (const row of planter.squares ?? []) {
-        for (const cell of row) {
-          if (!cell.plantInstance) continue;
-          const { instanceId, plant, plantingDate, harvestDate } =
-            cell.plantInstance;
-          placedPlants.push({
-            instanceId,
-            plant,
-            plantingDate,
-            harvestDate,
-            pestEvents: cell.plantInstance.pestEvents ?? [],
-            planterId: planter.id,
-            planterName: planter.name,
-            areaId: area.id,
-            areaName: area.name,
-            adjacentPlantNames: adjacentMap.get(instanceId) ?? [],
-          });
-        }
-      }
-    }
-  }
+  const placedPlants = buildPlacedPlants(areas);
 
   // Build lastEvents map
   const lastEvents = new Map<string, Map<string, Date>>();
