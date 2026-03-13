@@ -30,6 +30,8 @@ export interface EvaluateSuggestionsParams {
 export interface EvaluateSuggestionsResult {
   suggestions: Suggestion[];
   mode: SuggestionMode;
+  /** Set when the AI call failed — rules-based suggestions are still returned. */
+  aiError?: Error;
 }
 
 /**
@@ -79,6 +81,7 @@ export async function evaluateSuggestions(
 
   let mode: SuggestionMode;
   let aiResults: ReturnType<typeof getAISuggestions> extends Promise<infer T> ? T : never = [];
+  let aiError: Error | undefined;
 
   if (hasAI && hasLocation && weatherAvailable) {
     // Tier 1: attempt AI + weather
@@ -87,6 +90,7 @@ export async function evaluateSuggestions(
       mode = aiResults.length > 0 ? "ai+weather" : "rules+weather";
     } catch (err) {
       console.warn("[suggestions] AI call failed, falling back to rules+weather:", err);
+      aiError = err instanceof Error ? err : new Error(String(err));
       mode = "rules+weather";
     }
   } else if (weatherAvailable) {
@@ -99,5 +103,5 @@ export async function evaluateSuggestions(
 
   const suggestions = mergeSuggestions(ruleResults, aiResults, false);
 
-  return { suggestions, mode };
+  return { suggestions, mode, aiError };
 }

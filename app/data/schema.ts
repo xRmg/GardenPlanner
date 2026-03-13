@@ -75,7 +75,7 @@ export const PlantSourceSchema = z.enum(["bundled", "synced", "custom"]);
 
 export const VirtualSectionSchema = z.object({
   id: z.string(),
-  name: z.string().min(1),
+  name: z.string().min(1).max(80),
   type: z.enum(["rows", "columns"]),
   start: z.number().int().min(1),
   end: z.number().int().min(1),
@@ -89,13 +89,13 @@ export const VirtualSectionSchema = z.object({
 
 export const PlantSchema = z.object({
   id: z.string(),
-  name: z.string().min(1),
+  name: z.string().min(1).max(80),
   color: z.string(),
   icon: z.string(),
   /** Accepted botanical name, e.g. "Solanum lycopersicum". */
   latinName: z.string().optional(),
   description: z.string().optional(),
-  variety: z.string().optional(),
+  variety: z.string().max(80).optional(),
   daysToHarvest: z.number().int().positive().optional(),
   isSeed: z.boolean().default(false),
   /** Current stock count (seeds). */
@@ -105,7 +105,7 @@ export const PlantSchema = z.object({
   /** Whether this plant is sensitive to frost (opposite of frostHardy). */
   frostSensitive: z.boolean().optional(),
   watering: z.string().optional(),
-  growingTips: z.string().optional(),
+  growingTips: z.string().max(500).optional(),
   companions: z.array(z.string()).default([]),
   antagonists: z.array(z.string()).default([]),
   sowIndoorMonths: z.array(z.number().int().min(1).max(12)).default([]),
@@ -124,7 +124,7 @@ export const PestEventSchema = z.object({
   id: z.string(),
   date: z.string().datetime({ offset: true }),
   type: z.enum(["pest", "treatment"]),
-  description: z.string(),
+  description: z.string().max(500),
 });
 
 // ---------------------------------------------------------------------------
@@ -136,7 +136,7 @@ export const PlantInstanceSchema = z.object({
   plant: PlantSchema,
   plantingDate: z.string().datetime({ offset: true }).optional(),
   harvestDate: z.string().datetime({ offset: true }).optional(),
-  variety: z.string().optional(),
+  variety: z.string().max(80).optional(),
   pestEvents: z.array(PestEventSchema).default([]),
 });
 
@@ -199,7 +199,7 @@ export const SeedlingSchema = z.object({
   plant: PlantSchema,
   plantedDate: z.string().datetime({ offset: true }),
   seedCount: z.number().int().positive(),
-  location: z.string(),
+  location: z.string().max(200),
   method: z.enum(["indoor", "direct-sow"]).optional(),
   status: SeedlingStatusSchema,
 });
@@ -310,7 +310,7 @@ export const GardenEventSchema = z.object({
   date: z.string().datetime({ offset: true }),
   /** The planter ID this event relates to, if applicable. */
   gardenId: z.string().optional(),
-  note: z.string().optional(),
+  note: z.string().max(500).optional(),
   /** Forward-compatibility for Tier 1c / Tier 4. */
   profileId: z.string().default("default"),
 });
