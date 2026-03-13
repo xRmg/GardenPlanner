@@ -43,12 +43,14 @@ export function useOpenRouterSettings(
   // Sync draft once when settings are first loaded from the database.
   const hasInitialized = useRef(false);
   useEffect(() => {
+    console.log('[OpenRouter] Init effect — hasInit:', hasInitialized.current, 'aiProvider:', JSON.stringify(settings.aiProvider));
     if (!hasInitialized.current && settings.aiProvider.type === "byok") {
+      console.log('[OpenRouter] Setting status=valid, keyDraft="" (masked)');
       setOrKeyDraft(settings.aiProvider.key);
       setOrStatus("valid");
       hasInitialized.current = true;
     } else if (!hasInitialized.current && settings.aiProvider.type !== "none") {
-      // settings loaded but no BYOK key — mark as initialized
+      console.log('[OpenRouter] Non-none provider, marking initialized');
       hasInitialized.current = true;
     }
   }, [settings.aiProvider]);
