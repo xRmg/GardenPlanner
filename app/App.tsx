@@ -349,7 +349,7 @@ export default function App() {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="w-full h-auto flex-wrap justify-start bg-muted/40 border-none">
+            <TabsList className="w-full h-auto flex-wrap justify-start bg-muted border border-border">
               <TabsTrigger value="areas">
                 <MapIcon className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Areas</span>
@@ -372,15 +372,19 @@ export default function App() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="areas" className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
-              <div className="flex-1 overflow-auto bg-card rounded-2xl border border-border/20 shadow-sm p-4 custom-scrollbar h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]">
+            <TabsContent
+              value="areas"
+              className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
+              <div className="flex-1 overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]">
                 <div className="mb-4 px-1 flex items-center justify-between">
                   <div>
                     <h1 className="text-xl font-black text-foreground tracking-tight uppercase">
                       Area Planner
                     </h1>
                     <p className="text-muted-foreground mt-0.5 text-[10px] uppercase font-bold tracking-wider opacity-60">
-                      Add areas like 'Backyard' or 'Patio', then build planters inside each one.
+                      Add areas like 'Backyard' or 'Patio', then build planters
+                      inside each one.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -423,14 +427,15 @@ export default function App() {
                         Your garden map is empty
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-                        Add your first area — like "Backyard" or "Front Porch" — then lay out planters inside it.
+                        Add your first area — like "Backyard" or "Front Porch" —
+                        then lay out planters inside it.
                       </p>
                     </div>
                   ) : (
                     areas.map((area, areaIdx) => (
                       <div
                         key={area.id}
-                        className="bg-card rounded-2xl border border-border/20 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+                        className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
                       >
                         <div
                           className="px-4 py-2.5 flex items-center justify-between border-b border-white/40"
@@ -626,10 +631,15 @@ export default function App() {
               </div>
             </TabsContent>
 
-            <TabsContent value="calendar" className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
+            <TabsContent
+              value="calendar"
+              className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
               <CalendarView
                 areas={areas as unknown as import("./data/schema").Area[]}
-                events={events as unknown as import("./data/schema").GardenEvent[]}
+                events={
+                  events as unknown as import("./data/schema").GardenEvent[]
+                }
                 suggestions={
                   suggestions as unknown as import("./data/schema").Suggestion[]
                 }
@@ -639,8 +649,11 @@ export default function App() {
               />
             </TabsContent>
 
-            <TabsContent value="plants" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
-              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+            <TabsContent
+              value="plants"
+              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <div className="mb-5">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -725,9 +738,7 @@ export default function App() {
                       p.sowIndoorMonths?.includes(currentMonth) ||
                       p.sowDirectMonths?.includes(currentMonth),
                   );
-                  const inSeasonIds = new Set(
-                    inSeasonPlants.map((p) => p.id),
-                  );
+                  const inSeasonIds = new Set(inSeasonPlants.map((p) => p.id));
                   const hasInSeason = inSeasonPlants.length > 0;
                   const listPlants = hasInSeason
                     ? filteredAvailablePlants.filter(
@@ -757,7 +768,7 @@ export default function App() {
                               Sow This Month
                             </p>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {inSeasonPlants.map((plant) => {
                               const isCustom = customPlants.some(
                                 (p) => p.id === plant.id,
@@ -1009,8 +1020,11 @@ export default function App() {
               </div>
             </TabsContent>
 
-            <TabsContent value="seedlings" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
-              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+            <TabsContent
+              value="seedlings"
+              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <div className="flex justify-between items-center mb-5">
                   <div>
                     <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
@@ -1097,7 +1111,7 @@ export default function App() {
                               </p>
                             </div>
                             {featured ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {group.map((seedling) => (
                                   <div
                                     key={seedling.id}
@@ -1241,8 +1255,11 @@ export default function App() {
               </div>
             </TabsContent>
 
-            <TabsContent value="settings" className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
-              <div className="bg-card rounded-2xl border border-border/20 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+            <TabsContent
+              value="settings"
+              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
                 <h2 className="text-2xl font-black text-foreground tracking-tight uppercase mb-6 leading-none">
                   Settings
                 </h2>
@@ -1258,7 +1275,10 @@ export default function App() {
 
                     {/* Location with verify */}
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-location" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-location"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         Location
                       </label>
                       <div className="flex gap-2">
@@ -1321,7 +1341,10 @@ export default function App() {
 
                     {/* Climate Zone — auto-derived but still overridable */}
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-growth-zone" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-growth-zone"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         Köppen–Geiger Climate Zone
                         <span className="ml-2 normal-case font-medium text-muted-foreground/70">
                           (auto-derived from location, or set manually)
@@ -1422,7 +1445,10 @@ export default function App() {
 
                     {/* OpenRouter API key */}
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-or-key" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-or-key"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         OpenRouter API Key
                       </label>
                       <div className="flex gap-2">
@@ -1458,7 +1484,9 @@ export default function App() {
                             type="button"
                             onClick={() => setShowOrKey((v) => !v)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            aria-label={showOrKey ? "Hide API key" : "Show API key"}
+                            aria-label={
+                              showOrKey ? "Hide API key" : "Show API key"
+                            }
                           >
                             {showOrKey ? (
                               <EyeOff className="w-4 h-4" />
@@ -1518,7 +1546,10 @@ export default function App() {
 
                     {/* Model */}
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-ai-model" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-ai-model"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         Model
                       </label>
                       <input

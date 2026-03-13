@@ -166,26 +166,40 @@ export function PlanterDialog({
           {/* Basic Configuration */}
           <div className="space-y-4">
             <div>
-              <label htmlFor="planter-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="planter-name"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 Planter Name *
               </label>
               <input
                 id="planter-name"
                 type="text"
                 value={name}
-                onChange={(e) => { setName(e.target.value); setNameError(""); }}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setNameError("");
+                }}
                 placeholder="e.g., Raised Bed 1, Herb Pot..."
                 aria-describedby={nameError ? "planter-name-error" : undefined}
                 aria-invalid={!!nameError}
                 className={`w-full px-4 py-3 bg-background border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm ${nameError ? "border-destructive" : ""}`}
               />
               {nameError && (
-                <p id="planter-name-error" className="text-destructive text-xs mt-1 ml-1 animate-error-appear">{nameError}</p>
+                <p
+                  id="planter-name-error"
+                  className="text-destructive text-xs mt-1 ml-1 animate-error-appear"
+                >
+                  {nameError}
+                </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="planter-tagline" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="planter-tagline"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 Short Tag-line
               </label>
               <input
@@ -232,7 +246,10 @@ export function PlanterDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="planter-rows" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+                <label
+                  htmlFor="planter-rows"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+                >
                   Number of Rows *
                 </label>
                 <div className="flex gap-2">
@@ -265,7 +282,10 @@ export function PlanterDialog({
               </div>
 
               <div>
-                <label htmlFor="planter-cols" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+                <label
+                  htmlFor="planter-cols"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+                >
                   Number of Columns *
                 </label>
                 <div className="flex gap-2">
@@ -305,7 +325,12 @@ export function PlanterDialog({
 
           {/* Virtual Sections Section */}
           <div className="border-t pt-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">Virtual Sections <span className="font-medium normal-case tracking-normal text-muted-foreground">(Optional)</span></h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-3">
+              Virtual Sections{" "}
+              <span className="font-medium normal-case tracking-normal text-muted-foreground">
+                (Optional)
+              </span>
+            </h3>
             <p className="text-xs text-muted-foreground mb-4">
               Divide your planter into sections (e.g., one section for tomatoes,
               another for lettuce)
@@ -315,25 +340,41 @@ export function PlanterDialog({
             <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 mb-4">
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label htmlFor="vsection-name" className="text-xs text-muted-foreground block mb-1">
+                  <label
+                    htmlFor="vsection-name"
+                    className="text-xs text-muted-foreground block mb-1"
+                  >
                     Section Name
                   </label>
                   <input
                     id="vsection-name"
                     type="text"
                     value={newVirtualSectionName}
-                    onChange={(e) => { setNewVirtualSectionName(e.target.value); setSectionNameError(""); }}
+                    onChange={(e) => {
+                      setNewVirtualSectionName(e.target.value);
+                      setSectionNameError("");
+                    }}
                     placeholder="e.g., Tomato Section"
-                    aria-describedby={sectionNameError ? "vsection-name-error" : undefined}
+                    aria-describedby={
+                      sectionNameError ? "vsection-name-error" : undefined
+                    }
                     aria-invalid={!!sectionNameError}
                     className={`w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary ${sectionNameError ? "border-destructive" : "border-border/60"}`}
                   />
                   {sectionNameError && (
-                    <p id="vsection-name-error" className="text-destructive text-xs mt-1 animate-error-appear">{sectionNameError}</p>
+                    <p
+                      id="vsection-name-error"
+                      className="text-destructive text-xs mt-1 animate-error-appear"
+                    >
+                      {sectionNameError}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="vsection-type" className="text-xs text-muted-foreground block mb-1">
+                  <label
+                    htmlFor="vsection-type"
+                    className="text-xs text-muted-foreground block mb-1"
+                  >
                     Division Type
                   </label>
                   <select
@@ -360,7 +401,10 @@ export function PlanterDialog({
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label htmlFor="vsection-start" className="text-xs text-muted-foreground block mb-1">
+                  <label
+                    htmlFor="vsection-start"
+                    className="text-xs text-muted-foreground block mb-1"
+                  >
                     Start {newVirtualSectionType === "rows" ? "Row" : "Column"}
                   </label>
                   <input
@@ -377,7 +421,10 @@ export function PlanterDialog({
                   />
                 </div>
                 <div>
-                  <label htmlFor="vsection-end" className="text-xs text-muted-foreground block mb-1">
+                  <label
+                    htmlFor="vsection-end"
+                    className="text-xs text-muted-foreground block mb-1"
+                  >
                     End {newVirtualSectionType === "rows" ? "Row" : "Column"}
                   </label>
                   <input
@@ -395,7 +442,9 @@ export function PlanterDialog({
                 </div>
               </div>
               {sectionRangeError && (
-                <p className="text-destructive text-xs mb-2 animate-error-appear">{sectionRangeError}</p>
+                <p className="text-destructive text-xs mb-2 animate-error-appear">
+                  {sectionRangeError}
+                </p>
               )}
 
               <button

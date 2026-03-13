@@ -169,9 +169,10 @@ function formatWindow(item: CalendarHarvestItem, locale: string): string {
   const ready = item.readyDateKey
     ? `Ready ${formatDateKey(item.readyDateKey, locale)}`
     : undefined;
-  const span = item.startDateKey && item.endDateKey
-    ? `${formatDateKey(item.startDateKey, locale)} to ${formatDateKey(item.endDateKey, locale)}`
-    : undefined;
+  const span =
+    item.startDateKey && item.endDateKey
+      ? `${formatDateKey(item.startDateKey, locale)} to ${formatDateKey(item.endDateKey, locale)}`
+      : undefined;
 
   return [ready, span].filter(Boolean).join(" · ");
 }
@@ -220,7 +221,10 @@ function DayCell({ day }: { day: CalendarDayCell }) {
     Boolean,
   ).length;
   const overflowCount =
-    day.harvests.length + day.suggestions.length + day.events.length - visibleItems;
+    day.harvests.length +
+    day.suggestions.length +
+    day.events.length -
+    visibleItems;
 
   return (
     <div
@@ -266,9 +270,11 @@ function DayCell({ day }: { day: CalendarDayCell }) {
 
       {suggestionPreview && (
         <div
-          title={suggestionPreview.detail
-            ? `${suggestionPreview.label} · ${suggestionPreview.detail}`
-            : suggestionPreview.label}
+          title={
+            suggestionPreview.detail
+              ? `${suggestionPreview.label} · ${suggestionPreview.detail}`
+              : suggestionPreview.label
+          }
           className={cn(
             "rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight",
             PRIORITY_STYLES[suggestionPreview.priority].chip,
@@ -285,9 +291,11 @@ function DayCell({ day }: { day: CalendarDayCell }) {
 
       {eventPreview && (
         <div
-          title={eventPreview.detail
-            ? `${eventPreview.label} · ${eventPreview.detail}`
-            : eventPreview.label}
+          title={
+            eventPreview.detail
+              ? `${eventPreview.label} · ${eventPreview.detail}`
+              : eventPreview.label
+          }
           className={cn(
             "rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight",
             EVENT_STYLES[eventPreview.type].chip,
@@ -359,8 +367,8 @@ export function CalendarView({
               Calendar Planner
             </h1>
             <p className="text-muted-foreground mt-0.5 text-[10px] uppercase font-bold tracking-wider opacity-60">
-              Navigate month by month to review journal entries, due suggestions,
-              and crop harvest windows.
+              Navigate month by month to review journal entries, due
+              suggestions, and crop harvest windows.
             </p>
           </div>
 
@@ -402,7 +410,9 @@ export function CalendarView({
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
                   Viewing
                 </p>
-                <p className="text-sm font-black text-foreground">{monthLabel}</p>
+                <p className="text-sm font-black text-foreground">
+                  {monthLabel}
+                </p>
               </div>
               <Button
                 type="button"
@@ -423,7 +433,9 @@ export function CalendarView({
                 variant="ghost"
                 size="sm"
                 className="h-9 rounded-xl"
-                onClick={() => setVisibleMonth(startOfCalendarMonth(new Date()))}
+                onClick={() =>
+                  setVisibleMonth(startOfCalendarMonth(new Date()))
+                }
                 disabled={model.isCurrentMonth}
               >
                 Today
@@ -437,7 +449,8 @@ export function CalendarView({
             {model.counts.events} journal
           </span>
           <span className="rounded-full bg-muted/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-border/20">
-            {model.counts.datedSuggestions + model.counts.undatedSuggestions} suggestions
+            {model.counts.datedSuggestions + model.counts.undatedSuggestions}{" "}
+            suggestions
           </span>
           <span className="rounded-full bg-muted/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-foreground border border-border/20">
             {model.counts.harvests} harvest windows
@@ -479,26 +492,29 @@ export function CalendarView({
                   <Sparkles className="h-4 w-4 text-primary" />
                   Unscheduled Suggestions
                 </h2>
-                {model.isCurrentMonth && model.undatedSuggestions.length > 0 && (
-                  <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground border border-border/50">
-                    {model.undatedSuggestions.length}
-                  </span>
-                )}
+                {model.isCurrentMonth &&
+                  model.undatedSuggestions.length > 0 && (
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground border border-border/50">
+                      {model.undatedSuggestions.length}
+                    </span>
+                  )}
               </div>
 
               <div className="mt-3 space-y-2.5">
                 {!model.isCurrentMonth && (
                   <p className="text-sm text-muted-foreground">
                     Undated suggestions stay pinned to the current month so they
-                    do not get assigned to arbitrary dates in the future or past.
+                    do not get assigned to arbitrary dates in the future or
+                    past.
                   </p>
                 )}
 
-                {model.isCurrentMonth && model.undatedSuggestions.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    All active suggestions already have a specific date.
-                  </p>
-                )}
+                {model.isCurrentMonth &&
+                  model.undatedSuggestions.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      All active suggestions already have a specific date.
+                    </p>
+                  )}
 
                 {model.isCurrentMonth &&
                   model.undatedSuggestions.map((suggestion) => (

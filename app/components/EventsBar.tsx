@@ -279,9 +279,9 @@ export function EventsBar({
   };
 
   return (
-    <div className="w-72 bg-card rounded-2xl border border-border/20 shadow-sm flex flex-col h-full overflow-hidden">
+    <div className="w-72 bg-card rounded-2xl border border-border shadow-sm flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="p-3.5 flex items-center justify-between border-b border-white/20 bg-linear-to-br from-primary/10 to-transparent">
+      <div className="p-3.5 flex items-center justify-between border-b border-border bg-linear-to-br from-primary/20 to-primary/5">
         <h2 className="flex items-center gap-2 font-black text-foreground tracking-tight text-base uppercase">
           <Calendar className="w-5 h-5 text-primary" aria-hidden="true" />
           {currentMonth}
@@ -461,7 +461,7 @@ export function EventsBar({
                   );
                 })}
             {!suggestionsLoading && suggestions.length === 0 && (
-                <div className="text-center py-6 px-4 text-muted-foreground/40 bg-muted/20 rounded-2xl border border-dashed border-border/40">
+              <div className="text-center py-6 px-4 text-muted-foreground/40 bg-muted/20 rounded-2xl border border-dashed border-border/40">
                 <div className="text-lg mb-0.5 animate-float-gentle">✨</div>
                 <p className="text-xs font-black uppercase tracking-widest">
                   All caught up!
@@ -477,7 +477,7 @@ export function EventsBar({
             Garden Journal
           </h3>
           <div className="space-y-1.5 ">
-              {groupedEvents.map((group, groupIdx) => {
+            {groupedEvents.map((group, groupIdx) => {
               const IconComponent = eventIcons[group.type].icon;
               const iconColor = eventIcons[group.type].color;
 

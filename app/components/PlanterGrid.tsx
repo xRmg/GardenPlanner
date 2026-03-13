@@ -90,6 +90,21 @@ interface PlanterGridProps {
   onMoveDown?: () => void;
 }
 
+function abbreviatePlantName(name: string): string {
+  if (name.length <= 9) return name;
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) {
+    return name.slice(0, 8) + ".";
+  }
+  if (words.length === 2) {
+    const first =
+      words[0].length > 6 ? words[0].slice(0, 5) + "." : words[0];
+    return first + " " + words[1][0].toUpperCase() + ".";
+  }
+  // 3+ words → all initials
+  return words.map((w) => w[0].toUpperCase() + ".").join("");
+}
+
 export function PlanterGrid({
   id,
   name,
@@ -441,8 +456,10 @@ export function PlanterGrid({
                               {square.plantInstance.plant.icon}
                             </span>
                             <span className="text-[7px] font-black uppercase text-muted-foreground/60 truncate w-full px-1 text-center mt-0.5">
-                              {square.plantInstance.variety ||
-                                square.plantInstance.plant.name}
+                              {abbreviatePlantName(
+                                square.plantInstance.variety ||
+                                  square.plantInstance.plant.name,
+                              )}
                             </span>
                           </div>
                         ) : (
