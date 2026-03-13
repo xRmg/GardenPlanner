@@ -6,7 +6,7 @@
  * public Suggestion type from app/data/schema.ts.
  */
 
-import type { Plant, PlantInstance, Seedling, GardenEventType, Priority, SuggestionType } from "../../data/schema";
+import type { Plant, Seedling, GardenEventType, Priority, SuggestionType } from "../../data/schema";
 import type { WeatherData } from "../weather";
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   PlanterGrid,
   PlantInstance,
-  PlanterSquare,
 } from "./components/PlanterGrid";
 import { EventsBar } from "./components/EventsBar";
 import { ToolBar } from "./components/ToolBar";
@@ -91,7 +90,9 @@ export default function App() {
     locationDraft,
     setLocationDraft,
     locationStatus,
+    setLocationStatus,
     locationError,
+    setLocationError,
     handleVerifyLocation,
   } = useLocationSettings(settings, setSettings);
 
@@ -99,7 +100,9 @@ export default function App() {
     orKeyDraft,
     setOrKeyDraft,
     orStatus,
+    setOrStatus,
     orError,
+    setOrError,
     showOrKey,
     setShowOrKey,
     handleValidateOpenRouter,

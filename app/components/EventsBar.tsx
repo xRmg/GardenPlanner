@@ -12,7 +12,6 @@ import {
   Snowflake,
   Bug,
   Loader2,
-  RefreshCw,
   CloudRain,
 } from "lucide-react";
 import { Plant } from "./PlanterGrid";

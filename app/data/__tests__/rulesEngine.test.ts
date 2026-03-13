@@ -5,10 +5,10 @@
  * Each rule is tested with its primary trigger conditions and cooldown logic.
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { runRules, buildRuleContext } from "../../services/suggestions/rulesEngine";
 import type { RuleContext, PlacedPlant } from "../../services/suggestions/types";
-import type { Area, GardenEvent, Plant, Seedling, Settings } from "../schema";
+import type { Area, GardenEvent, Plant, Settings } from "../schema";
 
 // ---------------------------------------------------------------------------
 // Test helpers

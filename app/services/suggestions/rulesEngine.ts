@@ -20,18 +20,6 @@ import type { Seedling } from "../../data/schema";
 // Hemisphere detection from Köppen zone + lat
 // ---------------------------------------------------------------------------
 
-/** Derive the first frost month for the Northern Hemisphere based on the Köppen zone.
- * Returns 13 as a sentinel for frost-free zones (always > any valid month 1-12). */
-function approxFirstFrostMonthNH(koeppenZone: string): number {
-  if (koeppenZone.startsWith("A") || koeppenZone.startsWith("B") || koeppenZone === "Aw") return 13; // no frost
-  if (koeppenZone.startsWith("ET") || koeppenZone.startsWith("EF")) return 9;
-  if (koeppenZone.startsWith("D")) return 10;
-  // C zones
-  const sub = koeppenZone[2];
-  if (sub === "c" || sub === "d") return 10;
-  return 11;
-}
-
 /** Derive last frost month (spring) for Northern Hemisphere.
  * Returns 0 as a sentinel for frost-free zones (always < any valid month 1-12). */
 function approxLastFrostMonthNH(koeppenZone: string): number {
@@ -625,7 +613,7 @@ function buildAdjacentPlantNames(
   return result;
 }
 
-import type { Area, GardenEvent, Settings, Plant } from "../../data/schema";
+import type { Area, GardenEvent, Settings } from "../../data/schema";
 
 /**
  * Build a RuleContext from the current application state.

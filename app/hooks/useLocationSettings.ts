@@ -95,8 +95,8 @@ async function fetchKoppenZone(lat: number, lon: number): Promise<string> {
     if (p !== null) (ymPrecip[key] ??= []).push(p);
   }
 
-  const monthTemp = Array.from<number[]>({ length: 12 }, () => []);
-  const monthPrecip = Array.from<number[]>({ length: 12 }, () => []);
+  const monthTemp: number[][] = Array.from({ length: 12 }, () => []);
+  const monthPrecip: number[][] = Array.from({ length: 12 }, () => []);
   for (const [key, vals] of Object.entries(ymTemp)) {
     const m = parseInt(key.slice(5), 10) - 1;
     const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
