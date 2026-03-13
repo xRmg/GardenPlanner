@@ -274,6 +274,12 @@ export const StoredSettingsSchema = z.object({
   aiValidationError: z.string().optional(),
   /** Forward-compatibility for Tier 1c / Tier 4 multi-profile. */
   profileId: z.string().default("default"),
+  /** Whether the area planner is in edit-layout mode (vs view/interact mode). */
+  isEditMode: z.boolean().default(false),
+  /** The area last interacted with — restored on page reload. */
+  lastSelectedAreaId: z.string().optional(),
+  /** The planter last interacted with — restored on page reload. */
+  lastSelectedPlanterId: z.string().optional(),
 });
 
 export const SettingsSchema = z.object({
@@ -287,6 +293,12 @@ export const SettingsSchema = z.object({
   aiLastValidatedAt: z.string().datetime({ offset: true }).optional(),
   aiValidationError: z.string().optional(),
   profileId: z.string().default("default"),
+  /** Whether the area planner is in edit-layout mode (vs view/interact mode). */
+  isEditMode: z.boolean().default(false),
+  /** The area last interacted with — restored on page reload. */
+  lastSelectedAreaId: z.string().optional(),
+  /** The planter last interacted with — restored on page reload. */
+  lastSelectedPlanterId: z.string().optional(),
 });
 
 export const SettingsPatchSchema = z
@@ -318,6 +330,9 @@ export function toFrontendSettings(stored: StoredSettings): Settings {
     aiLastValidatedAt: stored.aiLastValidatedAt,
     aiValidationError: stored.aiValidationError,
     profileId: stored.profileId,
+    isEditMode: stored.isEditMode,
+    lastSelectedAreaId: stored.lastSelectedAreaId,
+    lastSelectedPlanterId: stored.lastSelectedPlanterId,
   };
 }
 
