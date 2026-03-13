@@ -198,7 +198,8 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         if (isDev) console.log("[usePlantAILookup] Parsing JSON response…");
         let parsed: PlantAIResponse;
         try {
-          parsed = JSON.parse(content);
+          const stripped = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+          parsed = JSON.parse(stripped);
         } catch (parseError) {
           if (isDev) {
             console.error(

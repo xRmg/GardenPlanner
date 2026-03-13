@@ -375,7 +375,8 @@ export async function getAISuggestions(
 
         let parsed: unknown;
         try {
-          parsed = JSON.parse(content);
+          const stripped = (content as string).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+          parsed = JSON.parse(stripped);
         } catch {
           console.warn("[aiSuggestions] Failed to parse AI response JSON");
           continue;
