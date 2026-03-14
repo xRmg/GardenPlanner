@@ -8,10 +8,14 @@
  * - When areas or seedlings change (debounced 2 s)
  * - Silent background refresh every 15 minutes
  * - Manual refresh() call
- * - Settings change (lat/lng, AI provider)
+ * - Settings change (lat/lng, AI provider, locale, aiModel)
  *
  * NOTE: Events are intentionally NOT a refresh trigger — completing a
  * suggestion logs an event, which would create a feedback loop.
+ *
+ * LAS.7 / LAS.10: When settings.locale or settings.aiModel changes, the
+ * AI suggestion cache is invalidated for the previous locale/model combination
+ * and a fresh evaluation runs immediately.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -33,6 +37,7 @@ import {
   enhanceSuggestionsWithAI,
   evaluateRuleSuggestions,
 } from "../services/suggestions";
+import { clearAISuggestionsCache } from "../services/suggestions/suggestionsCache";
 
 const DEBOUNCE_MS = 2_000;
 const BACKGROUND_REFRESH_MS = 15 * 60 * 1_000; // 15 minutes
@@ -87,6 +92,25 @@ export function useSuggestions({
   useEffect(() => {
     eventsRef.current = events;
   }, [events]);
+
+  // LAS.7 / LAS.10 — track previous locale and model so we can invalidate
+  // the AI cache when either changes (without creating a dependency cycle).
+  const prevLocaleRef = useRef<string | undefined>(settings.locale);
+  const prevModelRef = useRef<string>(settings.aiModel);
+  useEffect(() => {
+    const localeChanged = prevLocaleRef.current !== settings.locale;
+    const modelChanged = prevModelRef.current !== settings.aiModel;
+    if ((localeChanged || modelChanged) && hasLoadedFromDB.current) {
+      console.debug(
+        `[useSuggestions] Invalidation trigger: locale=${localeChanged} model=${modelChanged} — clearing AI cache`,
+      );
+      clearAISuggestionsCache().catch((err) => {
+        console.warn("[useSuggestions] Failed to clear AI suggestions cache:", err);
+      });
+    }
+    prevLocaleRef.current = settings.locale;
+    prevModelRef.current = settings.aiModel;
+  }, [settings.locale, settings.aiModel, hasLoadedFromDB]);
 
   const evaluate = useCallback(
     async (isBackground: boolean) => {

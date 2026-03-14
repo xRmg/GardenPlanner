@@ -102,6 +102,12 @@ export const SuggestionTypeSchema = z.enum([
 export const PrioritySchema = z.enum(["low", "medium", "high"]);
 
 /**
+ * Which part of the garden hierarchy a suggestion targets.
+ * Used for scoped display, completion flow, and cache partitioning.
+ */
+export const SuggestionScopeSchema = z.enum(["area", "planter", "plant"]);
+
+/**
  * Where a plant record originated.
  * Determines whether it can be overwritten on a shared library sync.
  */
@@ -461,6 +467,13 @@ export const SuggestionSchema = z.object({
   areaName: z.string().optional(),
   /** Human-readable planter name for display. */
   planterName: z.string().optional(),
+  /**
+   * Explicit scope of the suggestion target.
+   * 'area'    — broad work affecting multiple sibling planters (frost, storm, heat).
+   * 'planter' — focused maintenance on one planter (water, weed, fertilise).
+   * 'plant'   — instance-specific work (harvest, pest, treatment, prune).
+   */
+  scope: SuggestionScopeSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -480,6 +493,7 @@ export type GardenEventType = z.infer<typeof GardenEventTypeSchema>;
 export type EventScope = z.infer<typeof EventScopeSchema>;
 export type SuggestionType = z.infer<typeof SuggestionTypeSchema>;
 export type Priority = z.infer<typeof PrioritySchema>;
+export type SuggestionScope = z.infer<typeof SuggestionScopeSchema>;
 export type PlantSource = z.infer<typeof PlantSourceSchema>;
 
 /** Which tier of suggestion quality is active. */

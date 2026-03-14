@@ -36,6 +36,17 @@ const PRIORITY_ORDER: Record<Suggestion["priority"], number> = {
 // ---------------------------------------------------------------------------
 
 function ruleResultToSuggestion(result: SuggestionResult): Suggestion {
+  // Derive scope from existing fields when not explicitly set
+  const scope =
+    result.scope ??
+    (result.instanceId || result.plant
+      ? "plant"
+      : result.planterId
+        ? "planter"
+        : result.areaId
+          ? "area"
+          : undefined);
+
   return {
     id: `rule:${result.key}`,
     type: result.type,
@@ -50,6 +61,7 @@ function ruleResultToSuggestion(result: SuggestionResult): Suggestion {
     areaId: result.areaId,
     areaName: result.areaName,
     planterName: result.planterName,
+    scope,
   };
 }
 
@@ -58,7 +70,7 @@ function aiResultToSuggestion(
   index: number,
 ): Suggestion {
   return {
-    id: `ai:${result.type}:${result.plant?.name ?? "global"}:${index}`,
+    id: `ai:${result.type}:${result.plant?.name ?? result.areaName ?? "global"}:${index}`,
     type: result.type,
     plant: result.plant,
     planterId: result.planterId,
@@ -67,6 +79,9 @@ function aiResultToSuggestion(
     description: result.description,
     dueDate: result.dueDate,
     source: "ai",
+    areaName: result.areaName,
+    planterName: result.planterName,
+    scope: result.scope,
   };
 }
 
@@ -75,7 +90,9 @@ function aiResultToSuggestion(
 // ---------------------------------------------------------------------------
 
 function dedupeKey(s: Suggestion): string {
-  return `${s.type}:${s.planterId ?? "global"}:${s.instanceId ?? "global"}:${s.plant?.name ?? "no-plant"}`;
+  // Include scope in the dedup key so area-scoped and planter-scoped
+  // suggestions of the same type are not incorrectly merged (LAS.11)
+  return `${s.type}:${s.scope ?? "none"}:${s.planterId ?? s.areaId ?? "global"}:${s.instanceId ?? "global"}:${s.plant?.name ?? "no-plant"}`;
 }
 
 // ---------------------------------------------------------------------------

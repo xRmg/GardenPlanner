@@ -225,6 +225,7 @@ const weedingRule = {
         areaId,
         areaName,
         planterName,
+        scope: "planter",
       });
     }
     return results;
@@ -299,6 +300,7 @@ const sowingRule = {
           }),
           source: "rules",
           ruleId: this.id,
+          scope: "plant",
         });
       }
 
@@ -321,6 +323,7 @@ const sowingRule = {
           description: translateSuggestion(ctx, "sowDirectly", { plantName }),
           source: "rules",
           ruleId: this.id,
+          scope: "plant",
         });
       }
     }
@@ -429,6 +432,7 @@ const harvestingRule = {
           areaId: placed.areaId,
           areaName: placed.areaName,
           planterName: placed.planterName,
+          scope: "plant",
         });
       }
     }
@@ -499,6 +503,7 @@ const fertilizationRule = {
         areaId,
         areaName,
         planterName,
+        scope: "planter",
       });
     }
     return results;
@@ -571,6 +576,7 @@ const wateringRule = {
         areaId,
         areaName,
         planterName,
+        scope: "planter",
       });
     }
     return results;
@@ -627,6 +633,7 @@ const noWaterRule = {
         areaId: planterEntry?.areaId,
         areaName: planterEntry?.areaName,
         planterName,
+        scope: "planter",
       });
     }
     return results;
@@ -676,6 +683,7 @@ const frostRule = {
         areaId: placed.areaId,
         areaName: placed.areaName,
         planterName,
+        scope: "planter",
       });
     }
     return results;
@@ -741,6 +749,7 @@ const treatmentRule = {
         areaId: placed.areaId,
         areaName: placed.areaName,
         planterName: placed.planterName,
+        scope: "plant",
       });
     }
 

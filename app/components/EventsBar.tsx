@@ -86,6 +86,8 @@ export interface Suggestion {
   areaName?: string;
   /** Human-readable planter name for display. */
   planterName?: string;
+  /** Explicit scope of the suggestion target. */
+  scope?: "area" | "planter" | "plant";
 }
 
 interface EventsBarProps {
@@ -239,6 +241,22 @@ function getPriorityLabel(
     case "low":
       return t("common.priorities.low");
   }
+}
+
+/**
+ * Derives the human-readable location label for a suggestion based on its
+ * scope, areaName, and planterName. Returns null when no context is available.
+ */
+function getSuggestionLocationLabel(s: Suggestion): string | null {
+  const { scope, areaName, planterName } = s;
+  if (scope === "area") return areaName ?? null;
+  if (scope === "planter") {
+    if (planterName && areaName) return `${areaName} › ${planterName}`;
+    return planterName ?? areaName ?? null;
+  }
+  // plant scope with no plant object, or no scope set — show planter/area if available
+  if (!s.plant) return planterName ?? areaName ?? null;
+  return null;
 }
 
 export function EventsBar({
@@ -490,6 +508,14 @@ export function EventsBar({
                           <p className="text-xs font-bold text-foreground mt-0.5 leading-tight">
                             {suggestion.description}
                           </p>
+                          {/* Scope-aware location context (LAS.2) */}
+                          {getSuggestionLocationLabel(suggestion) && (
+                            <div className="flex items-center gap-1 mt-0.5 opacity-60">
+                              <span className="text-[7.5px] font-black uppercase text-muted-foreground tracking-wider">
+                                {getSuggestionLocationLabel(suggestion)}
+                              </span>
+                            </div>
+                          )}
                           {suggestion.plant && (
                             <div className="flex items-center gap-1 mt-0.5 opacity-60">
                               <span className="text-xs scale-90 origin-left">
