@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import i18n, { supportedLocales, LOCALE_LABELS, type SupportedLocale } from "./i18n/config";
+import i18n, {
+  supportedLocales,
+  LOCALE_LABELS,
+  type SupportedLocale,
+} from "./i18n/config";
 import { loadPlantNameOverridesForLocale } from "./i18n/plantNameOverrides";
 import { getPlantDisplayName } from "./i18n/utils/plantTranslation";
 import { PlanterGrid, PlantInstance } from "./components/PlanterGrid";
@@ -110,7 +114,8 @@ export default function App() {
   const setIsEditMode = (value: boolean | ((prev: boolean) => boolean)) => {
     setSettings((prev) => ({
       ...prev,
-      isEditMode: typeof value === "function" ? value(prev.isEditMode ?? false) : value,
+      isEditMode:
+        typeof value === "function" ? value(prev.isEditMode ?? false) : value,
     }));
   };
 
@@ -447,7 +452,9 @@ export default function App() {
               value="areas"
               className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
-              <div className={`flex-1 overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar ${isEditMode ? 'h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]' : 'h-[calc(100dvh-8rem)] md:h-[calc(100dvh-7rem)]'}`}>
+              <div
+                className={`flex-1 overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar ${isEditMode ? "h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]" : "h-[calc(100dvh-8rem)] md:h-[calc(100dvh-7rem)]"}`}
+              >
                 <div className="mb-4 px-1 flex items-center justify-between">
                   <div>
                     <h1 className="text-xl font-black text-foreground tracking-tight uppercase">
@@ -468,11 +475,13 @@ export default function App() {
                     >
                       {isEditMode ? (
                         <>
-                          <EyeOff className="w-3.5 h-3.5" /> {t("areas.doneEditing")}
+                          <EyeOff className="w-3.5 h-3.5" />{" "}
+                          {t("areas.doneEditing")}
                         </>
                       ) : (
                         <>
-                          <Eye className="w-3.5 h-3.5" /> {t("areas.editLayout")}
+                          <Eye className="w-3.5 h-3.5" />{" "}
+                          {t("areas.editLayout")}
                         </>
                       )}
                     </button>
@@ -679,7 +688,9 @@ export default function App() {
                                       })),
                                     );
                                   }}
-                                  moveAreas={areas as unknown as import("./data/schema").Area[]}
+                                  moveAreas={
+                                    areas as unknown as import("./data/schema").Area[]
+                                  }
                                   activeDragSource={activePlantDragSource}
                                   onDragSourceChange={setActivePlantDragSource}
                                   onMovePlant={handleMovePlant}
@@ -756,10 +767,15 @@ export default function App() {
               </div>
             </TabsContent>
 
-            <TabsContent value="calendar" className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200">
+            <TabsContent
+              value="calendar"
+              className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+            >
               <CalendarView
                 areas={areas as unknown as import("./data/schema").Area[]}
-                events={events as unknown as import("./data/schema").GardenEvent[]}
+                events={
+                  events as unknown as import("./data/schema").GardenEvent[]
+                }
                 suggestions={
                   suggestions as unknown as import("./data/schema").Suggestion[]
                 }
@@ -809,7 +825,8 @@ export default function App() {
                         variant="outline"
                         className="h-8 rounded-lg px-3 border-primary/40 text-primary hover:bg-primary/5 shadow-sm text-xs font-bold uppercase tracking-wider"
                       >
-                        <Plus className="mr-1.5 h-3.5 w-3.5" /> {t("plants.addSeeds")}
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />{" "}
+                        {t("plants.addSeeds")}
                       </Button>
                       <Button
                         onClick={() => {
@@ -819,7 +836,8 @@ export default function App() {
                         }}
                         className="h-8 rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider"
                       >
-                        <Plus className="mr-1.5 h-3.5 w-3.5" /> {t("plants.addPlant")}
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />{" "}
+                        {t("plants.addPlant")}
                       </Button>
                     </div>
                   </div>
@@ -836,14 +854,23 @@ export default function App() {
                     <div className="flex gap-0.5 bg-muted/30 rounded-lg p-0.5">
                       {(
                         [
-                          { key: "all", label: t("plants.tabAll", { count: plantTabCounts.all }) },
+                          {
+                            key: "all",
+                            label: t("plants.tabAll", {
+                              count: plantTabCounts.all,
+                            }),
+                          },
                           {
                             key: "plants",
-                            label: t("plants.tabPlants", { count: plantTabCounts.plants }),
+                            label: t("plants.tabPlants", {
+                              count: plantTabCounts.plants,
+                            }),
                           },
                           {
                             key: "seeds",
-                            label: t("plants.tabSeeds", { count: plantTabCounts.seeds }),
+                            label: t("plants.tabSeeds", {
+                              count: plantTabCounts.seeds,
+                            }),
                           },
                         ] as {
                           key: "all" | "plants" | "seeds";
@@ -873,9 +900,7 @@ export default function App() {
                       p.sowIndoorMonths?.includes(currentMonth) ||
                       p.sowDirectMonths?.includes(currentMonth),
                   );
-                  const inSeasonIds = new Set(
-                    inSeasonPlants.map((p) => p.id),
-                  );
+                  const inSeasonIds = new Set(inSeasonPlants.map((p) => p.id));
                   const hasInSeason = inSeasonPlants.length > 0;
                   const listPlants = hasInSeason
                     ? filteredAvailablePlants.filter(
@@ -962,11 +987,15 @@ export default function App() {
                                     </div>
                                     <div className="flex gap-3 mt-2 flex-wrap">
                                       <span className="text-[10px] font-bold text-muted-foreground">
-                                        {t("common.daysToHarvest", { count: plant.daysToHarvest ?? 60 })}
+                                        {t("common.daysToHarvest", {
+                                          count: plant.daysToHarvest ?? 60,
+                                        })}
                                       </span>
                                       {plant.spacingCm && (
                                         <span className="text-[10px] font-bold text-muted-foreground">
-                                          {t("common.spacingCm", { count: plant.spacingCm })}
+                                          {t("common.spacingCm", {
+                                            count: plant.spacingCm,
+                                          })}
                                         </span>
                                       )}
                                     </div>
@@ -991,7 +1020,10 @@ export default function App() {
                                           handleOpenSowModal(plant)
                                         }
                                         className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
-                                        aria-label={t("plants.sowSeedsAriaLabel", { name: displayName })}
+                                        aria-label={t(
+                                          "plants.sowSeedsAriaLabel",
+                                          { name: displayName },
+                                        )}
                                       >
                                         <Sprout className="w-3.5 h-3.5" />
                                       </button>
@@ -1003,7 +1035,10 @@ export default function App() {
                                             handleEditPlantManually(plant)
                                           }
                                           className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                                          aria-label={t("plants.editAriaLabel", { name: displayName })}
+                                          aria-label={t(
+                                            "plants.editAriaLabel",
+                                            { name: displayName },
+                                          )}
                                         >
                                           <Edit className="w-3 h-3" />
                                         </button>
@@ -1012,7 +1047,10 @@ export default function App() {
                                             handleRemovePlantManually(plant.id)
                                           }
                                           className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
-                                          aria-label={t("plants.deleteAriaLabel", { name: displayName })}
+                                          aria-label={t(
+                                            "plants.deleteAriaLabel",
+                                            { name: displayName },
+                                          )}
                                         >
                                           <Trash2 className="w-3 h-3" />
                                         </button>
@@ -1020,7 +1058,9 @@ export default function App() {
                                     ) : (
                                       <button
                                         disabled
-                                        aria-label={t("plants.bundledCannotEdit")}
+                                        aria-label={t(
+                                          "plants.bundledCannotEdit",
+                                        )}
                                         className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
                                       >
                                         <SettingsIcon className="w-3 h-3" />
@@ -1093,7 +1133,9 @@ export default function App() {
                                             : "bg-blue-100 text-blue-700"
                                         }`}
                                       >
-                                        {isDepleted ? t("plants.emptyBadge") : t("plants.seedBadge")}
+                                        {isDepleted
+                                          ? t("plants.emptyBadge")
+                                          : t("plants.seedBadge")}
                                       </span>
                                     )}
                                     {plant.frostHardy === true && (
@@ -1117,7 +1159,10 @@ export default function App() {
                                           handleOpenSowModal(plant)
                                         }
                                         className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
-                                        aria-label={t("plants.sowSeedsAriaLabel", { name: displayName })}
+                                        aria-label={t(
+                                          "plants.sowSeedsAriaLabel",
+                                          { name: displayName },
+                                        )}
                                       >
                                         <Sprout className="w-3 h-3" />
                                       </button>
@@ -1129,7 +1174,10 @@ export default function App() {
                                             handleEditPlantManually(plant)
                                           }
                                           className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                                          aria-label={t("plants.editAriaLabel", { name: displayName })}
+                                          aria-label={t(
+                                            "plants.editAriaLabel",
+                                            { name: displayName },
+                                          )}
                                         >
                                           <Edit className="w-3 h-3" />
                                         </button>
@@ -1138,7 +1186,10 @@ export default function App() {
                                             handleRemovePlantManually(plant.id)
                                           }
                                           className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
-                                          aria-label={t("plants.deleteAriaLabel", { name: displayName })}
+                                          aria-label={t(
+                                            "plants.deleteAriaLabel",
+                                            { name: displayName },
+                                          )}
                                         >
                                           <Trash2 className="w-3 h-3" />
                                         </button>
@@ -1146,7 +1197,9 @@ export default function App() {
                                     ) : (
                                       <button
                                         disabled
-                                        aria-label={t("plants.bundledCannotEdit")}
+                                        aria-label={t(
+                                          "plants.bundledCannotEdit",
+                                        )}
                                         className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
                                       >
                                         <SettingsIcon className="w-3 h-3" />
@@ -1183,7 +1236,8 @@ export default function App() {
                     onClick={() => setShowAddSeedlingModal(true)}
                     className="h-8 rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider"
                   >
-                    <Plus className="mr-1.5 h-3.5 w-3.5" /> {t("seedlings.addSeedling")}
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />{" "}
+                    {t("seedlings.addSeedling")}
                   </Button>
                 </div>
                 {seedlings.length === 0 ? (
@@ -1259,7 +1313,10 @@ export default function App() {
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {group.map((seedling) => {
                                   const daysOld = Math.floor(
-                                    (Date.now() - new Date(seedling.plantedDate).getTime()) /
+                                    (Date.now() -
+                                      new Date(
+                                        seedling.plantedDate,
+                                      ).getTime()) /
                                       (1000 * 60 * 60 * 24),
                                   );
                                   const displayName = getPlantDisplayName(
@@ -1267,49 +1324,55 @@ export default function App() {
                                     i18n.language,
                                   );
                                   return (
-                                  <div
-                                    key={seedling.id}
-                                    className="flex gap-4 items-start p-4 rounded-xl border border-primary/20 bg-primary/5 hover:border-primary/40 transition-[border-color]"
-                                  >
-                                    <div className="w-14 h-14 flex items-center justify-center text-4xl bg-white rounded-xl shadow-sm border border-primary/10 shrink-0">
-                                      {seedling.plant.icon}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <h3 className="font-black text-sm text-foreground">
-                                        {displayName}
-                                      </h3>
-                                      <div className="flex gap-3 mt-1">
-                                        <span className="text-[10px] font-bold text-muted-foreground">
-                                          {t("seedlings.daysOld", { count: daysOld })}
-                                        </span>
-                                        <span className="text-[10px] font-bold text-muted-foreground">
-                                          {t("seedlings.batchCount", { count: seedling.seedCount })}
-                                        </span>
+                                    <div
+                                      key={seedling.id}
+                                      className="flex gap-4 items-start p-4 rounded-xl border border-primary/20 bg-primary/5 hover:border-primary/40 transition-[border-color]"
+                                    >
+                                      <div className="w-14 h-14 flex items-center justify-center text-4xl bg-white rounded-xl shadow-sm border border-primary/10 shrink-0">
+                                        {seedling.plant.icon}
                                       </div>
-                                      <div className="flex gap-2 mt-3">
-                                        <Button
-                                          onClick={() =>
-                                            handlePlantFromBatch(seedling)
-                                          }
-                                          className="flex-1 h-7 bg-primary hover:bg-primary/90 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm shadow-primary/20"
-                                        >
-                                          {t("seedlings.useBatch")}
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          onClick={() =>
-                                            handleRemoveSeedling(seedling.id)
-                                          }
-                                          className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
-                                          aria-label={t("seedlings.removeSeedlingAriaLabel")}
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </Button>
+                                      <div className="flex-1 min-w-0">
+                                        <h3 className="font-black text-sm text-foreground">
+                                          {displayName}
+                                        </h3>
+                                        <div className="flex gap-3 mt-1">
+                                          <span className="text-[10px] font-bold text-muted-foreground">
+                                            {t("seedlings.daysOld", {
+                                              count: daysOld,
+                                            })}
+                                          </span>
+                                          <span className="text-[10px] font-bold text-muted-foreground">
+                                            {t("seedlings.batchCount", {
+                                              count: seedling.seedCount,
+                                            })}
+                                          </span>
+                                        </div>
+                                        <div className="flex gap-2 mt-3">
+                                          <Button
+                                            onClick={() =>
+                                              handlePlantFromBatch(seedling)
+                                            }
+                                            className="flex-1 h-7 bg-primary hover:bg-primary/90 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm shadow-primary/20"
+                                          >
+                                            {t("seedlings.useBatch")}
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            onClick={() =>
+                                              handleRemoveSeedling(seedling.id)
+                                            }
+                                            className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
+                                            aria-label={t(
+                                              "seedlings.removeSeedlingAriaLabel",
+                                            )}
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                })}
                               </div>
                             ) : (
                               <div className="space-y-1.5">
@@ -1388,7 +1451,9 @@ export default function App() {
                                             handleRemoveSeedling(seedling.id)
                                           }
                                           className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
-                                          aria-label={t("seedlings.removeSeedlingAriaLabel")}
+                                          aria-label={t(
+                                            "seedlings.removeSeedlingAriaLabel",
+                                          )}
                                         >
                                           <Trash2 className="w-3.5 h-3.5" />
                                         </Button>
@@ -1427,7 +1492,10 @@ export default function App() {
 
                     {/* Location with verify */}
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-location" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-location"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         {t("settings.location")}
                       </label>
                       <div className="flex gap-2">
@@ -1492,7 +1560,10 @@ export default function App() {
 
                     {/* Climate Zone — auto-derived but still overridable */}
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-growth-zone" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-growth-zone"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         {t("settings.koppenZone")}
                         <span className="ml-2 normal-case font-medium text-muted-foreground/70">
                           {t("settings.koppenZoneNote")}
@@ -1509,41 +1580,99 @@ export default function App() {
                           }))
                         }
                       >
-                        <optgroup label={t("settings.climateZones.groupTropical")}>
-                          <option value="Af">{t("settings.climateZones.Af")}</option>
-                          <option value="Am">{t("settings.climateZones.Am")}</option>
-                          <option value="Aw">{t("settings.climateZones.Aw")}</option>
+                        <optgroup
+                          label={t("settings.climateZones.groupTropical")}
+                        >
+                          <option value="Af">
+                            {t("settings.climateZones.Af")}
+                          </option>
+                          <option value="Am">
+                            {t("settings.climateZones.Am")}
+                          </option>
+                          <option value="Aw">
+                            {t("settings.climateZones.Aw")}
+                          </option>
                         </optgroup>
                         <optgroup label={t("settings.climateZones.groupArid")}>
-                          <option value="BWh">{t("settings.climateZones.BWh")}</option>
-                          <option value="BWk">{t("settings.climateZones.BWk")}</option>
-                          <option value="BSh">{t("settings.climateZones.BSh")}</option>
-                          <option value="BSk">{t("settings.climateZones.BSk")}</option>
+                          <option value="BWh">
+                            {t("settings.climateZones.BWh")}
+                          </option>
+                          <option value="BWk">
+                            {t("settings.climateZones.BWk")}
+                          </option>
+                          <option value="BSh">
+                            {t("settings.climateZones.BSh")}
+                          </option>
+                          <option value="BSk">
+                            {t("settings.climateZones.BSk")}
+                          </option>
                         </optgroup>
-                        <optgroup label={t("settings.climateZones.groupTemperate")}>
-                          <option value="Csa">{t("settings.climateZones.Csa")}</option>
-                          <option value="Csb">{t("settings.climateZones.Csb")}</option>
-                          <option value="Csc">{t("settings.climateZones.Csc")}</option>
-                          <option value="Cwa">{t("settings.climateZones.Cwa")}</option>
-                          <option value="Cwb">{t("settings.climateZones.Cwb")}</option>
-                          <option value="Cfa">{t("settings.climateZones.Cfa")}</option>
-                          <option value="Cfb">{t("settings.climateZones.Cfb")}</option>
-                          <option value="Cfc">{t("settings.climateZones.Cfc")}</option>
+                        <optgroup
+                          label={t("settings.climateZones.groupTemperate")}
+                        >
+                          <option value="Csa">
+                            {t("settings.climateZones.Csa")}
+                          </option>
+                          <option value="Csb">
+                            {t("settings.climateZones.Csb")}
+                          </option>
+                          <option value="Csc">
+                            {t("settings.climateZones.Csc")}
+                          </option>
+                          <option value="Cwa">
+                            {t("settings.climateZones.Cwa")}
+                          </option>
+                          <option value="Cwb">
+                            {t("settings.climateZones.Cwb")}
+                          </option>
+                          <option value="Cfa">
+                            {t("settings.climateZones.Cfa")}
+                          </option>
+                          <option value="Cfb">
+                            {t("settings.climateZones.Cfb")}
+                          </option>
+                          <option value="Cfc">
+                            {t("settings.climateZones.Cfc")}
+                          </option>
                         </optgroup>
-                        <optgroup label={t("settings.climateZones.groupContinental")}>
-                          <option value="Dsa">{t("settings.climateZones.Dsa")}</option>
-                          <option value="Dsb">{t("settings.climateZones.Dsb")}</option>
-                          <option value="Dwa">{t("settings.climateZones.Dwa")}</option>
-                          <option value="Dwb">{t("settings.climateZones.Dwb")}</option>
-                          <option value="Dwc">{t("settings.climateZones.Dwc")}</option>
-                          <option value="Dfa">{t("settings.climateZones.Dfa")}</option>
-                          <option value="Dfb">{t("settings.climateZones.Dfb")}</option>
-                          <option value="Dfc">{t("settings.climateZones.Dfc")}</option>
-                          <option value="Dfd">{t("settings.climateZones.Dfd")}</option>
+                        <optgroup
+                          label={t("settings.climateZones.groupContinental")}
+                        >
+                          <option value="Dsa">
+                            {t("settings.climateZones.Dsa")}
+                          </option>
+                          <option value="Dsb">
+                            {t("settings.climateZones.Dsb")}
+                          </option>
+                          <option value="Dwa">
+                            {t("settings.climateZones.Dwa")}
+                          </option>
+                          <option value="Dwb">
+                            {t("settings.climateZones.Dwb")}
+                          </option>
+                          <option value="Dwc">
+                            {t("settings.climateZones.Dwc")}
+                          </option>
+                          <option value="Dfa">
+                            {t("settings.climateZones.Dfa")}
+                          </option>
+                          <option value="Dfb">
+                            {t("settings.climateZones.Dfb")}
+                          </option>
+                          <option value="Dfc">
+                            {t("settings.climateZones.Dfc")}
+                          </option>
+                          <option value="Dfd">
+                            {t("settings.climateZones.Dfd")}
+                          </option>
                         </optgroup>
                         <optgroup label={t("settings.climateZones.groupPolar")}>
-                          <option value="ET">{t("settings.climateZones.ET")}</option>
-                          <option value="EF">{t("settings.climateZones.EF")}</option>
+                          <option value="ET">
+                            {t("settings.climateZones.ET")}
+                          </option>
+                          <option value="EF">
+                            {t("settings.climateZones.EF")}
+                          </option>
                         </optgroup>
                       </select>
                     </div>
@@ -1560,14 +1689,18 @@ export default function App() {
                       </h3>
                       {orStatus === "valid" && (
                         <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" /> {t("common.enabled")}
+                          <CheckCircle2 className="w-3 h-3" />{" "}
+                          {t("common.enabled")}
                         </span>
                       )}
                     </div>
 
                     {/* OpenRouter API key */}
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-or-key" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-or-key"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         {t("settings.openRouterKey")}
                       </label>
                       <div className="flex gap-2">
@@ -1603,7 +1736,11 @@ export default function App() {
                             type="button"
                             onClick={() => setShowOrKey((v) => !v)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            aria-label={showOrKey ? t("settings.hideApiKey") : t("settings.showApiKey")}
+                            aria-label={
+                              showOrKey
+                                ? t("settings.hideApiKey")
+                                : t("settings.showApiKey")
+                            }
                           >
                             {showOrKey ? (
                               <EyeOff className="w-4 h-4" />
@@ -1662,7 +1799,10 @@ export default function App() {
 
                     {/* Model */}
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-ai-model" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-ai-model"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         {t("settings.aiModel")}
                       </label>
                       <input
@@ -1690,10 +1830,15 @@ export default function App() {
                       </h3>
                     </div>
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-language" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-language"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         {t("settings.language")}
                       </label>
-                      <p className="text-[11px] text-muted-foreground/70 ml-1">{t("settings.languageHint")}</p>
+                      <p className="text-[11px] text-muted-foreground/70 ml-1">
+                        {t("settings.languageHint")}
+                      </p>
                       <select
                         id="settings-language"
                         className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
@@ -1704,7 +1849,10 @@ export default function App() {
                           document.documentElement.lang = locale;
                           localStorage.setItem("gp_locale", locale);
                           setSettings((prev) => ({ ...prev, locale }));
-                          repositoryRef.current?.saveSettings({ ...settings, locale });
+                          repositoryRef.current?.saveSettings({
+                            ...settings,
+                            locale,
+                          });
                         }}
                       >
                         {supportedLocales.map((locale) => (
@@ -1724,22 +1872,36 @@ export default function App() {
                       </h3>
                     </div>
                     <div className="space-y-1.5">
-                      <label htmlFor="settings-unit-system" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      <label
+                        htmlFor="settings-unit-system"
+                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                      >
                         {t("settings.unitSystem")}
                       </label>
-                      <p className="text-[11px] text-muted-foreground/70 ml-1">{t("settings.unitSystemHint")}</p>
+                      <p className="text-[11px] text-muted-foreground/70 ml-1">
+                        {t("settings.unitSystemHint")}
+                      </p>
                       <select
                         id="settings-unit-system"
                         className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
                         value={settings.unitSystem ?? "metric"}
                         onChange={(e) => {
-                          const unitSystem = e.target.value as "imperial" | "metric";
+                          const unitSystem = e.target.value as
+                            | "imperial"
+                            | "metric";
                           setSettings((prev) => ({ ...prev, unitSystem }));
-                          repositoryRef.current?.saveSettings({ ...settings, unitSystem });
+                          repositoryRef.current?.saveSettings({
+                            ...settings,
+                            unitSystem,
+                          });
                         }}
                       >
-                        <option value="metric">{t("settings.unitSystemMetric")}</option>
-                        <option value="imperial">{t("settings.unitSystemImperial")}</option>
+                        <option value="metric">
+                          {t("settings.unitSystemMetric")}
+                        </option>
+                        <option value="imperial">
+                          {t("settings.unitSystemImperial")}
+                        </option>
                       </select>
                     </div>
                   </section>
