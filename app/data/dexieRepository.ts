@@ -273,6 +273,31 @@ export class GardenPlannerDB extends Dexie {
             }
           });
       });
+    // v11: backfill scope on existing events
+    //   - events with a plant object   → scope: 'plant'
+    //   - events with gardenId only    → scope: 'planter'
+    //   - events without either        → scope: 'plant' (safe default)
+    this.version(11)
+      .stores({})
+      .upgrade((trans) => {
+        console.info(
+          "[DB] Running v11 migration: backfilling scope on existing events",
+        );
+        return trans
+          .table("events")
+          .toCollection()
+          .modify((event: Record<string, unknown>) => {
+            if (event.scope === undefined) {
+              if (event.plant !== undefined && event.plant !== null) {
+                event.scope = "plant";
+              } else if (event.gardenId !== undefined && event.gardenId !== null) {
+                event.scope = "planter";
+              } else {
+                event.scope = "plant";
+              }
+            }
+          });
+      });
   }
 }
 

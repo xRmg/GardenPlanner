@@ -106,7 +106,8 @@
       "noNeedToWaterRain": "Geen water nodig voor {{planterName}} — er wordt {{mm}} mm regen verwacht",
       "frostRiskProtect": "Vorstrisico in {{planterName}} — bescherm vorstgevoelige planten vannacht",
       "reviewTreatment": "Controleer {{plantName}} en behandel de recente plaag"
-    }
+    },
+    "scopeBadgeArea": "tuin"
   },
   "areas": {
     "title": "Gebiedsplanner",
@@ -123,7 +124,13 @@
     "movePlanterUpAriaLabel": "Planter omhoog verplaatsen",
     "movePlanterDownAriaLabel": "Planter omlaag verplaatsen",
     "editPlanterAriaLabel": "Planter bewerken",
-    "removePlanterAriaLabel": "Planter verwijderen"
+    "removePlanterAriaLabel": "Planter verwijderen",
+    "quickActionsLabel": "Loggen voor tuin:",
+    "quickActions": {
+      "watered": "Gegoten",
+      "fertilised": "Bemest",
+      "weeded": "Gewied"
+    }
   },
   "planterGrid": {
     "movePlanterUpTitle": "Planter omhoog verplaatsen",
@@ -147,7 +154,13 @@
     "movePlantAriaLabel": "Verplaats {{name}} vanaf rij {{row}}, kolom {{col}}",
     "removePlantTitle": "Plant verwijderen",
     "removePlantAriaLabel": "{{name}} verwijderen",
-    "dimensionLabel": "{{rows}} × {{cols}} Raster"
+    "dimensionLabel": "{{rows}} × {{cols}} Raster",
+    "quickActions": {
+      "watered": "Gegoten",
+      "fertilised": "Bemest",
+      "weeded": "Gewied",
+      "observation": "Observatie"
+    }
   },
   "plants": {
     "title": "Mijn Planten & Zaden",

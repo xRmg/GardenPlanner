@@ -396,6 +396,18 @@ export function toFrontendSettings(stored: StoredSettings): Settings {
 }
 
 // ---------------------------------------------------------------------------
+// EventScope — where in the garden hierarchy an action was logged
+// ---------------------------------------------------------------------------
+
+/**
+ * Scope of a garden action:
+ * - 'plant'   — logged against a specific plant instance (default)
+ * - 'planter' — logged against a whole planter (e.g. watered the bed)
+ * - 'area'    — logged against a whole area (e.g. weeded the backyard)
+ */
+export const EventScopeSchema = z.enum(["plant", "planter", "area"]);
+
+// ---------------------------------------------------------------------------
 // GardenEvent — a logged action in the garden
 // (previously exported from EventsBar.tsx)
 // ---------------------------------------------------------------------------
@@ -412,6 +424,14 @@ export const GardenEventSchema = z.object({
   note: z.string().max(500).optional(),
   /** Forward-compatibility for Tier 1c / Tier 4. */
   profileId: z.string().default("default"),
+  /** Where in the garden hierarchy this action was logged. Defaults to 'plant'. */
+  scope: EventScopeSchema.optional(),
+  /** The area ID this event relates to (for planter- or area-scope events). */
+  areaId: z.string().optional(),
+  /** Human-readable planter name for display in the journal. */
+  planterName: z.string().optional(),
+  /** Human-readable area name for display in the journal. */
+  areaName: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -435,6 +455,12 @@ export const SuggestionSchema = z.object({
   expiresAt: z.string().datetime({ offset: true }).optional(),
   /** Origin of the suggestion — rules engine, AI, or bundled static tips. */
   source: z.enum(["rules", "ai", "static"]).default("rules"),
+  /** Which area this suggestion applies to (for planter-wide suggestions). */
+  areaId: z.string().optional(),
+  /** Human-readable area name for display. */
+  areaName: z.string().optional(),
+  /** Human-readable planter name for display. */
+  planterName: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -451,6 +477,7 @@ export type SeedlingStatus = z.infer<typeof SeedlingStatusSchema>;
 export type GrowthStage = z.infer<typeof GrowthStageSchema>;
 export type HealthState = z.infer<typeof HealthStateSchema>;
 export type GardenEventType = z.infer<typeof GardenEventTypeSchema>;
+export type EventScope = z.infer<typeof EventScopeSchema>;
 export type SuggestionType = z.infer<typeof SuggestionTypeSchema>;
 export type Priority = z.infer<typeof PrioritySchema>;
 export type PlantSource = z.infer<typeof PlantSourceSchema>;

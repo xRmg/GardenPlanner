@@ -40,6 +40,14 @@ export interface GardenEvent {
   gardenId?: string;
   instanceId?: string;
   note?: string;
+  /** Where in the garden hierarchy this action was logged. */
+  scope?: "plant" | "planter" | "area";
+  /** Area ID for planter- or area-scope events. */
+  areaId?: string;
+  /** Human-readable planter name for display in the journal. */
+  planterName?: string;
+  /** Human-readable area name for display in the journal. */
+  areaName?: string;
 }
 
 export interface Suggestion {
@@ -72,6 +80,12 @@ export interface Suggestion {
   instanceId?: string;
   expiresAt?: string;
   source?: "rules" | "ai" | "static";
+  /** Area ID for planter-wide suggestions. */
+  areaId?: string;
+  /** Human-readable area name for display. */
+  areaName?: string;
+  /** Human-readable planter name for display. */
+  planterName?: string;
 }
 
 interface EventsBarProps {
@@ -249,6 +263,9 @@ export function EventsBar({
     count: number;
     note?: string;
     key: string;
+    scope?: GardenEvent["scope"];
+    planterName?: string;
+    areaName?: string;
   };
 
   const groupedEvents = sortedEvents.reduce<EventGroup[]>((acc, event) => {
@@ -259,7 +276,11 @@ export function EventsBar({
         ? last.plant.id === event.plant?.id
         : last?.plant === undefined && event.plant === undefined;
     const sameNote = last?.note === event.note;
-    if (last && sameType && samePlant && sameNote) {
+    const sameScope =
+      last?.scope === event.scope &&
+      last?.planterName === event.planterName &&
+      last?.areaName === event.areaName;
+    if (last && sameType && samePlant && sameNote && sameScope) {
       last.count += 1;
     } else {
       acc.push({
@@ -269,6 +290,9 @@ export function EventsBar({
         count: 1,
         note: event.note,
         key: event.id,
+        scope: event.scope,
+        planterName: event.planterName,
+        areaName: event.areaName,
       });
     }
     return acc;
@@ -549,6 +573,14 @@ export function EventsBar({
                       </span>
                       {plantName && ` ${plantName}`}
                     </p>
+                    {/* Scope context — show planter or area name for non-plant events */}
+                    {(group.scope === "planter" || group.scope === "area") && (
+                      <p className="text-[10px] text-muted-foreground/60 font-semibold truncate mt-0.5">
+                        {group.scope === "area" && group.areaName
+                          ? group.areaName
+                          : group.planterName ?? group.areaName ?? ""}
+                      </p>
+                    )}
                     {group.note && (
                       <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">
                         {group.note}
@@ -569,6 +601,12 @@ export function EventsBar({
                     {group.plant && (
                       <span className="text-base opacity-80">
                         {group.plant.icon}
+                      </span>
+                    )}
+                    {/* Area-scope badge */}
+                    {group.scope === "area" && !group.plant && (
+                      <span className="text-[9px] font-black bg-muted/60 text-muted-foreground/60 px-1 py-0.5 rounded uppercase tracking-wider">
+                        {t("eventsBar.scopeBadgeArea")}
                       </span>
                     )}
                   </div>

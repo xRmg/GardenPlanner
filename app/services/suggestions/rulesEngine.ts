@@ -208,9 +208,12 @@ const weedingRule = {
         priority = daysAgo >= 14 ? "medium" : "low";
       }
 
-      const planterName =
-        ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ??
-        planterId;
+      const planterEntry = ctx.placedPlants.find(
+        (p) => p.planterId === planterId,
+      );
+      const planterName = planterEntry?.planterName ?? planterId;
+      const areaId = planterEntry?.areaId;
+      const areaName = planterEntry?.areaName;
       results.push({
         key: `weed:${planterId}:global`,
         type: "weed",
@@ -219,6 +222,9 @@ const weedingRule = {
         description: translateSuggestion(ctx, "timeToWeed", { planterName }),
         source: "rules",
         ruleId: this.id,
+        areaId,
+        areaName,
+        planterName,
       });
     }
     return results;
@@ -415,10 +421,14 @@ const harvestingRule = {
           type: "harvest",
           plant,
           planterId,
+          instanceId: placed.instanceId,
           priority,
           description,
           source: "rules",
           ruleId: this.id,
+          areaId: placed.areaId,
+          areaName: placed.areaName,
+          planterName: placed.planterName,
         });
       }
     }
@@ -470,9 +480,12 @@ const fertilizationRule = {
         priority = "high";
       }
 
-      const planterName =
-        ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ??
-        planterId;
+      const planterEntry = ctx.placedPlants.find(
+        (p) => p.planterId === planterId,
+      );
+      const planterName = planterEntry?.planterName ?? planterId;
+      const areaId = planterEntry?.areaId;
+      const areaName = planterEntry?.areaName;
       results.push({
         key: `fertilize:${planterId}:global`,
         type: "fertilize",
@@ -483,6 +496,9 @@ const fertilizationRule = {
         }),
         source: "rules",
         ruleId: this.id,
+        areaId,
+        areaName,
+        planterName,
       });
     }
     return results;
@@ -536,9 +552,12 @@ const wateringRule = {
         priority = "medium";
       }
 
-      const planterName =
-        ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ??
-        planterId;
+      const planterEntry = ctx.placedPlants.find(
+        (p) => p.planterId === planterId,
+      );
+      const planterName = planterEntry?.planterName ?? planterId;
+      const areaId = planterEntry?.areaId;
+      const areaName = planterEntry?.areaName;
       results.push({
         key: `water:${planterId}:global`,
         type: "water",
@@ -549,6 +568,9 @@ const wateringRule = {
         }),
         source: "rules",
         ruleId: this.id,
+        areaId,
+        areaName,
+        planterName,
       });
     }
     return results;
@@ -586,9 +608,10 @@ const noWaterRule = {
       // Only emit no-water if a watering suggestion would otherwise fire
       if (!wateringSuggestionKeys.has(`water:${planterId}:global`)) continue;
 
-      const planterName =
-        ctx.placedPlants.find((p) => p.planterId === planterId)?.planterName ??
-        planterId;
+      const planterEntry = ctx.placedPlants.find(
+        (p) => p.planterId === planterId,
+      );
+      const planterName = planterEntry?.planterName ?? planterId;
       const mm = Math.round(forecast48h.total);
       results.push({
         key: `no_water:${planterId}:global`,
@@ -601,6 +624,9 @@ const noWaterRule = {
         }),
         source: "rules",
         ruleId: this.id,
+        areaId: planterEntry?.areaId,
+        areaName: planterEntry?.areaName,
+        planterName,
       });
     }
     return results;
@@ -647,6 +673,9 @@ const frostRule = {
         }),
         source: "rules",
         ruleId: this.id,
+        areaId: placed.areaId,
+        areaName: placed.areaName,
+        planterName,
       });
     }
     return results;
@@ -709,6 +738,9 @@ const treatmentRule = {
         dueDate: latestPest.date,
         source: "rules",
         ruleId: this.id,
+        areaId: placed.areaId,
+        areaName: placed.areaName,
+        planterName: placed.planterName,
       });
     }
 
