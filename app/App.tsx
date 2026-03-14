@@ -39,6 +39,9 @@ import {
   AlertCircle,
   MapPin,
   Bell,
+  Droplets,
+  Package,
+  Scissors,
 } from "lucide-react";
 import { Sheet, SheetContent } from "./components/ui/sheet";
 import { useGardenData } from "./hooks/useGardenData";
@@ -210,6 +213,8 @@ export default function App() {
     handlePlantRemoved,
     handlePlantUpdated,
     handleCompleteSuggestion,
+    handlePlanterAction,
+    handleAreaAction,
   } = useGardenEvents({ setEvents, repositoryRef });
 
   const {
@@ -601,6 +606,40 @@ export default function App() {
                           </div>
                         </div>
 
+                        {/* Area-level quick actions — visible in view mode when area has planters */}
+                        {!isEditMode && area.planters.length > 0 && (
+                          <div className="px-4 pb-2 flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 mr-0.5">
+                              {t("areas.quickActionsLabel")}
+                            </span>
+                            {(
+                              [
+                                { type: "watered", icon: Droplets, cls: "text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100/60", label: t("areas.quickActions.watered") },
+                                { type: "composted", icon: Package, cls: "text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-100/60", label: t("areas.quickActions.fertilised") },
+                                { type: "weeded", icon: Scissors, cls: "text-orange-600 bg-orange-50 hover:bg-orange-100 border-orange-100/60", label: t("areas.quickActions.weeded") },
+                              ] as const
+                            ).map(({ type, icon: Icon, cls, label }) => (
+                              <button
+                                key={type}
+                                onClick={() =>
+                                  handleAreaAction({
+                                    type,
+                                    areaId: area.id,
+                                    areaName: area.name,
+                                    planterIds: area.planters.map((p) => p.id),
+                                    planterNames: area.planters.map((p) => p.name),
+                                  })
+                                }
+                                className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-lg transition-colors border ${cls}`}
+                                title={label}
+                              >
+                                <Icon className="w-3 h-3" />
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="p-4">
                           <div className="flex flex-wrap gap-4 items-start">
                             {area.planters.map((planter, pIdx) => (
@@ -678,6 +717,19 @@ export default function App() {
                                             planter.id,
                                             "down",
                                           )
+                                      : undefined
+                                  }
+                                  onQuickAction={
+                                    !isEditMode
+                                      ? (type, note) =>
+                                          handlePlanterAction({
+                                            type,
+                                            planterId: planter.id,
+                                            areaId: area.id,
+                                            planterName: planter.name,
+                                            areaName: area.name,
+                                            note,
+                                          })
                                       : undefined
                                   }
                                 />

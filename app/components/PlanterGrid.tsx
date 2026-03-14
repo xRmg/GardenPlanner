@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, Settings, Trash2, ArrowUp, ArrowDown, Move } from "lucide-react";
+import { X, Settings, Trash2, ArrowUp, ArrowDown, Move, Droplets, Package, Scissors, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PlantDetailsDialog } from "./PlantDetailsDialog";
 import { MovePlantPicker } from "./MovePlantPicker";
@@ -119,6 +119,11 @@ interface PlanterGridProps {
   onDelete?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  /**
+   * Called when the user logs a planter-level quick action (watered, weeded, etc.)
+   * from the planter header. Only fired in view mode (viewOnly === true).
+   */
+  onQuickAction?: (type: "watered" | "composted" | "weeded" | "observation", note?: string) => void;
 }
 
 /**
@@ -207,6 +212,7 @@ export function PlanterGrid({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onQuickAction,
 }: PlanterGridProps) {
   const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
@@ -700,6 +706,44 @@ export function PlanterGrid({
             )}
           </div>
         </div>
+
+        {/* Planter quick actions — shown in view mode when onQuickAction is provided */}
+        {viewOnly && onQuickAction && (
+          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+            <button
+              onClick={() => onQuickAction("watered")}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-100/60"
+              title={t("planterGrid.quickActions.watered")}
+            >
+              <Droplets className="w-3 h-3" />
+              {t("planterGrid.quickActions.watered")}
+            </button>
+            <button
+              onClick={() => onQuickAction("composted")}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition-colors border border-amber-100/60"
+              title={t("planterGrid.quickActions.fertilised")}
+            >
+              <Package className="w-3 h-3" />
+              {t("planterGrid.quickActions.fertilised")}
+            </button>
+            <button
+              onClick={() => onQuickAction("weeded")}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg transition-colors border border-orange-100/60"
+              title={t("planterGrid.quickActions.weeded")}
+            >
+              <Scissors className="w-3 h-3" />
+              {t("planterGrid.quickActions.weeded")}
+            </button>
+            <button
+              onClick={() => onQuickAction("observation")}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg transition-colors border border-teal-100/60"
+              title={t("planterGrid.quickActions.observation")}
+            >
+              <Eye className="w-3 h-3" />
+              {t("planterGrid.quickActions.observation")}
+            </button>
+          </div>
+        )}
 
         <div
           className="inline-block p-2 rounded-xl border border-black/10 shadow-inner"

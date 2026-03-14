@@ -40,6 +40,24 @@ export interface GardenEventsState {
     planterId: string,
   ) => void;
   handleCompleteSuggestion: (suggestion: Suggestion) => void;
+  /** Log a planter-level maintenance action (watered, weeded, etc.). */
+  handlePlanterAction: (params: {
+    type: GardenEvent["type"];
+    planterId: string;
+    areaId?: string;
+    planterName?: string;
+    areaName?: string;
+    note?: string;
+  }) => void;
+  /** Log an area-level action and generate synthetic planter-scope entries. */
+  handleAreaAction: (params: {
+    type: GardenEvent["type"];
+    areaId: string;
+    areaName: string;
+    planterIds: string[];
+    planterNames: string[];
+    note?: string;
+  }) => void;
 }
 
 interface UseGardenEventsParams {
@@ -194,6 +212,15 @@ export function useGardenEvents({
                     ? "pest"
                     : "observation"; // companion_conflict, disease_risk, frost_protect, prune, repot, thin_seedlings, harden_seedlings, end_of_season
 
+    // Determine scope from suggestion shape
+    const scope: GardenEvent["scope"] = suggestion.plant
+      ? "plant"
+      : suggestion.planterId
+        ? "planter"
+        : suggestion.areaId
+          ? "area"
+          : undefined;
+
     const completedEvent: GardenEvent = {
       id: `event-${Date.now()}-${Math.random()}`,
       type: eventType,
@@ -203,6 +230,10 @@ export function useGardenEvents({
       instanceId: suggestion.instanceId,
       note:
         suggestion.type === "treatment" ? suggestion.description : undefined,
+      scope,
+      areaId: suggestion.areaId,
+      planterName: suggestion.planterName,
+      areaName: suggestion.areaName,
     };
     setEvents((prev) => [completedEvent, ...prev]);
     void repositoryRef.current.saveEvent(
@@ -219,11 +250,112 @@ export function useGardenEvents({
       });
   };
 
+  const handlePlanterAction = ({
+    type,
+    planterId,
+    areaId,
+    planterName,
+    areaName,
+    note,
+  }: {
+    type: GardenEvent["type"];
+    planterId: string;
+    areaId?: string;
+    planterName?: string;
+    areaName?: string;
+    note?: string;
+  }) => {
+    const eventLog: GardenEvent = {
+      id: `planter-${type}-${Date.now()}-${Math.random()}`,
+      type,
+      date: new Date().toISOString(),
+      gardenId: planterId,
+      note,
+      scope: "planter",
+      areaId,
+      planterName,
+      areaName,
+    };
+    setEvents((prev) => [eventLog, ...prev]);
+    void repositoryRef.current.saveEvent(
+      eventLog as unknown as SchemaGardenEvent,
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not save planter action",
+          error,
+          fallback: "The planter action may not be fully persisted.",
+        });
+      });
+  };
+
+  const handleAreaAction = ({
+    type,
+    areaId,
+    areaName,
+    planterIds,
+    planterNames,
+    note,
+  }: {
+    type: GardenEvent["type"];
+    areaId: string;
+    areaName: string;
+    planterIds: string[];
+    planterNames: string[];
+    note?: string;
+  }) => {
+    // Create one area-scope event to represent the whole-area action
+    const areaEvent: GardenEvent = {
+      id: `area-${type}-${Date.now()}-${Math.random()}`,
+      type,
+      date: new Date().toISOString(),
+      note,
+      scope: "area",
+      areaId,
+      areaName,
+    };
+
+    // Create one planter-scope event per planter so cooldown logic can use them
+    const planterEvents: GardenEvent[] = planterIds.map((planterId, idx) => ({
+      id: `planter-${type}-${Date.now()}-${Math.random()}-${idx}`,
+      type,
+      date: new Date().toISOString(),
+      gardenId: planterId,
+      note,
+      scope: "planter" as const,
+      areaId,
+      planterName: planterNames[idx],
+      areaName,
+    }));
+
+    const allEvents = [areaEvent, ...planterEvents];
+    setEvents((prev) => [...allEvents, ...prev]);
+
+    void Promise.all(
+      allEvents.map((e) =>
+        repositoryRef.current.saveEvent(e as unknown as SchemaGardenEvent),
+      ),
+    )
+      .then(() => dismissErrorToast(ERROR_TOAST_IDS.eventsSync))
+      .catch((error) => {
+        notifyErrorToast({
+          id: ERROR_TOAST_IDS.eventsSync,
+          title: "Could not save area action",
+          error,
+          fallback: "The area action may not be fully persisted.",
+        });
+      });
+  };
+
   return {
     harvestAlerts,
     handlePlantAdded,
     handlePlantRemoved,
     handlePlantUpdated,
     handleCompleteSuggestion,
+    handlePlanterAction,
+    handleAreaAction,
   };
 }

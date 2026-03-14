@@ -106,7 +106,8 @@
       "noNeedToWaterRain": "No need to water {{planterName}} — {{mm}}mm of rain forecast",
       "frostRiskProtect": "Frost risk in {{planterName}} — protect frost-sensitive plants tonight",
       "reviewTreatment": "Review {{plantName}} and apply a treatment for the recent pest issue"
-    }
+    },
+    "scopeBadgeArea": "area"
   },
   "areas": {
     "title": "Area Planner",
@@ -123,7 +124,13 @@
     "movePlanterUpAriaLabel": "Move planter up",
     "movePlanterDownAriaLabel": "Move planter down",
     "editPlanterAriaLabel": "Edit planter",
-    "removePlanterAriaLabel": "Remove planter"
+    "removePlanterAriaLabel": "Remove planter",
+    "quickActionsLabel": "Log for area:",
+    "quickActions": {
+      "watered": "Watered",
+      "fertilised": "Fertilised",
+      "weeded": "Weeded"
+    }
   },
   "planterGrid": {
     "movePlanterUpTitle": "Move planter up",
@@ -147,7 +154,13 @@
     "movePlantAriaLabel": "Move {{name}} from row {{row}}, column {{col}}",
     "removePlantTitle": "Remove plant",
     "removePlantAriaLabel": "Remove {{name}}",
-    "dimensionLabel": "{{rows}} × {{cols}} Grid"
+    "dimensionLabel": "{{rows}} × {{cols}} Grid",
+    "quickActions": {
+      "watered": "Watered",
+      "fertilised": "Fertilised",
+      "weeded": "Weeded",
+      "observation": "Observation"
+    }
   },
   "plants": {
     "title": "My Plants & Seeds",

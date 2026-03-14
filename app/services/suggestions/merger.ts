@@ -47,6 +47,9 @@ function ruleResultToSuggestion(result: SuggestionResult): Suggestion {
     dueDate: result.dueDate,
     expiresAt: result.expiresAt,
     source: "rules",
+    areaId: result.areaId,
+    areaName: result.areaName,
+    planterName: result.planterName,
   };
 }
 

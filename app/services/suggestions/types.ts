@@ -68,6 +68,12 @@ export interface SuggestionResult {
   expiresAt?: string;
   source: "rules";
   ruleId: string;
+  /** Area ID this suggestion applies to (for planter-wide suggestions). */
+  areaId?: string;
+  /** Human-readable area name for display in the journal and suggestions panel. */
+  areaName?: string;
+  /** Human-readable planter name for display. */
+  planterName?: string;
 }
 
 export interface AISuggestionResult {
