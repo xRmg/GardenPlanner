@@ -21,7 +21,25 @@
     "infiniteUnlimited": "∞ Unlimited",
     "infinite": "∞",
     "seeds": "seeds",
-    "qty": "qty"
+    "qty": "qty",
+    "priorities": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "eventTypes": {
+      "planted": "Planted",
+      "watered": "Watered",
+      "composted": "Composted",
+      "weeded": "Weeded",
+      "harvested": "Harvested",
+      "sown": "Sown",
+      "sprouted": "Sprouted",
+      "removed": "Removed",
+      "pest": "Pest noted",
+      "treatment": "Treatment logged",
+      "observation": "Observation"
+    }
   },
   "toolbar": {
     "garden": "Garden",
@@ -67,6 +85,25 @@
       "rulesWeather": "🌤 Weather",
       "rules": "📅 Rules",
       "static": "📋 Tips"
+    },
+    "staticTips": {
+      "addPlants": "Add some plants to your planters to get personalised suggestions",
+      "companionPlanting": "Try companion planting — basil and tomatoes grow well together"
+    },
+    "suggestionDescriptions": {
+      "timeToWeed": "Time to weed {{planterName}} — conditions are promoting weed growth",
+      "startSeedsIndoors": "Start {{plantName}} seeds indoors — sowing window is open",
+      "sowDirectly": "Sow {{plantName}} directly — conditions are suitable",
+      "checkHarvestReady": "Check if {{plantName}} is ready to harvest",
+      "harvestOverdue": "{{plantName}} is overdue for harvest — pick now to prevent bolting",
+      "harvestThisWeek": "{{plantName}} should be ready to harvest this week",
+      "approachingHarvest": "{{plantName}} is approaching harvest time",
+      "harvestWindow": "{{plantName}} is in its harvest window",
+      "addCompostOrFertilizer": "Add compost or fertilizer to {{planterName}}",
+      "waterLowMoisture": "Water {{planterName}} — soil moisture is low",
+      "noNeedToWaterRain": "No need to water {{planterName}} — {{mm}}mm of rain forecast",
+      "frostRiskProtect": "Frost risk in {{planterName}} — protect frost-sensitive plants tonight",
+      "reviewTreatment": "Review {{plantName}} and apply a treatment for the recent pest issue"
     }
   },
   "areas": {
@@ -289,13 +326,36 @@
       "description": "View and manage details for this plant",
       "descriptionSection": "Description",
       "yourPlantDetails": "Your Plant Details",
+      "singlePlantMode": "Single-plant mode — changes apply to this plant only",
+      "partOfGroup": "Part of a group of {{count}} {{name}} plants — pest events, health state, and growth stage will apply to plants with the same current state",
       "planted": "Planted",
       "notRecorded": "Not recorded",
       "expectedHarvest": "Expected Harvest",
       "notSet": "Not set",
+      "varietyLabel": "Variety",
       "varietyOptional": "Variety (optional)",
       "varietyPlaceholder": "e.g., Cherry, Beefsteak, Roma...",
       "growingInformation": "Growing Information",
+      "growthStageLabel": "Growth Stage",
+      "growthStageAutoCurrent": "Auto ({{value}})",
+      "growthStageAutoUnknown": "Auto (unknown)",
+      "growthStageCurrent": "Current: {{value}}",
+      "growthStages": {
+        "sprouting": "Sprouting",
+        "vegetative": "Vegetative",
+        "flowering": "Flowering",
+        "fruiting": "Fruiting",
+        "dormant": "Dormant"
+      },
+      "healthStateLabel": "Health State",
+      "healthStateNotSet": "Not set",
+      "healthStates": {
+        "healthy": "Healthy",
+        "stressed": "Stressed",
+        "damaged": "Damaged",
+        "diseased": "Diseased",
+        "dead": "Dead"
+      },
       "sunlight": "Sunlight",
       "sunFull": "Full sun",
       "sunPartial": "Partial sun",
@@ -411,6 +471,33 @@
     "harvestEmpty": "No planted crops land in a harvest window for this month.",
     "harvestWindowTitle": "{{count}} harvest windows",
     "harvestSingle": "{{name}} harvest",
+    "harvestStates": {
+      "upcoming": "Approaching",
+      "ready": "Ready",
+      "overdue": "Overdue",
+      "seasonal": "Seasonal"
+    },
+    "harvestTiming": {
+      "monthLevelOnly": "This crop only has month-level harvest timing.",
+      "readyOn": "Ready {{date}}",
+      "range": "{{start}} to {{end}}"
+    },
+    "dayDetail": {
+      "emptyTitle": "Nothing logged for this day.",
+      "emptyHint": "Use the quick-add buttons below to log an event.",
+      "journalEntries": "Journal Entries",
+      "suggestionsDue": "Suggestions Due",
+      "harvestWindows": "Harvest Windows",
+      "quickAdd": "Quick Add",
+      "quickAddActions": {
+        "watered": "Watered",
+        "harvested": "Harvested",
+        "pest": "Pest Spotted",
+        "observation": "Note"
+      },
+      "notePlaceholder": "Write your observation…",
+      "addNote": "Add Note"
+    },
     "taskCount_one": "{{count}} task",
     "taskCount_other": "{{count}} tasks",
     "logCount_one": "{{count}} log",

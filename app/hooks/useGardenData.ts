@@ -32,6 +32,7 @@ import type { GardenEvent } from "../components/EventsBar";
 import { getPlantCache } from "../services/ai/plantCache";
 import i18n, { detectBrowserLocale, supportedLocales } from "../i18n/config";
 import type { SupportedLocale } from "../i18n/config";
+import { loadPlantNameOverridesForLocale } from "../i18n/plantNameOverrides";
 
 export interface GardenDataState {
   /** Non-null when the database failed to open. Data will not persist. */
@@ -152,6 +153,7 @@ export function useGardenData(): GardenDataState {
           }
         }
         i18n.changeLanguage(finalSettings.locale);
+        await loadPlantNameOverridesForLocale(finalSettings.locale);
         document.documentElement.lang = finalSettings.locale;
 
         setSettings(finalSettings);

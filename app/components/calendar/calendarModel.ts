@@ -5,24 +5,12 @@ import type {
   Suggestion,
 } from "../../data/schema";
 import { buildPlacedPlants } from "../../services/gardenState";
+import i18n from "../../i18n/config";
+import { getPlantName } from "../../i18n/utils/plantTranslation";
 
 const GRID_DAY_COUNT = 42;
 const HARVEST_WINDOW_LEAD_DAYS = 7;
 const HARVEST_WINDOW_TRAIL_DAYS = 14;
-
-const EVENT_LABELS: Record<GardenEvent["type"], string> = {
-  planted: "Planted",
-  watered: "Watered",
-  composted: "Composted",
-  weeded: "Weeded",
-  harvested: "Harvested",
-  sown: "Sowed",
-  sprouted: "Sprouted",
-  removed: "Removed",
-  pest: "Pest noted",
-  treatment: "Treatment logged",
-  observation: "Observation",
-};
 
 const HARVEST_STATE_ORDER = {
   overdue: 3,
@@ -218,6 +206,33 @@ function formatLocation(location?: PlanterLocation, note?: string): string | und
   return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
+function getEventLabel(type: GardenEvent["type"]): string {
+  switch (type) {
+    case "planted":
+      return i18n.t("common.eventTypes.planted");
+    case "watered":
+      return i18n.t("common.eventTypes.watered");
+    case "composted":
+      return i18n.t("common.eventTypes.composted");
+    case "weeded":
+      return i18n.t("common.eventTypes.weeded");
+    case "harvested":
+      return i18n.t("common.eventTypes.harvested");
+    case "sown":
+      return i18n.t("common.eventTypes.sown");
+    case "sprouted":
+      return i18n.t("common.eventTypes.sprouted");
+    case "removed":
+      return i18n.t("common.eventTypes.removed");
+    case "pest":
+      return i18n.t("common.eventTypes.pest");
+    case "treatment":
+      return i18n.t("common.eventTypes.treatment");
+    case "observation":
+      return i18n.t("common.eventTypes.observation");
+  }
+}
+
 function getPlanterLookup(areas: Area[]): Map<string, PlanterLocation> {
   const lookup = new Map<string, PlanterLocation>();
 
@@ -249,16 +264,19 @@ function buildEventItem(
   locations: Map<string, PlanterLocation>,
 ): CalendarEventItem {
   const location = event.gardenId ? locations.get(event.gardenId) : undefined;
+  const plantName = event.plant
+    ? getPlantName(event.plant.id, event.plant.name)
+    : undefined;
   const label = event.plant
-    ? `${EVENT_LABELS[event.type]} ${event.plant.name}`
-    : event.note?.trim() || EVENT_LABELS[event.type];
+    ? `${getEventLabel(event.type)} ${plantName}`
+    : event.note?.trim() || getEventLabel(event.type);
 
   return {
     id: event.id,
     type: event.type,
     label,
     detail: formatLocation(location, event.note),
-    plantName: event.plant?.name,
+    plantName,
     plantIcon: event.plant?.icon,
     dateKey,
   };
@@ -272,13 +290,16 @@ function buildSuggestionItem(
   const location = suggestion.planterId
     ? locations.get(suggestion.planterId)
     : undefined;
+  const plantName = suggestion.plant
+    ? getPlantName(suggestion.plant.id, suggestion.plant.name)
+    : undefined;
 
   return {
     id: suggestion.id,
     type: suggestion.type,
     label: suggestion.description,
     detail: location ? `${location.areaName} · ${location.planterName}` : undefined,
-    plantName: suggestion.plant?.name,
+    plantName,
     plantIcon: suggestion.plant?.icon,
     priority: suggestion.priority,
     source: suggestion.source,
@@ -422,6 +443,10 @@ export function buildCalendarMonth({
   const selectedMonthNumber = monthStart.getMonth() + 1;
 
   for (const placedPlant of placedPlants) {
+    const displayPlantName = getPlantName(
+      placedPlant.plant.id,
+      placedPlant.plant.name,
+    );
     let readyDate: Date | null = null;
 
     if (placedPlant.plantingDate && placedPlant.plant.daysToHarvest) {
@@ -439,9 +464,9 @@ export function buildCalendarMonth({
       const harvestWindow = resolveHarvestWindow(readyDate, todayLocal);
       const harvestItem: CalendarHarvestItem = {
         id: `harvest:${placedPlant.planterId}:${placedPlant.instanceId}`,
-        label: placedPlant.plant.name,
+        label: displayPlantName,
         detail: `${placedPlant.areaName} · ${placedPlant.planterName}`,
-        plantName: placedPlant.plant.name,
+        plantName: displayPlantName,
         plantIcon: placedPlant.plant.icon,
         areaName: placedPlant.areaName,
         planterName: placedPlant.planterName,
@@ -480,9 +505,9 @@ export function buildCalendarMonth({
 
     seasonalHarvests.push({
       id: `seasonal:${placedPlant.planterId}:${placedPlant.instanceId}:${selectedMonthNumber}`,
-      label: placedPlant.plant.name,
+      label: displayPlantName,
       detail: `${placedPlant.areaName} · ${placedPlant.planterName}`,
-      plantName: placedPlant.plant.name,
+      plantName: displayPlantName,
       plantIcon: placedPlant.plant.icon,
       areaName: placedPlant.areaName,
       planterName: placedPlant.planterName,

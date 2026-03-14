@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { X, Settings, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { PlantDetailsDialog } from "./PlantDetailsDialog";
 import { RemovalConfirmDialog } from "./RemovalConfirmDialog";
 import { VirtualSection } from "./PlanterDialog";
 import { cn } from "./ui/utils";
 import type { GrowthStage, HealthState } from "../data/schema";
+import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +39,14 @@ export interface Plant {
   frostSensitive?: boolean;
   watering?: string;
   growingTips?: string;
+  localizedContent?: Record<
+    string,
+    {
+      description?: string | null;
+      watering?: string | null;
+      growingTips?: string | null;
+    }
+  >;
   companions?: string[];
   antagonists?: string[];
   sowIndoorMonths?: number[];
@@ -177,6 +187,7 @@ export function PlanterGrid({
   onMoveUp,
   onMoveDown,
 }: PlanterGridProps) {
+  const { i18n } = useTranslation();
   const buildEmptyGrid = () =>
     Array(rows)
       .fill(null)
@@ -585,14 +596,14 @@ export function PlanterGrid({
                         onMouseLeave={() => setHoveredCells(new Set())}
                         title={
                           square.plantInstance
-                            ? `${square.plantInstance.plant.name}${square.plantInstance.plant.spacingCm ? ` · ${square.plantInstance.plant.spacingCm}cm spacing` : ""}`
+                            ? `${getPlantDisplayName(square.plantInstance.plant, i18n.language)}${square.plantInstance.plant.spacingCm ? ` · ${square.plantInstance.plant.spacingCm}cm spacing` : ""}`
                             : undefined
                         }
                         aria-label={
                           square.plantInstance
-                            ? `${square.plantInstance.plant.name} at row ${rowIndex + 1}, column ${colIndex + 1}`
+                            ? `${getPlantDisplayName(square.plantInstance.plant, i18n.language)} at row ${rowIndex + 1}, column ${colIndex + 1}`
                             : selectedPlant
-                              ? `Place ${selectedPlant.name} at row ${rowIndex + 1}, column ${colIndex + 1}`
+                              ? `Place ${getPlantDisplayName(selectedPlant, i18n.language)} at row ${rowIndex + 1}, column ${colIndex + 1}`
                               : `Row ${rowIndex + 1}, column ${colIndex + 1} — empty`
                         }
                         className={cn(
@@ -637,7 +648,10 @@ export function PlanterGrid({
                             <span className="text-[7px] font-black uppercase text-muted-foreground/60 truncate w-full px-1 text-center mt-0.5">
                               {abbreviatePlantName(
                                 square.plantInstance.variety ||
-                                  square.plantInstance.plant.name,
+                                  getPlantDisplayName(
+                                    square.plantInstance.plant,
+                                    i18n.language,
+                                  ),
                               )}
                             </span>
                             {square.plantInstance.healthState &&
@@ -688,7 +702,7 @@ export function PlanterGrid({
                           }
                           className="absolute -top-1 -right-1 bg-white border border-red-100 text-red-500 rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 hover:bg-red-50 transition-[opacity,background-color,transform] duration-150 hover:scale-110 active:scale-95 z-10"
                           title="Remove plant"
-                          aria-label={`Remove ${square.plantInstance?.plant.name}`}
+                          aria-label={`Remove ${getPlantDisplayName(square.plantInstance.plant, i18n.language)}`}
                         >
                           <X className="w-3 h-3" />
                         </button>

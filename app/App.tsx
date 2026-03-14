@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import i18n, { supportedLocales, LOCALE_LABELS, type SupportedLocale } from "./i18n/config";
+import { loadPlantNameOverridesForLocale } from "./i18n/plantNameOverrides";
+import { getPlantDisplayName } from "./i18n/utils/plantTranslation";
 import { PlanterGrid, PlantInstance } from "./components/PlanterGrid";
 import {
   EventsBar,
@@ -76,10 +78,15 @@ export default function App() {
 
   // ── i18n locale sync ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (settings.locale && i18n.language !== settings.locale) {
-      i18n.changeLanguage(settings.locale);
+    if (!settings.locale) return;
+
+    void (async () => {
+      if (i18n.language !== settings.locale) {
+        await i18n.changeLanguage(settings.locale);
+      }
+      await loadPlantNameOverridesForLocale(settings.locale);
       document.documentElement.lang = settings.locale;
-    }
+    })();
   }, [settings.locale]);
 
   // ── UI-only state kept in App as orchestration layer ──────────────────────
@@ -205,6 +212,7 @@ export default function App() {
     suggestions,
     loading: suggestionsLoading,
     mode: suggestionsMode,
+    dismissSuggestion,
   } = useSuggestions({
     areas: areas as unknown as import("./data/schema").Area[],
     seedlings: seedlings as unknown as import("./data/schema").Seedling[],
@@ -836,6 +844,10 @@ export default function App() {
                               );
                               const isDepleted =
                                 plant.isSeed && availableStock === 0;
+                              const displayName = getPlantDisplayName(
+                                plant,
+                                i18n.language,
+                              );
                               return (
                                 <div
                                   key={plant.id}
@@ -854,7 +866,7 @@ export default function App() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <h3 className="font-black text-sm text-foreground leading-tight">
-                                      {plant.name}
+                                      {displayName}
                                       {plant.variety && (
                                         <span className="ml-1.5 text-[9px] font-black bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase tracking-widest align-middle">
                                           {plant.variety}
@@ -908,7 +920,7 @@ export default function App() {
                                           handleOpenSowModal(plant)
                                         }
                                         className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
-                                        aria-label={t("plants.sowSeedsAriaLabel", { name: plant.name })}
+                                        aria-label={t("plants.sowSeedsAriaLabel", { name: displayName })}
                                       >
                                         <Sprout className="w-3.5 h-3.5" />
                                       </button>
@@ -920,7 +932,7 @@ export default function App() {
                                             handleEditPlantManually(plant)
                                           }
                                           className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                                          aria-label={t("plants.editAriaLabel", { name: plant.name })}
+                                          aria-label={t("plants.editAriaLabel", { name: displayName })}
                                         >
                                           <Edit className="w-3 h-3" />
                                         </button>
@@ -929,7 +941,7 @@ export default function App() {
                                             handleRemovePlantManually(plant.id)
                                           }
                                           className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
-                                          aria-label={t("plants.deleteAriaLabel", { name: plant.name })}
+                                          aria-label={t("plants.deleteAriaLabel", { name: displayName })}
                                         >
                                           <Trash2 className="w-3 h-3" />
                                         </button>
@@ -969,6 +981,10 @@ export default function App() {
                               );
                               const isDepleted =
                                 plant.isSeed && availableStock === 0;
+                              const displayName = getPlantDisplayName(
+                                plant,
+                                i18n.language,
+                              );
                               return (
                                 <div
                                   key={plant.id}
@@ -989,7 +1005,7 @@ export default function App() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <span className="font-bold text-sm text-foreground truncate block leading-tight">
-                                      {plant.name}
+                                      {displayName}
                                     </span>
                                     {plant.variety && (
                                       <span className="text-[9px] font-black text-primary/70 uppercase tracking-wider">
@@ -1030,7 +1046,7 @@ export default function App() {
                                           handleOpenSowModal(plant)
                                         }
                                         className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
-                                        aria-label={t("plants.sowSeedsAriaLabel", { name: plant.name })}
+                                        aria-label={t("plants.sowSeedsAriaLabel", { name: displayName })}
                                       >
                                         <Sprout className="w-3 h-3" />
                                       </button>
@@ -1042,7 +1058,7 @@ export default function App() {
                                             handleEditPlantManually(plant)
                                           }
                                           className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                                          aria-label={t("plants.editAriaLabel", { name: plant.name })}
+                                          aria-label={t("plants.editAriaLabel", { name: displayName })}
                                         >
                                           <Edit className="w-3 h-3" />
                                         </button>
@@ -1051,7 +1067,7 @@ export default function App() {
                                             handleRemovePlantManually(plant.id)
                                           }
                                           className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
-                                          aria-label={t("plants.deleteAriaLabel", { name: plant.name })}
+                                          aria-label={t("plants.deleteAriaLabel", { name: displayName })}
                                         >
                                           <Trash2 className="w-3 h-3" />
                                         </button>
@@ -1175,6 +1191,10 @@ export default function App() {
                                     (Date.now() - new Date(seedling.plantedDate).getTime()) /
                                       (1000 * 60 * 60 * 24),
                                   );
+                                  const displayName = getPlantDisplayName(
+                                    seedling.plant,
+                                    i18n.language,
+                                  );
                                   return (
                                   <div
                                     key={seedling.id}
@@ -1185,7 +1205,7 @@ export default function App() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <h3 className="font-black text-sm text-foreground">
-                                        {seedling.plant.name}
+                                        {displayName}
                                       </h3>
                                       <div className="flex gap-3 mt-1">
                                         <span className="text-[10px] font-bold text-muted-foreground">
@@ -1230,6 +1250,10 @@ export default function App() {
                                       ).getTime()) /
                                       (1000 * 60 * 60 * 24),
                                   );
+                                  const displayName = getPlantDisplayName(
+                                    seedling.plant,
+                                    i18n.language,
+                                  );
                                   return (
                                     <div
                                       key={seedling.id}
@@ -1240,7 +1264,7 @@ export default function App() {
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <span className="font-bold text-sm text-foreground truncate block">
-                                          {seedling.plant.name}
+                                          {displayName}
                                         </span>
                                         <span className="text-[9px] text-muted-foreground/60 font-medium">
                                           {daysOld}d · {seedling.seedCount}× ·{" "}
@@ -1634,7 +1658,10 @@ export default function App() {
               suggestions as unknown as import("./components/EventsBar").Suggestion[]
             }
             harvestAlerts={harvestAlerts}
-            onCompleteSuggestion={handleCompleteSuggestion}
+            onCompleteSuggestion={(s) => {
+              handleCompleteSuggestion(s);
+              dismissSuggestion(s.id);
+            }}
             onOpenTreatmentSuggestion={handleOpenTreatmentSuggestion}
             suggestionsMode={suggestionsMode}
             suggestionsLoading={suggestionsLoading}
@@ -1656,6 +1683,7 @@ export default function App() {
             harvestAlerts={harvestAlerts}
             onCompleteSuggestion={(s) => {
               handleCompleteSuggestion(s);
+              dismissSuggestion(s.id);
               setEventsSheetOpen(false);
             }}
             onOpenTreatmentSuggestion={(s) => {

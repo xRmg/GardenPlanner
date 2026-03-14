@@ -15,6 +15,14 @@
 
 import type { Suggestion } from "../../data/schema";
 import type { SuggestionResult, AISuggestionResult } from "./types";
+import i18n from "../../i18n/config";
+
+type StaticTipKey = "addPlants" | "companionPlanting";
+
+function translateStaticTip(key: StaticTipKey, locale?: string): string {
+  const translationKey = `eventsBar.staticTips.${key}` as const;
+  return String(i18n.t(translationKey, { lng: locale }));
+}
 
 const MAX_SUGGESTIONS = 7;
 const PRIORITY_ORDER: Record<Suggestion["priority"], number> = {
@@ -71,24 +79,24 @@ function dedupeKey(s: Suggestion): string {
 // Static tips (Tier 4: shown when garden is empty)
 // ---------------------------------------------------------------------------
 
-const STATIC_TIPS: Suggestion[] = [
-  {
-    id: "static:start-seeds",
-    type: "sow",
-    priority: "low",
-    description:
-      "Add some plants to your planters to get personalised suggestions",
-    source: "static",
-  },
-  {
-    id: "static:companion-planting",
-    type: "companion_conflict",
-    priority: "low",
-    description:
-      "Try companion planting — basil and tomatoes grow well together",
-    source: "static",
-  },
-];
+function getStaticTips(locale?: string): Suggestion[] {
+  return [
+    {
+      id: "static:start-seeds",
+      type: "sow",
+      priority: "low",
+      description: translateStaticTip("addPlants", locale),
+      source: "static",
+    },
+    {
+      id: "static:companion-planting",
+      type: "companion_conflict",
+      priority: "low",
+      description: translateStaticTip("companionPlanting", locale),
+      source: "static",
+    },
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // Public merge function
@@ -105,11 +113,12 @@ export function mergeSuggestions(
   ruleResults: SuggestionResult[],
   aiResults: AISuggestionResult[],
   isEmpty: boolean,
+  locale?: string,
 ): Suggestion[] {
   const now = new Date();
 
   if (isEmpty && ruleResults.length === 0 && aiResults.length === 0) {
-    return STATIC_TIPS;
+    return getStaticTips(locale);
   }
 
   const all: Suggestion[] = [];

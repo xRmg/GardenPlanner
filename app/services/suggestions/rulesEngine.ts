@@ -16,6 +16,8 @@
 import type { RuleContext, SuggestionResult } from "./types";
 import type { Area, GardenEvent, Seedling, Settings } from "../../data/schema";
 import { buildPlacedPlants } from "../gardenState";
+import i18n from "../../i18n/config";
+import { getPlantDisplayName } from "../../i18n/utils/plantTranslation";
 
 // ---------------------------------------------------------------------------
 // Hemisphere detection from Köppen zone + lat
@@ -119,6 +121,30 @@ function tempMinForecast(ctx: RuleContext, days: number): number {
   return Math.min(...futureDays.map((d) => d.tempMinC), 99);
 }
 
+type SuggestionDescriptionKey =
+  | "timeToWeed"
+  | "startSeedsIndoors"
+  | "sowDirectly"
+  | "checkHarvestReady"
+  | "harvestOverdue"
+  | "harvestThisWeek"
+  | "approachingHarvest"
+  | "harvestWindow"
+  | "addCompostOrFertilizer"
+  | "waterLowMoisture"
+  | "noNeedToWaterRain"
+  | "frostRiskProtect"
+  | "reviewTreatment";
+
+function translateSuggestion(
+  ctx: RuleContext,
+  key: SuggestionDescriptionKey,
+  options: Record<string, string | number> = {},
+): string {
+  const translationKey = `eventsBar.suggestionDescriptions.${key}` as const;
+  return String(i18n.t(translationKey, { lng: ctx.locale, ...options }));
+}
+
 // ---------------------------------------------------------------------------
 // Rule: Weeding
 // ---------------------------------------------------------------------------
@@ -171,7 +197,7 @@ const weedingRule = {
         type: "weed",
         planterId,
         priority,
-        description: `Time to weed ${planterName} — conditions are promoting weed growth`,
+        description: translateSuggestion(ctx, "timeToWeed", { planterName }),
         source: "rules",
         ruleId: this.id,
       });
@@ -224,6 +250,7 @@ const sowingRule = {
     for (const placed of ctx.placedPlants) {
       const plant = placed.plant;
       const nameLower = plant.name.toLowerCase();
+      const plantName = getPlantDisplayName(plant, ctx.locale);
       if (seenPlants.has(nameLower)) continue;
       seenPlants.add(nameLower);
 
@@ -242,7 +269,9 @@ const sowingRule = {
           type: "sow",
           plant,
           priority,
-          description: `Start ${plant.name} seeds indoors — sowing window is open`,
+          description: translateSuggestion(ctx, "startSeedsIndoors", {
+            plantName,
+          }),
           source: "rules",
           ruleId: this.id,
         });
@@ -264,7 +293,7 @@ const sowingRule = {
           type: "sow",
           plant,
           priority,
-          description: `Sow ${plant.name} directly — conditions are suitable`,
+          description: translateSuggestion(ctx, "sowDirectly", { plantName }),
           source: "rules",
           ruleId: this.id,
         });
@@ -297,6 +326,7 @@ const harvestingRule = {
 
     for (const placed of ctx.placedPlants) {
       const { plant, planterId, plantingDate } = placed;
+      const plantName = getPlantDisplayName(plant, ctx.locale);
 
       // Skip harvest suggestions for dead plants
       if (placed.healthState === "dead") continue;
@@ -319,7 +349,9 @@ const harvestingRule = {
 
       let shouldSuggest = false;
       let priority: SuggestionResult["priority"] = "low";
-      let description = `Check if ${plant.name} is ready to harvest`;
+      let description = translateSuggestion(ctx, "checkHarvestReady", {
+        plantName,
+      });
 
       // Trigger by daysToHarvest elapsed since planting
       if (plantingDate && plant.daysToHarvest) {
@@ -332,13 +364,19 @@ const harvestingRule = {
           shouldSuggest = true;
           if (daysOverdue > 7 || (isFastBolting && daysOverdue >= 0)) {
             priority = "high";
-            description = `${plant.name} is overdue for harvest — pick now to prevent bolting`;
+            description = translateSuggestion(ctx, "harvestOverdue", {
+              plantName,
+            });
           } else if (daysOverdue >= -3) {
             priority = "high";
-            description = `${plant.name} should be ready to harvest this week`;
+            description = translateSuggestion(ctx, "harvestThisWeek", {
+              plantName,
+            });
           } else {
             priority = isFastBolting ? "medium" : "low";
-            description = `${plant.name} is approaching harvest time`;
+            description = translateSuggestion(ctx, "approachingHarvest", {
+              plantName,
+            });
           }
         }
       }
@@ -347,7 +385,9 @@ const harvestingRule = {
       if (!shouldSuggest && plant.harvestMonths.includes(ctx.currentMonth)) {
         shouldSuggest = true;
         priority = isFastBolting ? "medium" : "low";
-        description = `${plant.name} is in its harvest window`;
+        description = translateSuggestion(ctx, "harvestWindow", {
+          plantName,
+        });
       }
 
       if (shouldSuggest) {
@@ -419,7 +459,9 @@ const fertilizationRule = {
         type: "fertilize",
         planterId,
         priority,
-        description: `Add compost or fertilizer to ${planterName}`,
+        description: translateSuggestion(ctx, "addCompostOrFertilizer", {
+          planterName,
+        }),
         source: "rules",
         ruleId: this.id,
       });
@@ -483,7 +525,9 @@ const wateringRule = {
         type: "water",
         planterId,
         priority,
-        description: `Water ${planterName} — soil moisture is low`,
+        description: translateSuggestion(ctx, "waterLowMoisture", {
+          planterName,
+        }),
         source: "rules",
         ruleId: this.id,
       });
@@ -532,7 +576,10 @@ const noWaterRule = {
         type: "no_water",
         planterId,
         priority: "medium",
-        description: `No need to water ${planterName} — ${mm}mm of rain forecast`,
+        description: translateSuggestion(ctx, "noNeedToWaterRain", {
+          planterName,
+          mm,
+        }),
         source: "rules",
         ruleId: this.id,
       });
@@ -576,7 +623,9 @@ const frostRule = {
         plant,
         planterId,
         priority: "high",
-        description: `Frost risk in ${planterName} — protect frost-sensitive plants tonight`,
+        description: translateSuggestion(ctx, "frostRiskProtect", {
+          planterName,
+        }),
         source: "rules",
         ruleId: this.id,
       });
@@ -635,7 +684,9 @@ const treatmentRule = {
         planterId: placed.planterId,
         instanceId: placed.instanceId,
         priority,
-        description: `Review ${placed.plant.name} and apply a treatment for the recent pest issue`,
+        description: translateSuggestion(ctx, "reviewTreatment", {
+          plantName: getPlantDisplayName(placed.plant, ctx.locale),
+        }),
         dueDate: latestPest.date,
         source: "rules",
         ruleId: this.id,
@@ -771,6 +822,7 @@ export function buildRuleContext(params: {
   return {
     currentMonth: today.getMonth() + 1,
     today,
+    locale: settings.locale,
     koeppenZone: settings.growthZone ?? "Cfb",
     lat: settings.lat,
     lng: settings.lng,

@@ -15,13 +15,25 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { Area, GardenEvent, Plant, Seedling, Settings, Suggestion, SuggestionMode } from "../data/schema";
+import type {
+  Area,
+  GardenEvent,
+  Plant,
+  Seedling,
+  Settings,
+  Suggestion,
+  SuggestionMode,
+} from "../data/schema";
 import {
   dismissErrorToast,
   ERROR_TOAST_IDS,
   notifyErrorToast,
 } from "../lib/asyncErrors";
-import { evaluateSuggestions } from "../services/suggestions";
+import {
+  enhanceSuggestionsWithAI,
+  evaluateRuleSuggestions,
+} from "../services/suggestions";
+
 const DEBOUNCE_MS = 2_000;
 const BACKGROUND_REFRESH_MS = 15 * 60 * 1_000; // 15 minutes
 
@@ -33,6 +45,8 @@ export interface UseSuggestionsReturn {
   mode: SuggestionMode;
   lastRefreshed: Date | null;
   refresh: () => void;
+  /** Optimistically remove a suggestion by id (e.g. after completing/dismissing it). */
+  dismissSuggestion: (id: string) => void;
 }
 
 export interface UseSuggestionsParams {
@@ -68,17 +82,16 @@ export function useSuggestions({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Use a ref for events so the latest value is always available inside the
   // evaluate callback without making events a dependency (which would cause
-  // a feedback loop: completing a suggestion logs an event → re-evaluates).
+  // a feedback loop: completing a suggestion logs an event -> re-evaluates).
   const eventsRef = useRef(events);
-  useEffect(() => { eventsRef.current = events; }, [events]);
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
 
-  // Core evaluation function
   const evaluate = useCallback(
     async (isBackground: boolean) => {
-      // Guard: don't evaluate before the DB has loaded
       if (!hasLoadedFromDB.current) return;
 
-      // Cancel any in-flight evaluation
       if (abortRef.current) {
         abortRef.current.abort();
       }
@@ -93,21 +106,52 @@ export function useSuggestions({
       setError(null);
 
       try {
-        const result = await evaluateSuggestions(
+        const baseResult = await evaluateRuleSuggestions(
           { areas, seedlings, events: eventsRef.current, settings, plants },
           controller.signal,
         );
 
+        if (controller.signal.aborted) return;
+
+        setSuggestions(baseResult.suggestions);
+        setMode(baseResult.mode);
+        setLastRefreshed(new Date());
+
+        if (
+          !baseResult.canEnhanceWithAI ||
+          !baseResult.ruleCtx ||
+          !baseResult.ruleResults ||
+          baseResult.mode === "static"
+        ) {
+          dismissErrorToast(ERROR_TOAST_IDS.suggestions);
+          return;
+        }
+
+        if (!isBackground) {
+          setLoading(false);
+          setBackgroundRefreshing(true);
+        }
+
+        const enhancedResult = await enhanceSuggestionsWithAI(
+          baseResult.ruleCtx,
+          baseResult.ruleResults,
+          settings,
+          plants,
+          controller.signal,
+        );
+
         if (!controller.signal.aborted) {
-          setSuggestions(result.suggestions);
-          setMode(result.mode);
+          setSuggestions(enhancedResult.suggestions);
+          setMode(enhancedResult.mode);
           setLastRefreshed(new Date());
-          if (result.aiError) {
+
+          if (enhancedResult.aiError) {
             notifyErrorToast({
               id: ERROR_TOAST_IDS.suggestions,
               title: "AI suggestions failed",
-              error: result.aiError,
-              fallback: "AI suggestions could not be loaded. Showing rule-based suggestions.",
+              error: enhancedResult.aiError,
+              fallback:
+                "AI suggestions could not be loaded. Showing rule-based suggestions.",
             });
           } else {
             dismissErrorToast(ERROR_TOAST_IDS.suggestions);
@@ -115,7 +159,8 @@ export function useSuggestions({
         }
       } catch (err) {
         if (!controller.signal.aborted) {
-          const message = err instanceof Error ? err.message : "Suggestion engine error";
+          const message =
+            err instanceof Error ? err.message : "Suggestion engine error";
           setError(message);
           console.warn("[useSuggestions] Evaluation failed:", err);
           notifyErrorToast({
@@ -135,15 +180,12 @@ export function useSuggestions({
     [areas, seedlings, settings, plants, hasLoadedFromDB],
   );
 
-  // Manual refresh
   const refresh = useCallback(() => {
     evaluate(false);
   }, [evaluate]);
 
-  // Trigger evaluation when areas/seedlings/settings change (i.e., after DB load)
   useEffect(() => {
     if (isFirstRun.current) {
-      // Delay the initial run slightly to allow the DB load to settle
       const timer = setTimeout(() => {
         isFirstRun.current = false;
         evaluate(false);
@@ -151,7 +193,6 @@ export function useSuggestions({
       return () => clearTimeout(timer);
     }
 
-    // Subsequent triggers — debounce
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       evaluate(lastRefreshed !== null);
@@ -163,7 +204,6 @@ export function useSuggestions({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [evaluate]);
 
-  // Background refresh every 15 minutes
   useEffect(() => {
     const intervalId = setInterval(() => {
       evaluate(true);
@@ -171,12 +211,15 @@ export function useSuggestions({
     return () => clearInterval(intervalId);
   }, [evaluate]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (abortRef.current) abortRef.current.abort();
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
+  }, []);
+
+  const dismissSuggestion = useCallback((id: string) => {
+    setSuggestions((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   return {
@@ -187,5 +230,6 @@ export function useSuggestions({
     mode,
     lastRefreshed,
     refresh,
+    dismissSuggestion,
   };
 }

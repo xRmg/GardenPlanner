@@ -10,6 +10,7 @@
 
 import { withRetry } from "./retry";
 import { RateLimiter } from "./rateLimiter";
+import { createTimeoutAbortHandle } from "../../lib/abortTimeout";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,6 +79,7 @@ export const MODEL_CHAIN = [
 // ---------------------------------------------------------------------------
 
 const rateLimiter = new RateLimiter(10, 60_000);
+const AI_PROXY_TIMEOUT_MS = 8_000;
 
 export class OpenRouterClient {
   private config: OpenRouterConfig;
@@ -114,24 +116,37 @@ export class OpenRouterClient {
       );
     }
 
-    const response = await fetch(this.config.proxyUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: options.temperature ?? 0.3,
-        maxTokens: options.maxTokens ?? 1024,
-      }),
-      signal: options.signal,
-    });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      if (isDev)
-        console.error(`[OpenRouter] Proxy returned ${response.status}:`, error);
-      throw new OpenRouterError(response.status, error);
+    const request = createTimeoutAbortHandle(AI_PROXY_TIMEOUT_MS, options.signal);
+
+    try {
+      const response = await fetch(this.config.proxyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: options.temperature ?? 0.3,
+          maxTokens: options.maxTokens ?? 1024,
+        }),
+        signal: request.signal,
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        if (isDev)
+          console.error(`[OpenRouter] Proxy returned ${response.status}:`, error);
+        throw new OpenRouterError(response.status, error);
+      }
+      return response.json() as Promise<OpenRouterResponse>;
+    } catch (error) {
+      if (request.didTimeout() && !options.signal?.aborted) {
+        throw new Error(
+          `AI suggestion request timed out after ${AI_PROXY_TIMEOUT_MS / 1000}s`,
+        );
+      }
+      throw error;
+    } finally {
+      request.cleanup();
     }
-    return response.json() as Promise<OpenRouterResponse>;
   }
 
   /**

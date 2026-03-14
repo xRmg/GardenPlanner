@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "../i18n/config";
 import {
   Calendar as CalendarIcon,
   CalendarDays,
@@ -39,22 +40,18 @@ import {
 
 const MODE_BADGES: Record<
   SuggestionMode,
-  { label: string; className: string }
+  { className: string }
 > = {
   "ai+weather": {
-    label: "AI + weather",
     className: "bg-violet-50 text-violet-700 border border-violet-200",
   },
   "rules+weather": {
-    label: "Rules + weather",
     className: "bg-sky-50 text-sky-700 border border-sky-200",
   },
   rules: {
-    label: "Rules",
     className: "bg-emerald-50 text-emerald-700 border border-emerald-200",
   },
   static: {
-    label: "Static",
     className: "bg-gray-50 text-gray-600 border border-gray-200",
   },
 };
@@ -129,27 +126,23 @@ const PRIORITY_STYLES: Record<
 
 const HARVEST_STYLES: Record<
   CalendarHarvestItem["state"],
-  { chip: string; badge: string; label: string }
+  { chip: string; badge: string }
 > = {
   upcoming: {
     chip: "border-lime-200 bg-lime-50 text-lime-800",
     badge: "bg-lime-50 text-lime-700 border border-lime-200",
-    label: "Approaching",
   },
   ready: {
     chip: "border-emerald-200 bg-emerald-50 text-emerald-800",
     badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    label: "Ready",
   },
   overdue: {
     chip: "border-amber-200 bg-amber-50 text-amber-800",
     badge: "bg-amber-50 text-amber-700 border border-amber-200",
-    label: "Overdue",
   },
   seasonal: {
     chip: "border-emerald-200 bg-emerald-50 text-emerald-800",
     badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    label: "Seasonal",
   },
 };
 
@@ -177,17 +170,68 @@ function formatDateKey(dateKey: string, locale: string): string {
 
 function formatWindow(item: CalendarHarvestItem, locale: string): string {
   if (item.timing === "seasonal") {
-    return "This crop only has month-level harvest timing.";
+    return i18n.t("calendarView.harvestTiming.monthLevelOnly");
   }
 
   const ready = item.readyDateKey
-    ? `Ready ${formatDateKey(item.readyDateKey, locale)}`
+    ? i18n.t("calendarView.harvestTiming.readyOn", {
+        date: formatDateKey(item.readyDateKey, locale),
+      })
     : undefined;
   const span = item.startDateKey && item.endDateKey
-    ? `${formatDateKey(item.startDateKey, locale)} to ${formatDateKey(item.endDateKey, locale)}`
+    ? i18n.t("calendarView.harvestTiming.range", {
+        start: formatDateKey(item.startDateKey, locale),
+        end: formatDateKey(item.endDateKey, locale),
+      })
     : undefined;
 
   return [ready, span].filter(Boolean).join(" · ");
+}
+
+function getSuggestionModeLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  mode: SuggestionMode,
+): string {
+  switch (mode) {
+    case "ai+weather":
+      return t("eventsBar.modeBadges.aiWeather");
+    case "rules+weather":
+      return t("eventsBar.modeBadges.rulesWeather");
+    case "rules":
+      return t("eventsBar.modeBadges.rules");
+    case "static":
+      return t("eventsBar.modeBadges.static");
+  }
+}
+
+function getPriorityLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  priority: CalendarSuggestionItem["priority"],
+): string {
+  switch (priority) {
+    case "high":
+      return t("common.priorities.high");
+    case "medium":
+      return t("common.priorities.medium");
+    case "low":
+      return t("common.priorities.low");
+  }
+}
+
+function getHarvestStateLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  state: CalendarHarvestItem["state"],
+): string {
+  switch (state) {
+    case "upcoming":
+      return t("calendarView.harvestStates.upcoming");
+    case "ready":
+      return t("calendarView.harvestStates.ready");
+    case "overdue":
+      return t("calendarView.harvestStates.overdue");
+    case "seasonal":
+      return t("calendarView.harvestStates.seasonal");
+  }
 }
 
 function DayCounts({ day }: { day: CalendarDayCell }) {
@@ -392,7 +436,7 @@ export function CalendarView({
                     MODE_BADGES[suggestionsMode].className,
                   )}
                 >
-                  {MODE_BADGES[suggestionsMode].label}
+                  {getSuggestionModeLabel(t, suggestionsMode)}
                 </span>
               )}
               {suggestionsLoading && (
@@ -540,7 +584,7 @@ export function CalendarView({
                             PRIORITY_STYLES[suggestion.priority].count,
                           )}
                         >
-                          {suggestion.priority}
+                          {getPriorityLabel(t, suggestion.priority)}
                         </span>
                       </div>
                     </div>
@@ -594,7 +638,7 @@ export function CalendarView({
                           HARVEST_STYLES[harvest.state].badge,
                         )}
                       >
-                        {HARVEST_STYLES[harvest.state].label}
+                        {getHarvestStateLabel(t, harvest.state)}
                       </span>
                     </div>
                   </div>
@@ -629,16 +673,6 @@ const EVENT_TYPE_ICONS: Partial<Record<CalendarEventItem["type"], string>> = {
   observation: "👁️",
 };
 
-const QUICK_ADD_ACTIONS: Array<{
-  label: string;
-  type: GardenEvent["type"];
-}> = [
-  { label: "💧 Watered", type: "watered" },
-  { label: "🌾 Harvested", type: "harvested" },
-  { label: "🪲 Pest Spotted", type: "pest" },
-  { label: "✏️ Note", type: "observation" },
-];
-
 function DayDetailPanel({
   day,
   locale,
@@ -650,11 +684,35 @@ function DayDetailPanel({
   onClose: () => void;
   onAddEvent?: (event: Omit<GardenEvent, "id">) => void;
 }) {
+  const { t } = useTranslation();
   const isEmpty =
     day !== null &&
     day.events.length === 0 &&
     day.suggestions.length === 0 &&
     day.harvests.length === 0;
+
+  const quickAddActions = [
+    {
+      type: "watered" as const,
+      icon: "💧",
+      label: t("calendarView.dayDetail.quickAddActions.watered"),
+    },
+    {
+      type: "harvested" as const,
+      icon: "🌾",
+      label: t("calendarView.dayDetail.quickAddActions.harvested"),
+    },
+    {
+      type: "pest" as const,
+      icon: "🪲",
+      label: t("calendarView.dayDetail.quickAddActions.pest"),
+    },
+    {
+      type: "observation" as const,
+      icon: "✏️",
+      label: t("calendarView.dayDetail.quickAddActions.observation"),
+    },
+  ];
 
   const formattedDate = day
     ? new Intl.DateTimeFormat(locale, {
@@ -687,7 +745,7 @@ function DayDetailPanel({
 
   return (
     <Sheet open={day !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto pl-[10px]">
+      <SheetContent className="w-full sm:max-w-md overflow-y-auto pl-2.5">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2 text-base font-black uppercase tracking-wider">
             <CalendarDays className="h-4 w-4 text-primary" />
@@ -700,10 +758,10 @@ function DayDetailPanel({
             {isEmpty && (
               <div className="rounded-2xl border border-dashed border-border/30 bg-muted/20 px-4 py-6 text-center">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Nothing logged for this day.
+                  {t("calendarView.dayDetail.emptyTitle")}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground/60">
-                  Use the quick-add buttons below to log an event.
+                  {t("calendarView.dayDetail.emptyHint")}
                 </p>
               </div>
             )}
@@ -711,7 +769,7 @@ function DayDetailPanel({
             {day.events.length > 0 && (
               <section>
                 <h3 className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">
-                  Journal Entries
+                  {t("calendarView.dayDetail.journalEntries")}
                 </h3>
                 <div className="space-y-2">
                   {day.events.map((event) => (
@@ -746,7 +804,7 @@ function DayDetailPanel({
             {day.suggestions.length > 0 && (
               <section>
                 <h3 className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">
-                  Suggestions Due
+                  {t("calendarView.dayDetail.suggestionsDue")}
                 </h3>
                 <div className="space-y-2">
                   {day.suggestions.map((suggestion) => (
@@ -780,7 +838,7 @@ function DayDetailPanel({
                             PRIORITY_STYLES[suggestion.priority].count,
                           )}
                         >
-                          {suggestion.priority}
+                          {getPriorityLabel(t, suggestion.priority)}
                         </span>
                       </div>
                     </div>
@@ -792,7 +850,7 @@ function DayDetailPanel({
             {day.harvests.length > 0 && (
               <section>
                 <h3 className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">
-                  Harvest Windows
+                  {t("calendarView.dayDetail.harvestWindows")}
                 </h3>
                 <div className="space-y-2">
                   {day.harvests.map((harvest) => (
@@ -823,7 +881,7 @@ function DayDetailPanel({
                             HARVEST_STYLES[harvest.state].badge,
                           )}
                         >
-                          {HARVEST_STYLES[harvest.state].label}
+                          {getHarvestStateLabel(t, harvest.state)}
                         </span>
                       </div>
                     </div>
@@ -836,17 +894,17 @@ function DayDetailPanel({
               <section>
                 <h3 className="mb-2.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground/60 flex items-center gap-1.5">
                   <Plus className="h-3 w-3" />
-                  Quick Add
+                  {t("calendarView.dayDetail.quickAdd")}
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {QUICK_ADD_ACTIONS.filter((a) => a.type !== "observation").map((action) => (
+                  {quickAddActions.filter((a) => a.type !== "observation").map((action) => (
                     <button
                       key={action.type}
                       type="button"
                       onClick={() => handleQuickAdd(action.type)}
                       className="rounded-full border border-border/30 bg-muted/30 px-3 py-1.5 text-xs font-bold transition-colors hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
                     >
-                      {action.label}
+                      {`${action.icon} ${action.label}`}
                     </button>
                   ))}
                   <button
@@ -859,7 +917,7 @@ function DayDetailPanel({
                         : "border-border/30 bg-muted/30 hover:bg-primary/10 hover:border-primary/30 hover:text-primary",
                     )}
                   >
-                    ✏️ Note
+                    {`✏️ ${t("calendarView.dayDetail.quickAddActions.observation")}`}
                   </button>
                 </div>
                 {showNoteInput && (
@@ -872,7 +930,7 @@ function DayDetailPanel({
                         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddNote(); }
                         if (e.key === "Escape") { setShowNoteInput(false); setNoteText(""); }
                       }}
-                      placeholder="Write your observation…"
+                      placeholder={t("calendarView.dayDetail.notePlaceholder")}
                       rows={2}
                       className="w-full resize-none rounded-xl border border-border/40 bg-white/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground/50"
                     />
@@ -883,14 +941,14 @@ function DayDetailPanel({
                         disabled={!noteText.trim()}
                         className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/20 disabled:opacity-40"
                       >
-                        Add Note
+                        {t("calendarView.dayDetail.addNote")}
                       </button>
                       <button
                         type="button"
                         onClick={() => { setShowNoteInput(false); setNoteText(""); }}
                         className="rounded-full border border-border/30 bg-muted/30 px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted/50"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </button>
                     </div>
                   </div>

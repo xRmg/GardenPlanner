@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Plant } from "./PlanterGrid";
 import { useTranslation } from "react-i18next";
+import {
+  getPlantDisplayName,
+  matchesPlantSearchQuery,
+} from "../i18n/utils/plantTranslation";
 
 interface PlantPickerDialogProps {
   open: boolean;
@@ -18,17 +22,13 @@ export function PlantPickerDialog({
   mode,
   onSelect,
 }: PlantPickerDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [search, setSearch] = useState("");
 
   // Filter by mode: direct-sow shows seeds, transplant shows plants
   const filtered = plants
     .filter((p) => (mode === "direct-sow" ? p.isSeed : !p.isSeed))
-    .filter(
-      (p) =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.variety ?? "").toLowerCase().includes(search.toLowerCase()),
-    );
+    .filter((plant) => matchesPlantSearchQuery(plant, search, i18n.language));
 
   const handleSelect = (plant: Plant) => {
     onSelect(plant);
@@ -96,7 +96,7 @@ export function PlantPickerDialog({
                     {plant.icon}
                   </span>
                   <span className="text-[10px] font-black uppercase text-foreground tracking-tight text-center leading-tight">
-                    {plant.name}
+                    {getPlantDisplayName(plant, i18n.language)}
                   </span>
                   {plant.variety && (
                     <span className="text-xs font-bold text-muted-foreground/50 uppercase tracking-wider">

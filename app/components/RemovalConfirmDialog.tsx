@@ -9,6 +9,7 @@ import {
 import { Button } from "./ui/button";
 import { PlantInstance } from "./PlanterGrid";
 import { useTranslation } from "react-i18next";
+import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
 
 interface RemovalConfirmDialogProps {
   open: boolean;
@@ -23,7 +24,10 @@ export function RemovalConfirmDialog({
   plantInstance,
   onConfirm,
 }: RemovalConfirmDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const displayPlantName = plantInstance
+    ? getPlantDisplayName(plantInstance.plant, i18n.language)
+    : undefined;
   const handleHarvested = () => {
     onConfirm("harvested");
     onOpenChange(false);
@@ -42,7 +46,9 @@ export function RemovalConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("dialogs.removalConfirmDialog.title", { name: plantInstance?.plant.name })}</DialogTitle>
+          <DialogTitle>
+            {t("dialogs.removalConfirmDialog.title", { name: displayPlantName })}
+          </DialogTitle>
           <DialogDescription>
             {t("dialogs.removalConfirmDialog.description")}
           </DialogDescription>

@@ -17,9 +17,11 @@
  *   seedlings     — Seedling batch records
  *   settings      — Single-row settings (key: "singleton")
  *   events        — GardenEvent records
+ *   plantNameOverrides — AI/runtime fallback plant labels keyed by locale + ref
  */
 
 import Dexie, { type Table } from "dexie";
+import { normalizePlantReferenceList } from "../lib/plantReferences";
 import {
   AreaSchema,
   GardenEventSchema,
@@ -77,6 +79,21 @@ export interface AiSuggestionsCacheRow {
 }
 
 // ---------------------------------------------------------------------------
+// Plant name override row type
+// ---------------------------------------------------------------------------
+
+export interface PlantNameOverrideRow {
+  /** Compound key: `${locale}|${ref}` */
+  id: string;
+  locale: string;
+  ref: string;
+  label: string;
+  source: "ai" | "user";
+  confidence?: number;
+  updatedAt: number;
+}
+
+// ---------------------------------------------------------------------------
 // Dexie database definition
 // ---------------------------------------------------------------------------
 
@@ -89,6 +106,7 @@ export class GardenPlannerDB extends Dexie {
   aiPlantCache!: Table<AiPlantCacheRow, string>;
   weatherCache!: Table<WeatherCacheRow, string>;
   aiSuggestionsCache!: Table<AiSuggestionsCacheRow, string>;
+  plantNameOverrides!: Table<PlantNameOverrideRow, string>;
 
   constructor() {
     super("GardenPlannerDB");
@@ -172,6 +190,32 @@ export class GardenPlannerDB extends Dexie {
       weatherCache: "id, fetchedAt",
       aiSuggestionsCache: "id, createdAt",
     });
+    // v8: runtime per-locale plant label overrides for missing translations
+    this.version(8).stores({
+      plantNameOverrides: "id, locale, ref, updatedAt",
+    });
+    // v9: normalize stored plant relationship refs to canonical slug form
+    this.version(9)
+      .stores({})
+      .upgrade((trans) => {
+        console.info(
+          "[DB] Running v9 migration: normalizing plant relationship refs",
+        );
+        return trans
+          .table("customPlants")
+          .toCollection()
+          .modify((plant: Record<string, unknown>) => {
+            const companions = Array.isArray(plant.companions)
+              ? (plant.companions as string[])
+              : [];
+            const antagonists = Array.isArray(plant.antagonists)
+              ? (plant.antagonists as string[])
+              : [];
+
+            plant.companions = normalizePlantReferenceList(companions);
+            plant.antagonists = normalizePlantReferenceList(antagonists);
+          });
+      });
   }
 }
 
@@ -234,7 +278,11 @@ export class DexieRepository implements GardenRepository {
   }
 
   async savePlant(plant: Plant): Promise<void> {
-    await this.db.customPlants.put(plant);
+    await this.db.customPlants.put({
+      ...plant,
+      companions: normalizePlantReferenceList(plant.companions),
+      antagonists: normalizePlantReferenceList(plant.antagonists),
+    });
   }
 
   async deletePlant(id: string): Promise<void> {

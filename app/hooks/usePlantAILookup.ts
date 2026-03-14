@@ -21,6 +21,15 @@ import {
   notifyErrorToast,
 } from "../lib/asyncErrors";
 import { OpenRouterClient } from "../services/ai/openrouter";
+import {
+  isCanonicalPlantReference,
+  normalizePlantReference,
+} from "../lib/plantReferences";
+import { upsertMissingPlantNameOverrides } from "../i18n/plantNameOverrides";
+import {
+  getKnownPlantReferences,
+  parseLocalizedPlantReferenceList,
+} from "../i18n/utils/plantTranslation";
 
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
 import {
@@ -104,7 +113,12 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 
         // 1. Try cache first (no API call needed)
         if (isDev) console.log("[usePlantAILookup] Checking cache…");
-        const cached = await cache.get(name, undefined, koeppenZone);
+        const cached = await cache.get(
+          name,
+          undefined,
+          koeppenZone,
+          settings.locale,
+        );
         if (cached) {
           if (isDev) console.log("[usePlantAILookup] ✓ Cache hit:", cached);
           setAiResult(cached);
@@ -140,6 +154,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           koeppenZone,
           latitude: settings.lat,
           longitude: settings.lng,
+          locale: settings.locale,
         });
 
         if (isDev) {
@@ -226,16 +241,25 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         if (isDev) console.log("[usePlantAILookup] ✓ JSON parsed:", parsed);
 
         // 5. Filter out fields below the rejection threshold
-        const filtered = filterLowConfidenceFields(parsed);
+        const filtered = filterLowConfidenceFields(parsed, settings.locale);
         if (isDev)
           console.log(
             "[usePlantAILookup] ✓ Filtered (low-confidence fields removed):",
             filtered,
           );
 
+        await persistLocalizedRelationshipLabels(filtered, settings.locale);
+
         // 6. Cache result
         if (isDev) console.log("[usePlantAILookup] Caching result…");
-        await cache.set(name, filtered, model, filtered.latinName, koeppenZone);
+        await cache.set(
+          name,
+          filtered,
+          model,
+          filtered.latinName,
+          koeppenZone,
+          settings.locale,
+        );
         if (isDev)
           console.log(
             "[usePlantAILookup] ✓ Cached successfully with model:",
@@ -288,8 +312,37 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
  * Zero-out fields whose confidence is below the rejection threshold so they
  * don't accidentally overwrite user data with low-quality AI suggestions.
  */
-function filterLowConfidenceFields(result: PlantAIResponse): PlantAIResponse {
+export function filterLowConfidenceFields(
+  result: PlantAIResponse,
+  locale?: string,
+): PlantAIResponse {
   const c = result.confidence;
+  const normalizedCompanionLabels =
+    (c.localizedCompanionLabels ?? c.companions ?? 1) >= CONFIDENCE.REJECT
+      ? normalizeLocalizedLabelMap(result.localizedCompanionLabels)
+      : {};
+  const normalizedAntagonistLabels =
+    (c.localizedAntagonistLabels ?? c.antagonists ?? 1) >=
+    CONFIDENCE.REJECT
+      ? normalizeLocalizedLabelMap(result.localizedAntagonistLabels)
+      : {};
+  const companions =
+    (c.companions ?? 1) >= CONFIDENCE.REJECT
+      ? normalizeRelationshipRefs(
+          result.companions,
+          normalizedCompanionLabels,
+          locale,
+        )
+      : [];
+  const antagonists =
+    (c.antagonists ?? 1) >= CONFIDENCE.REJECT
+      ? normalizeRelationshipRefs(
+          result.antagonists,
+          normalizedAntagonistLabels,
+          locale,
+        )
+      : [];
+
   return {
     ...result,
     watering:
@@ -308,11 +361,109 @@ function filterLowConfidenceFields(result: PlantAIResponse): PlantAIResponse {
         : [],
     harvestMonths:
       (c.harvestMonths ?? 1) >= CONFIDENCE.REJECT ? result.harvestMonths : [],
-    companions:
-      (c.companions ?? 1) >= CONFIDENCE.REJECT ? result.companions : [],
-    antagonists:
-      (c.antagonists ?? 1) >= CONFIDENCE.REJECT ? result.antagonists : [],
+    companions,
+    antagonists,
+    localizedCompanionLabels: filterLocalizedLabelMap(
+      normalizedCompanionLabels,
+      companions,
+    ),
+    localizedAntagonistLabels: filterLocalizedLabelMap(
+      normalizedAntagonistLabels,
+      antagonists,
+    ),
     icon: (c.icon ?? 0) >= CONFIDENCE.HIGH ? result.icon : undefined,
     color: (c.color ?? 0) >= CONFIDENCE.HIGH ? result.color : undefined,
   };
+}
+
+function normalizeRelationshipRefs(
+  values: string[] | undefined,
+  localizedLabels: Record<string, string>,
+  locale?: string,
+): string[] {
+  const knownRefs = getKnownPlantReferences();
+
+  return Array.from(
+    new Set(
+      parseLocalizedPlantReferenceList((values ?? []).join(", "), locale),
+    ),
+  ).filter((ref) => {
+    if (!isCanonicalPlantReference(ref)) {
+      console.warn(
+        `[usePlantAILookup] Dropping malformed relationship ref "${ref}"`,
+      );
+      return false;
+    }
+
+    if (knownRefs.has(ref) || localizedLabels[ref]) {
+      return true;
+    }
+
+    console.warn(
+      `[usePlantAILookup] Dropping unknown relationship ref "${ref}" without localized label`,
+    );
+    return false;
+  });
+}
+
+function normalizeLocalizedLabelMap(
+  labels: Record<string, string> | undefined,
+): Record<string, string> {
+  const normalized: Record<string, string> = {};
+
+  Object.entries(labels ?? {}).forEach(([ref, label]) => {
+    const normalizedRef = normalizePlantReference(ref);
+    const trimmedLabel = label.trim();
+    if (!normalizedRef || !trimmedLabel) return;
+
+    normalized[normalizedRef] = trimmedLabel;
+  });
+
+  return normalized;
+}
+
+function filterLocalizedLabelMap(
+  labels: Record<string, string>,
+  allowedRefs: string[],
+): Record<string, string> {
+  const allowed = new Set(allowedRefs);
+  return Object.fromEntries(
+    Object.entries(labels).filter(([ref]) => allowed.has(ref)),
+  );
+}
+
+async function persistLocalizedRelationshipLabels(
+  result: PlantAIResponse,
+  locale?: string,
+): Promise<void> {
+  const labels: Record<
+    string,
+    { label: string; confidence?: number; source: "ai" }
+  > = {};
+
+  Object.entries(result.localizedCompanionLabels ?? {}).forEach(
+    ([ref, label]) => {
+      labels[ref] = {
+        label,
+        confidence:
+          result.confidence.localizedCompanionLabels ?? result.confidence.companions,
+        source: "ai",
+      };
+    },
+  );
+
+  Object.entries(result.localizedAntagonistLabels ?? {}).forEach(
+    ([ref, label]) => {
+      labels[ref] = {
+        label,
+        confidence:
+          result.confidence.localizedAntagonistLabels ?? result.confidence.antagonists,
+        source: "ai",
+      };
+    },
+  );
+
+  if (Object.keys(labels).length === 0) return;
+
+  await upsertMissingPlantNameOverrides(locale, labels);
 }

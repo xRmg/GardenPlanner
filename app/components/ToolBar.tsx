@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Plus, Map as MapIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Plant } from "./PlanterGrid";
+import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
 
 interface ToolBarProps {
   plants: Plant[];
@@ -26,7 +27,7 @@ export function ToolBar({
   seedlingCount = 0,
   onShowSeedlings,
 }: ToolBarProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filter, setFilter] = useState<PlantFilter>("all");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -185,6 +186,7 @@ export function ToolBar({
                 const isInfinite =
                   plant.amount === undefined || plant.amount === null;
                 const showBadge = plant.isSeed && !isInfinite;
+                const displayName = getPlantDisplayName(plant, i18n.language);
 
                 return (
                   <button
@@ -193,12 +195,12 @@ export function ToolBar({
                     disabled={isDepleted}
                     title={
                       isDepleted
-                        ? t("toolbar.outOfSeeds", { name: plant.name })
+                        ? t("toolbar.outOfSeeds", { name: displayName })
                         : plant.isSeed
                           ? isInfinite
-                            ? t("toolbar.infiniteSeeds", { name: plant.name })
-                            : t("toolbar.seedsAvailable", { name: plant.name, count: plant.amount })
-                          : plant.name
+                            ? t("toolbar.infiniteSeeds", { name: displayName })
+                            : t("toolbar.seedsAvailable", { name: displayName, count: plant.amount })
+                          : displayName
                     }
                     className={`h-8 px-3 rounded-lg border transition-[background-color,border-color,box-shadow] flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in duration-300 relative ${
                       isDepleted
@@ -218,7 +220,7 @@ export function ToolBar({
                           : "text-foreground"
                       }`}
                     >
-                      {plant.name}
+                      {displayName}
                     </span>
                     {/* Inventory badge */}
                     {showBadge && !isDepleted && (

@@ -36,6 +36,7 @@ function buildCacheKey(ctx: AISuggestionContext): string {
     ctx.koeppenZone,
     ctx.hemisphere,
     ctx.currentMonth,
+    ctx.responseLocale,
     weatherFingerprint,
     plantKeys,
     seedlingKeys,

@@ -17,6 +17,19 @@ import type { Settings } from "../data/schema";
 import { usePlantAILookup } from "../hooks/usePlantAILookup";
 import { CONFIDENCE } from "../services/ai/prompts";
 import { formatMonthNarrow } from "@/app/i18n/utils/formatting";
+import {
+  formatPlantReferenceList,
+  getLocalizedPlantContent,
+  parseLocalizedPlantReferenceList,
+  updatePlantLocalizedContent,
+  type PlantLocalizedContentField,
+} from "../i18n/utils/plantTranslation";
+
+const LOCALIZED_PROSE_FIELDS = [
+  "description",
+  "watering",
+  "growingTips",
+] as const satisfies readonly PlantLocalizedContentField[];
 
 interface PlantDialogProps {
   open: boolean;
@@ -136,7 +149,8 @@ export function PlantDialog({
   const [latinName, setLatinName] = useState(initialPlant?.latinName || "");
   const [variety, setVariety] = useState(initialPlant?.variety || "");
   const [description, setDescription] = useState(
-    initialPlant?.description || "",
+    getLocalizedPlantContent(initialPlant, "description", i18n.language) ||
+      "",
   );
   const [icon, setIcon] = useState(initialPlant?.icon || EMOJIS[0]);
   const [color, setColor] = useState(initialPlant?.color || COLORS[0]);
@@ -152,9 +166,12 @@ export function PlantDialog({
   const [frostHardy, setFrostHardy] = useState(
     initialPlant?.frostHardy ?? false,
   );
-  const [watering, setWatering] = useState(initialPlant?.watering || "");
+  const [watering, setWatering] = useState(
+    getLocalizedPlantContent(initialPlant, "watering", i18n.language) || "",
+  );
   const [growingTips, setGrowingTips] = useState(
-    initialPlant?.growingTips || "",
+    getLocalizedPlantContent(initialPlant, "growingTips", i18n.language) ||
+      "",
   );
   const [sowIndoorMonths, setSowIndoorMonths] = useState<number[]>(
     initialPlant?.sowIndoorMonths || [],
@@ -169,15 +186,18 @@ export function PlantDialog({
     "full" | "partial" | "shade"
   >(initialPlant?.sunRequirement || "full");
   const [companions, setCompanions] = useState(
-    initialPlant?.companions?.join(", ") || "",
+    formatPlantReferenceList(initialPlant?.companions, i18n.language),
   );
   const [antagonists, setAntagonists] = useState(
-    initialPlant?.antagonists?.join(", ") || "",
+    formatPlantReferenceList(initialPlant?.antagonists, i18n.language),
   );
   const [nameError, setNameError] = useState("");
 
   // Track which fields were overridden by the user after an AI fill
   const [userOverrides, setUserOverrides] = useState<Set<string>>(new Set());
+  const [localizedProseDirtyFields, setLocalizedProseDirtyFields] = useState<
+    Set<PlantLocalizedContentField>
+  >(new Set());
 
   const aiEnabled = settings?.aiProvider.type === "server";
   const {
@@ -195,7 +215,10 @@ export function PlantDialog({
       setName(initialPlant?.name || "");
       setLatinName(initialPlant?.latinName || "");
       setVariety(initialPlant?.variety || "");
-      setDescription(initialPlant?.description || "");
+      setDescription(
+        getLocalizedPlantContent(initialPlant, "description", i18n.language) ||
+          "",
+      );
       setIcon(initialPlant?.icon || EMOJIS[0]);
       setColor(initialPlant?.color || COLORS[0]);
       setDaysToHarvest(initialPlant?.daysToHarvest || 60);
@@ -204,18 +227,29 @@ export function PlantDialog({
       setAmount(initialPlant?.amount ?? 10);
       setSpacingCm(initialPlant?.spacingCm || 30);
       setFrostHardy(initialPlant?.frostHardy ?? false);
-      setWatering(initialPlant?.watering || "");
-      setGrowingTips(initialPlant?.growingTips || "");
+      setWatering(
+        getLocalizedPlantContent(initialPlant, "watering", i18n.language) ||
+          "",
+      );
+      setGrowingTips(
+        getLocalizedPlantContent(initialPlant, "growingTips", i18n.language) ||
+          "",
+      );
       setSowIndoorMonths(initialPlant?.sowIndoorMonths || []);
       setSowDirectMonths(initialPlant?.sowDirectMonths || []);
       setHarvestMonths(initialPlant?.harvestMonths || []);
       setSunRequirement(initialPlant?.sunRequirement || "full");
-      setCompanions(initialPlant?.companions?.join(", ") || "");
-      setAntagonists(initialPlant?.antagonists?.join(", ") || "");
+      setCompanions(
+        formatPlantReferenceList(initialPlant?.companions, i18n.language),
+      );
+      setAntagonists(
+        formatPlantReferenceList(initialPlant?.antagonists, i18n.language),
+      );
       setUserOverrides(new Set());
+      setLocalizedProseDirtyFields(new Set());
       clearAiResult();
     }
-  }, [open, initialPlant, defaultIsSeed]);
+  }, [open, initialPlant, defaultIsSeed, clearAiResult, i18n.language]);
 
   // Apply AI result to form fields (only non-overridden fields)
   useEffect(() => {
@@ -242,13 +276,28 @@ export function PlantDialog({
     if (!overrides.has("harvestMonths"))
       setHarvestMonths(aiResult.harvestMonths ?? []);
     if (!overrides.has("companions"))
-      setCompanions((aiResult.companions ?? []).join(", "));
+      setCompanions(
+        formatPlantReferenceList(aiResult.companions ?? [], i18n.language),
+      );
     if (!overrides.has("antagonists"))
-      setAntagonists((aiResult.antagonists ?? []).join(", "));
+      setAntagonists(
+        formatPlantReferenceList(aiResult.antagonists ?? [], i18n.language),
+      );
     if (!overrides.has("icon") && aiResult.icon) setIcon(aiResult.icon);
     if (!overrides.has("color") && aiResult.color) setColor(aiResult.color);
+
+    setLocalizedProseDirtyFields((prev) => {
+      const next = new Set(prev);
+      if (!overrides.has("description") && aiResult.description)
+        next.add("description");
+      if (!overrides.has("watering") && aiResult.watering)
+        next.add("watering");
+      if (!overrides.has("growingTips") && aiResult.growingTips)
+        next.add("growingTips");
+      return next;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiResult, userOverrides]);
+  }, [aiResult, i18n.language, userOverrides]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -292,24 +341,31 @@ export function PlantDialog({
     if (aiResult) setUserOverrides((prev) => new Set(prev).add(field));
   };
 
+  const markLocalizedProseDirty = (field: PlantLocalizedContentField) => {
+    setLocalizedProseDirtyFields((prev) => new Set(prev).add(field));
+  };
+
   const handleSave = () => {
     if (!name.trim()) {
       setNameError(t("dialogs.plantDefinitionDialog.nameError"));
       return;
     }
     setNameError("");
-    const splitTrimmed = (s: string) =>
-      s
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
+    const parsedCompanions = parseLocalizedPlantReferenceList(
+      companions,
+      i18n.language,
+    );
+    const parsedAntagonists = parseLocalizedPlantReferenceList(
+      antagonists,
+      i18n.language,
+    );
 
-    onSave({
+    const basePlant: Plant = {
       id: initialPlant?.id || `plant-${Date.now()}`,
       name: name.trim(),
       latinName: latinName.trim() || undefined,
       variety: variety.trim(),
-      description: description.trim(),
+      description: description.trim() || undefined,
       icon,
       color,
       daysToHarvest,
@@ -328,13 +384,27 @@ export function PlantDialog({
           ? "custom"
           : (initialPlant.source ?? "custom")
         : "custom",
-      companions: splitTrimmed(companions).length
-        ? splitTrimmed(companions)
+      companions: parsedCompanions.length
+        ? parsedCompanions
         : undefined,
-      antagonists: splitTrimmed(antagonists).length
-        ? splitTrimmed(antagonists)
+      antagonists: parsedAntagonists.length
+        ? parsedAntagonists
         : undefined,
-    });
+      localizedContent: initialPlant?.localizedContent,
+    };
+
+    const proseFieldsToPersist = initialPlant
+      ? Array.from(localizedProseDirtyFields)
+      : [...LOCALIZED_PROSE_FIELDS];
+
+    onSave(
+      updatePlantLocalizedContent(
+        basePlant,
+        i18n.language,
+        { description, watering, growingTips },
+        proseFieldsToPersist,
+      ),
+    );
     onOpenChange(false);
   };
 
@@ -678,6 +748,7 @@ export function PlantDialog({
               onChange={(e) => {
                 setWatering(e.target.value);
                 markOverride("watering");
+                markLocalizedProseDirty("watering");
               }}
               placeholder={t("dialogs.plantDefinitionDialog.wateringPlaceholder")}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-18 text-sm"
@@ -695,6 +766,7 @@ export function PlantDialog({
               onChange={(e) => {
                 setGrowingTips(e.target.value);
                 markOverride("growingTips");
+                markLocalizedProseDirty("growingTips");
               }}
               placeholder={t("dialogs.plantDefinitionDialog.growingTipsPlaceholder")}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-24 text-sm"
@@ -850,6 +922,7 @@ export function PlantDialog({
               onChange={(e) => {
                 setDescription(e.target.value);
                 markOverride("description");
+                markLocalizedProseDirty("description");
               }}
               placeholder={t("dialogs.plantDefinitionDialog.descriptionPlaceholder")}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-20 text-sm"

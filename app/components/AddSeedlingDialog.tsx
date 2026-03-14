@@ -11,6 +11,10 @@ import { Button } from "./ui/button";
 import { Plant } from "./PlanterGrid";
 import { Sprout, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import {
+  getPlantDisplayName,
+  matchesPlantSearchQuery,
+} from "../i18n/utils/plantTranslation";
 
 export interface SeedlingFormData {
   plant: Plant;
@@ -36,7 +40,7 @@ export function AddSeedlingDialog({
   onAdd,
   defaultPlant,
 }: AddSeedlingDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(
     defaultPlant ?? null,
   );
@@ -85,10 +89,8 @@ export function AddSeedlingDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, selectedPlant, seedCount, location, plantedDate, method]);
 
-  const filteredPlants = plants.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.variety ?? "").toLowerCase().includes(search.toLowerCase()),
+  const filteredPlants = plants.filter((plant) =>
+    matchesPlantSearchQuery(plant, search, i18n.language),
   );
 
   const handleSave = () => {
@@ -130,7 +132,7 @@ export function AddSeedlingDialog({
                 <span className="text-2xl">{selectedPlant.icon}</span>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-black text-foreground">
-                    {selectedPlant.name}
+                    {getPlantDisplayName(selectedPlant, i18n.language)}
                   </p>
                   {selectedPlant.variety && (
                     <p className="text-[10px] text-muted-foreground font-bold uppercase">
@@ -168,7 +170,7 @@ export function AddSeedlingDialog({
                     >
                       <span className="text-xl">{p.icon}</span>
                       <span className="text-xs font-black uppercase leading-tight">
-                        {p.name}
+                        {getPlantDisplayName(p, i18n.language)}
                       </span>
                     </button>
                   ))}

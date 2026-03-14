@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Plant } from "./PlanterGrid";
-import type { SuggestionMode } from "../data/schema";
+import type { Priority, SuggestionMode } from "../data/schema";
 import { Button } from "./ui/button";
+import { getPlantName } from "../i18n/utils/plantTranslation";
 
 export interface GardenEvent {
   id: string;
@@ -180,6 +181,50 @@ const MODE_BADGE_I18N_KEYS = {
   rules: "eventsBar.modeBadges.rules",
   static: "eventsBar.modeBadges.static",
 } as const satisfies Record<SuggestionMode, string>;
+
+function getEventTypeLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  type: GardenEvent["type"],
+): string {
+  switch (type) {
+    case "planted":
+      return t("common.eventTypes.planted");
+    case "watered":
+      return t("common.eventTypes.watered");
+    case "composted":
+      return t("common.eventTypes.composted");
+    case "weeded":
+      return t("common.eventTypes.weeded");
+    case "harvested":
+      return t("common.eventTypes.harvested");
+    case "sown":
+      return t("common.eventTypes.sown");
+    case "sprouted":
+      return t("common.eventTypes.sprouted");
+    case "removed":
+      return t("common.eventTypes.removed");
+    case "pest":
+      return t("common.eventTypes.pest");
+    case "treatment":
+      return t("common.eventTypes.treatment");
+    case "observation":
+      return t("common.eventTypes.observation");
+  }
+}
+
+function getPriorityLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  priority: Priority,
+): string {
+  switch (priority) {
+    case "high":
+      return t("common.priorities.high");
+    case "medium":
+      return t("common.priorities.medium");
+    case "low":
+      return t("common.priorities.low");
+  }
+}
 
 export function EventsBar({
   events,
@@ -402,7 +447,7 @@ export function EventsBar({
                                     : "bg-blue-50 text-blue-500"
                               }`}
                             >
-                              {suggestion.priority}
+                              {getPriorityLabel(t, suggestion.priority)}
                             </span>
                             <div className="flex items-center gap-1">
                               {suggestion.source === "ai" && (
@@ -426,7 +471,10 @@ export function EventsBar({
                                 {suggestion.plant.icon}
                               </span>
                               <span className="text-[7.5px] font-black uppercase text-muted-foreground tracking-wider">
-                                {suggestion.plant.name}
+                                {getPlantName(
+                                  suggestion.plant.id,
+                                  suggestion.plant.name,
+                                )}
                               </span>
                             </div>
                           )}
@@ -478,6 +526,9 @@ export function EventsBar({
               const eventIcon = eventIcons[group.type] ?? DEFAULT_SUGGESTION_ICON;
               const IconComponent = eventIcon.icon;
               const iconColor = eventIcon.color;
+              const plantName = group.plant
+                ? getPlantName(group.plant.id, group.plant.name)
+                : undefined;
 
               return (
                 <div
@@ -493,10 +544,9 @@ export function EventsBar({
                   <div className="flex-1 min-w-0 text-xs">
                     <p className="font-semibold text-foreground truncate text-[11px]">
                       <span className="font-black">
-                        {group.type.charAt(0).toUpperCase() +
-                          group.type.slice(1)}
+                        {getEventTypeLabel(t, group.type)}
                       </span>
-                      {group.plant && ` ${group.plant.name}`}
+                      {plantName && ` ${plantName}`}
                     </p>
                     {group.note && (
                       <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">

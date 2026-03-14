@@ -30,7 +30,7 @@ function makeArea(id = "a1"): Area {
   };
 }
 
-function makePlant(id = "tomato"): Plant {
+function makePlant(id = "tomato", overrides: Partial<Plant> = {}): Plant {
   return {
     id,
     name: "Tomato",
@@ -43,6 +43,7 @@ function makePlant(id = "tomato"): Plant {
     sowIndoorMonths: [],
     sowDirectMonths: [],
     harvestMonths: [],
+    ...overrides,
   };
 }
 
@@ -163,6 +164,20 @@ describe("LocalStorageRepository — customPlants", () => {
     const repo = new LocalStorageRepository();
     await repo.savePlant(makePlant());
     expect(await repo.getCustomPlants()).toHaveLength(1);
+  });
+
+  it("normalizes companion and antagonist refs on save", async () => {
+    const repo = new LocalStorageRepository();
+    await repo.savePlant(
+      makePlant("p1", {
+        companions: ["Spring Onion", " spring onion "],
+        antagonists: ["Sweet Potato"],
+      }),
+    );
+
+    const [plant] = await repo.getCustomPlants();
+    expect(plant.companions).toEqual(["spring-onion"]);
+    expect(plant.antagonists).toEqual(["sweet-potato"]);
   });
 
   it("deletes a plant", async () => {

@@ -54,6 +54,7 @@ export function initializeSchema(): void {
       frostSensitive INTEGER,
       watering TEXT,
       growingTips TEXT,
+      localizedContent TEXT DEFAULT '{}',
       companions TEXT DEFAULT '[]',
       antagonists TEXT DEFAULT '[]',
       sowIndoorMonths TEXT DEFAULT '[]',
@@ -70,6 +71,7 @@ export function initializeSchema(): void {
   ensureColumn("plants", "frostSensitive", "INTEGER");
   ensureColumn("plants", "watering", "TEXT");
   ensureColumn("plants", "growingTips", "TEXT");
+  ensureColumn("plants", "localizedContent", "TEXT DEFAULT '{}' ");
 
   // Areas table
   db.exec(`

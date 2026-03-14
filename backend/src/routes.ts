@@ -553,6 +553,7 @@ router.get("/garden", (req: Request, res: Response) => {
             : row.frostSensitive === 1,
         watering: row.watering || undefined,
         growingTips: row.growingTips || undefined,
+        localizedContent: JSON.parse(row.localizedContent || "{}"),
         companions: JSON.parse(row.companions || "[]"),
         antagonists: JSON.parse(row.antagonists || "[]"),
         sowIndoorMonths: JSON.parse(row.sowIndoorMonths || "[]"),
@@ -678,9 +679,10 @@ router.post("/garden/sync", (req: Request, res: Response) => {
           INSERT INTO plants (
             id, name, color, icon, latinName, description, variety,
             daysToHarvest, isSeed, amount, spacingCm, frostHardy,
-            frostSensitive, watering, growingTips, companions, antagonists,
+            frostSensitive, watering, growingTips, localizedContent,
+            companions, antagonists,
             sowIndoorMonths, sowDirectMonths, harvestMonths, sunRequirement, source
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         for (const plant of plants) {
@@ -704,6 +706,7 @@ router.post("/garden/sync", (req: Request, res: Response) => {
                 : 0,
             plant.watering ?? null,
             plant.growingTips ?? null,
+            JSON.stringify(plant.localizedContent || {}),
             JSON.stringify(plant.companions || []),
             JSON.stringify(plant.antagonists || []),
             JSON.stringify(plant.sowIndoorMonths || []),

@@ -22,6 +22,10 @@ import {
   parseTreatmentOptionsResponse,
   sanitizeTreatmentObservation,
 } from "../../services/ai/treatmentOptions";
+import { buildAISuggestionContext } from "../../services/suggestions/aiSuggestions";
+import type { RuleContext, PlacedPlant } from "../../services/suggestions/types";
+import type { Plant } from "../schema";
+import { filterLowConfidenceFields } from "../../hooks/usePlantAILookup";
 
 // ---------------------------------------------------------------------------
 // prompts.ts
@@ -89,6 +93,18 @@ describe("buildPlantLookupUserPrompt", () => {
     });
     expect(prompt).not.toContain("Coordinates");
   });
+
+  it("includes the requested response language", () => {
+    const prompt = buildPlantLookupUserPrompt({
+      plantName: "Tomato",
+      locale: "nl",
+    });
+
+    expect(prompt).toContain("Response language: Dutch (nl)");
+    expect(prompt).toContain(
+      "Use canonical slug refs for companions/antagonists",
+    );
+  });
 });
 
 describe("CONFIDENCE thresholds", () => {
@@ -100,41 +116,45 @@ describe("CONFIDENCE thresholds", () => {
   });
 });
 
+const makeAiResponse = (name: string): PlantAIResponse => ({
+  name,
+  latinName: "Solanum lycopersicum",
+  description: "A fruiting vegetable.",
+  daysToHarvest: 75,
+  spacingCm: 60,
+  sunRequirement: "full",
+  watering: "Water deeply when the soil surface dries.",
+  growingTips: "Support vines and keep foliage aired out.",
+  sowIndoorMonths: [2, 3],
+  sowDirectMonths: [],
+  harvestMonths: [7, 8, 9],
+  companions: ["basil"],
+  antagonists: ["fennel"],
+  localizedCompanionLabels: {},
+  localizedAntagonistLabels: {},
+  confidence: {
+    latinName: 0.95,
+    description: 0.9,
+    daysToHarvest: 0.85,
+    spacingCm: 0.8,
+    sunRequirement: 0.95,
+    watering: 0.8,
+    growingTips: 0.78,
+    sowIndoorMonths: 0.9,
+    sowDirectMonths: 0.7,
+    harvestMonths: 0.85,
+    companions: 0.8,
+    antagonists: 0.75,
+    localizedCompanionLabels: 0.8,
+    localizedAntagonistLabels: 0.75,
+  },
+});
+
 // ---------------------------------------------------------------------------
 // PlantCache — in-memory tier (no IndexedDB needed in tests)
 // ---------------------------------------------------------------------------
 
 describe("PlantCache (in-memory)", () => {
-  const makeAiResponse = (name: string): PlantAIResponse => ({
-    name,
-    latinName: "Solanum lycopersicum",
-    description: "A fruiting vegetable.",
-    daysToHarvest: 75,
-    spacingCm: 60,
-    sunRequirement: "full",
-    watering: "Water deeply when the soil surface dries.",
-    growingTips: "Support vines and keep foliage aired out.",
-    sowIndoorMonths: [2, 3],
-    sowDirectMonths: [],
-    harvestMonths: [7, 8, 9],
-    companions: ["basil"],
-    antagonists: ["fennel"],
-    confidence: {
-      latinName: 0.95,
-      description: 0.9,
-      daysToHarvest: 0.85,
-      spacingCm: 0.8,
-      sunRequirement: 0.95,
-      watering: 0.8,
-      growingTips: 0.78,
-      sowIndoorMonths: 0.9,
-      sowDirectMonths: 0.7,
-      harvestMonths: 0.85,
-      companions: 0.8,
-      antagonists: 0.75,
-    },
-  });
-
   // Mock the Dexie db to avoid real IndexedDB calls in tests
   beforeEach(() => {
     vi.mock("../../data/dexieRepository", () => ({
@@ -170,6 +190,49 @@ describe("PlantCache (in-memory)", () => {
     // Retrieve with alias
     const result = await cache.get("zucchini");
     expect(result).toEqual(data);
+  });
+
+  it("separates cache entries by locale", async () => {
+    const cache = new PlantCache();
+    const data = makeAiResponse("tomato");
+
+    await cache.set("tomato", data, "gemini", undefined, undefined, "nl");
+
+    expect(await cache.get("tomato", undefined, undefined, "nl")).toEqual(
+      data,
+    );
+    expect(await cache.get("tomato", undefined, undefined, "en")).toBeNull();
+  });
+});
+
+describe("filterLowConfidenceFields", () => {
+  it("drops unknown relationship refs that have no localized label", () => {
+    const filtered = filterLowConfidenceFields(
+      {
+        ...makeAiResponse("tomato"),
+        companions: ["basil", "mystery herb"],
+        localizedCompanionLabels: {},
+      },
+      "nl",
+    );
+
+    expect(filtered.companions).toEqual(["basil"]);
+  });
+
+  it("keeps unknown refs when AI provides a localized label", () => {
+    const filtered = filterLowConfidenceFields(
+      {
+        ...makeAiResponse("tomato"),
+        companions: ["mystery herb"],
+        localizedCompanionLabels: { "mystery herb": "Mysterie Kruid" },
+      },
+      "nl",
+    );
+
+    expect(filtered.companions).toEqual(["mystery-herb"]);
+    expect(filtered.localizedCompanionLabels).toEqual({
+      "mystery-herb": "Mysterie Kruid",
+    });
   });
 });
 
@@ -225,6 +288,16 @@ describe("treatment option helpers", () => {
     expect(prompt).toContain("Koppen-Geiger zone: Cfb");
     expect(prompt).toContain("preferring biological or low-toxicity");
   });
+
+  it("includes the requested treatment response language", () => {
+    const prompt = buildTreatmentOptionsPrompt({
+      plantName: "Strawberry",
+      latestPestNote: "aphids on the new growth",
+      locale: "nl-NL",
+    });
+
+    expect(prompt).toContain("Response language: Dutch (nl)");
+  });
 });
 
 describe("parseTreatmentOptionsResponse", () => {
@@ -267,5 +340,60 @@ describe("parseTreatmentOptionsResponse", () => {
     expect(parsed.verifyFirst).toBe(true);
     expect(parsed.options).toHaveLength(1);
     expect(parsed.options[0]?.title).toBe("Inspect the crown and roots");
+  });
+});
+
+describe("buildAISuggestionContext", () => {
+  it("includes locale-aware display names for AI suggestion prose", () => {
+    const plant: Plant = {
+      id: "lettuce",
+      name: "Lettuce",
+      color: "#84cc16",
+      icon: "🥬",
+      companions: [],
+      antagonists: [],
+      sowIndoorMonths: [],
+      sowDirectMonths: [],
+      harvestMonths: [],
+      isSeed: false,
+      source: "bundled",
+    };
+
+    const placedPlant: PlacedPlant = {
+      instanceId: "inst-1",
+      plant,
+      pestEvents: [],
+      planterId: "planter-1",
+      planterName: "Bed 1",
+      areaId: "area-1",
+      areaName: "Garden",
+      adjacentPlantNames: ["Broccoli"],
+      adjacentPlants: [{ id: "broccoli", name: "Broccoli" }],
+      growthStage: null,
+      healthState: null,
+    };
+
+    const ctx: RuleContext = {
+      currentMonth: 5,
+      today: new Date("2026-05-15T00:00:00.000Z"),
+      koeppenZone: "Cfb",
+      lat: 52,
+      lng: 4,
+      placedPlants: [placedPlant],
+      seedlings: [],
+      lastEvents: new Map(),
+      weather: null,
+    };
+
+    const aiContext = buildAISuggestionContext(ctx, [], "nl");
+
+    expect(aiContext.responseLocale).toBe("nl");
+    expect(aiContext.responseLanguage).toBe("Dutch");
+    expect(aiContext.plants[0]).toMatchObject({
+      name: "Lettuce",
+      displayName: "Sla",
+      adjacentPlants: ["Broccoli"],
+      adjacentPlantDisplayNames: ["Broccoli"],
+    });
   });
 });

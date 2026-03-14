@@ -11,6 +11,8 @@
 
 import { useState, useMemo } from "react";
 import type { GardenRepository } from "../data/repository";
+import i18n from "../i18n/config";
+import { matchesPlantSearchQuery } from "../i18n/utils/plantTranslation";
 import {
   dismissErrorToast,
   ERROR_TOAST_IDS,
@@ -56,6 +58,7 @@ export function usePlantCatalog({
   areas,
   repositoryRef,
 }: UsePlantCatalogParams): PlantCatalogState {
+  const activeLocale = i18n.language;
   const [showAddPlantModal, setShowAddPlantModal] = useState(false);
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
   const [dialogDefaultIsSeed, setDialogDefaultIsSeed] = useState(false);
@@ -64,10 +67,14 @@ export function usePlantCatalog({
   );
   const [plantsSearch, setPlantsSearch] = useState("");
 
-  const AVAILABLE_PLANTS = customPlants.map((p) => ({
-    ...p,
-    isSeed: p.isSeed ?? false,
-  }));
+  const AVAILABLE_PLANTS = useMemo(
+    () =>
+      customPlants.map((p) => ({
+        ...p,
+        isSeed: p.isSeed ?? false,
+      })),
+    [customPlants],
+  );
 
   const getUsedPlantCount = (plantId: string): number => {
     let count = 0;
@@ -111,15 +118,14 @@ export function usePlantCatalog({
           plantsFilter === "all" ||
           (plantsFilter === "plants" && !plant.isSeed) ||
           (plantsFilter === "seeds" && plant.isSeed);
-        const matchesSearch =
-          !plantsSearch.trim() ||
-          plant.name.toLowerCase().includes(plantsSearch.toLowerCase()) ||
-          (plant.variety ?? "")
-            .toLowerCase()
-            .includes(plantsSearch.toLowerCase());
+        const matchesSearch = matchesPlantSearchQuery(
+          plant,
+          plantsSearch,
+          activeLocale,
+        );
         return matchesFilter && matchesSearch;
       }),
-    [AVAILABLE_PLANTS, plantsFilter, plantsSearch],
+    [AVAILABLE_PLANTS, plantsFilter, plantsSearch, activeLocale],
   );
 
   const handleAddPlant = (plant: Plant) => {

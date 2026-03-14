@@ -1,6 +1,11 @@
 import type { Area, Plant, GrowthStage, HealthState } from "../data/schema";
 import { getEffectiveGrowthStage } from "./plantGrowthStage";
 
+export interface AdjacentPlantRef {
+  id: string;
+  name: string;
+}
+
 export interface PlacedPlant {
   instanceId: string;
   plant: Plant;
@@ -17,24 +22,27 @@ export interface PlacedPlant {
   areaId: string;
   areaName: string;
   adjacentPlantNames: string[];
+  adjacentPlants?: AdjacentPlantRef[];
   /** Effective growth stage: auto-derived unless overridden. Null when unknown. */
   growthStage: GrowthStage | null;
   /** Explicit health state set by the user. Null when unset. */
   healthState: HealthState | null;
 }
 
-function buildAdjacentPlantNames(
+function buildAdjacentPlants(
   squares:
     | Array<
         Array<{
-          plantInstance: { instanceId: string; plant: { name: string } } | null;
+          plantInstance:
+            | { instanceId: string; plant: { id: string; name: string } }
+            | null;
         }>
       >
     | undefined,
   rows: number,
   cols: number,
-): Map<string, string[]> {
-  const result = new Map<string, string[]>();
+): Map<string, AdjacentPlantRef[]> {
+  const result = new Map<string, AdjacentPlantRef[]>();
   if (!squares) return result;
 
   for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
@@ -42,7 +50,7 @@ function buildAdjacentPlantNames(
       const cell = squares[rowIndex]?.[colIndex]?.plantInstance;
       if (!cell) continue;
 
-      const adjacentPlantNames: string[] = [];
+      const adjacentPlants: AdjacentPlantRef[] = [];
       const deltas = [
         [-1, 0],
         [1, 0],
@@ -59,11 +67,14 @@ function buildAdjacentPlantNames(
 
         const neighbor = squares[nextRow]?.[nextCol]?.plantInstance;
         if (neighbor && neighbor.instanceId !== cell.instanceId) {
-          adjacentPlantNames.push(neighbor.plant.name);
+          adjacentPlants.push({
+            id: neighbor.plant.id,
+            name: neighbor.plant.name,
+          });
         }
       }
 
-      result.set(cell.instanceId, adjacentPlantNames);
+      result.set(cell.instanceId, adjacentPlants);
     }
   }
 
@@ -75,7 +86,7 @@ export function buildPlacedPlants(areas: Area[]): PlacedPlant[] {
 
   for (const area of areas) {
     for (const planter of area.planters) {
-      const adjacentMap = buildAdjacentPlantNames(
+      const adjacentMap = buildAdjacentPlants(
         planter.squares,
         planter.rows,
         planter.cols,
@@ -98,7 +109,10 @@ export function buildPlacedPlants(areas: Area[]): PlacedPlant[] {
             planterName: planter.name,
             areaId: area.id,
             areaName: area.name,
-            adjacentPlantNames: adjacentMap.get(instanceId) ?? [],
+            adjacentPlantNames: (adjacentMap.get(instanceId) ?? []).map(
+              (adjacentPlant) => adjacentPlant.name,
+            ),
+            adjacentPlants: adjacentMap.get(instanceId) ?? [],
             growthStage: getEffectiveGrowthStage(cell.plantInstance),
             healthState: cell.plantInstance.healthState ?? null,
           });

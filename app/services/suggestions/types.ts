@@ -27,6 +27,8 @@ export interface RuleContext {
   currentMonth: number;
   /** Today's date at midnight UTC for age calculations. */
   today: Date;
+  /** Active UI locale used for localized suggestion text. */
+  locale?: string;
   /** Köppen–Geiger zone code from settings.growthZone, e.g. "Cfb". */
   koeppenZone: string;
   lat?: number;
@@ -85,6 +87,7 @@ export interface AISuggestionResult {
 
 export interface AISuggestionContextPlant {
   name: string;
+  displayName: string;
   planterName: string;
   plantedDaysAgo?: number;
   daysToHarvest?: number;
@@ -93,10 +96,12 @@ export interface AISuggestionContextPlant {
   companions: string[];
   antagonists: string[];
   adjacentPlants: string[];
+  adjacentPlantDisplayNames: string[];
 }
 
 export interface AISuggestionContextSeedling {
   name: string;
+  displayName: string;
   status: string;
   daysSinceSeeded: number;
 }
@@ -111,6 +116,8 @@ export interface AISuggestionContext {
   koeppenZone: string;
   hemisphere: "N" | "S";
   currentMonth: number;
+  responseLocale: "en" | "nl";
+  responseLanguage: string;
   weather: {
     todayTempMaxC: number;
     todayPrecipMm: number;

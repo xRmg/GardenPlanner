@@ -18,6 +18,7 @@ import {
   isAbortError,
   notifyErrorToast,
 } from "../lib/asyncErrors";
+import { getPlantName } from "../i18n/utils/plantTranslation";
 import { OpenRouterClient } from "../services/ai/openrouter";
 import {
   buildTreatmentOptionsPrompt,
@@ -30,14 +31,6 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
 const CUSTOM_NOTE_MAX_LENGTH = 180;
-
-const METHOD_LABELS: Record<TreatmentMethod, string> = {
-  biological: "Biological",
-  mechanical: "Mechanical",
-  cultural: "Cultural",
-  monitor: "Monitor",
-  synthetic: "Synthetic",
-};
 
 const METHOD_BADGES: Record<TreatmentMethod, string> = {
   biological: "bg-emerald-50 text-emerald-700 border border-emerald-200",
@@ -65,15 +58,18 @@ interface TreatmentOptionsDialogProps {
   onApplyTreatment: (note: string) => void;
 }
 
-function buildTreatmentLogNote(option: TreatmentOption): string {
-  const value = `${METHOD_LABELS[option.methodType]}: ${option.title} - ${option.summary}`;
+function buildTreatmentLogNote(
+  option: TreatmentOption,
+  methodLabel: string,
+): string {
+  const value = `${methodLabel}: ${option.title} - ${option.summary}`;
   return value.length > CUSTOM_NOTE_MAX_LENGTH
     ? `${value.slice(0, CUSTOM_NOTE_MAX_LENGTH - 1)}...`
     : value;
 }
 
-function formatEventDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("en-US", {
+function formatEventDate(dateString: string, locale: string): string {
+  return new Date(dateString).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -87,7 +83,7 @@ export function TreatmentOptionsDialog({
   settings,
   onApplyTreatment,
 }: TreatmentOptionsDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [result, setResult] = useState<TreatmentOptionsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -97,19 +93,25 @@ export function TreatmentOptionsDialog({
   const abortRef = useRef<AbortController | null>(null);
 
   const hasAi = settings.aiProvider.type === "server";
+  const locale = settings.locale || i18n.language || "en";
 
   const promptPayload = useMemo(() => {
     if (!target) return null;
+    const plantName = getPlantName(
+      target.plantInstance.plant.id,
+      target.plantInstance.plant.name,
+    );
     return buildTreatmentOptionsPrompt({
-      plantName: target.plantInstance.plant.name,
+      plantName,
       variety:
         target.plantInstance.variety ?? target.plantInstance.plant.variety,
       location: settings.location,
       growthZone: settings.growthZone,
       latestPestNote: target.latestPest.description,
       latestTreatmentNote: target.latestTreatment?.description,
+      locale,
     });
-  }, [settings.growthZone, settings.location, target]);
+  }, [locale, settings.growthZone, settings.location, target]);
 
   useEffect(() => {
     if (!open) {
@@ -189,8 +191,16 @@ export function TreatmentOptionsDialog({
 
   if (!target) return null;
 
+  const displayPlantName = getPlantName(
+    target.plantInstance.plant.id,
+    target.plantInstance.plant.name,
+  );
+
   const applySuggestedOption = (option: TreatmentOption) => {
-    onApplyTreatment(buildTreatmentLogNote(option));
+    const methodLabel = t(
+      `dialogs.treatmentOptionsDialog.categoryLabels.${option.methodType}`,
+    );
+    onApplyTreatment(buildTreatmentLogNote(option, methodLabel));
     onOpenChange(false);
   };
 
@@ -214,7 +224,7 @@ export function TreatmentOptionsDialog({
           </DialogTitle>
           <DialogDescription>
             {t("dialogs.treatmentOptionsDialog.subtitle", {
-              plant: target.plantInstance.plant.name,
+              plant: displayPlantName,
               planter: target.planterName,
               area: target.areaName,
             })}
@@ -233,7 +243,9 @@ export function TreatmentOptionsDialog({
                   {target.latestPest.description}
                 </div>
                 <div className="text-xs text-amber-700/70 mt-1">
-                  {t("dialogs.treatmentOptionsDialog.logged", { date: formatEventDate(target.latestPest.date) })}
+                  {t("dialogs.treatmentOptionsDialog.logged", {
+                    date: formatEventDate(target.latestPest.date, locale),
+                  })}
                 </div>
               </div>
             </div>

@@ -5,13 +5,13 @@
  *   1. In-memory Map (instant, lost on page refresh)
  *   2. Dexie/IndexedDB (persistent, 30-day TTL)
  *
- * Key format: "name|latinName|koeppenZone" (lowercase, trimmed).
+ * Key format: "name|latinName|koeppenZone|locale" (lowercase, trimmed).
  * Pre-seed with built-in plants to avoid AI calls for well-known plants.
  */
 
 import { getGardenPlannerDB } from "../../data/dexieRepository";
 import type { Plant } from "../../data/schema";
-import { normalizePlantName } from "./prompts";
+import { normalizePlantReference } from "../../lib/plantReferences";
 import type { PlantAIResponse } from "./prompts";
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -30,8 +30,11 @@ export class PlantCache {
     name: string,
     latinName?: string,
     koeppenZone?: string,
+    locale?: string,
   ): string {
-    return [normalizePlantName(name), latinName, koeppenZone]
+    const normalizedLocale = locale?.split("-")[0]?.toLowerCase() ?? "en";
+
+    return [normalizePlantReference(name), latinName, koeppenZone, normalizedLocale]
       .filter(Boolean)
       .map((s) => s!.toLowerCase().trim())
       .join("|");
@@ -41,8 +44,9 @@ export class PlantCache {
     name: string,
     latinName?: string,
     koeppenZone?: string,
+    locale?: string,
   ): Promise<PlantAIResponse | null> {
-    const key = this.normalizeKey(name, latinName, koeppenZone);
+    const key = this.normalizeKey(name, latinName, koeppenZone, locale);
 
     // 1. Memory cache
     const mem = this.memCache.get(key);
@@ -78,8 +82,9 @@ export class PlantCache {
     model: string,
     latinName?: string,
     koeppenZone?: string,
+    locale?: string,
   ): Promise<void> {
-    const key = this.normalizeKey(name, latinName, koeppenZone);
+    const key = this.normalizeKey(name, latinName, koeppenZone, locale);
     const entry = { data, timestamp: Date.now(), model };
     this.memCache.set(key, entry);
     try {
@@ -113,8 +118,10 @@ export class PlantCache {
         sowIndoorMonths: p.sowIndoorMonths ?? [],
         sowDirectMonths: p.sowDirectMonths ?? [],
         harvestMonths: p.harvestMonths ?? [],
-        companions: p.companions ?? [],
-        antagonists: p.antagonists ?? [],
+        companions: (p.companions ?? []).map(normalizePlantReference),
+        antagonists: (p.antagonists ?? []).map(normalizePlantReference),
+        localizedCompanionLabels: {},
+        localizedAntagonistLabels: {},
         icon: p.icon,
         color: p.color,
         confidence: {
@@ -130,6 +137,8 @@ export class PlantCache {
           harvestMonths: 1,
           companions: 1,
           antagonists: 1,
+          localizedCompanionLabels: 1,
+          localizedAntagonistLabels: 1,
           icon: 1,
           color: 1,
         },

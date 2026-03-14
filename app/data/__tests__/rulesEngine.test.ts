@@ -10,6 +10,7 @@ import {
   runRules,
   buildRuleContext,
 } from "../../services/suggestions/rulesEngine";
+import { mergeSuggestions } from "../../services/suggestions/merger";
 import type {
   RuleContext,
   PlacedPlant,
@@ -57,6 +58,7 @@ function makeContext(overrides: Partial<RuleContext> = {}): RuleContext {
   return {
     currentMonth: 5, // May
     today: new Date("2026-05-15T00:00:00.000Z"),
+    locale: "en",
     koeppenZone: "Cfb",
     lat: 52,
     lng: 4,
@@ -350,6 +352,41 @@ describe("watering rule", () => {
     const results = runRules(ctx);
     const waterResult = results.find((r) => r.type === "water");
     expect(waterResult).toBeUndefined();
+  });
+});
+
+describe("suggestion localization", () => {
+  it("localizes rule descriptions using the active locale", () => {
+    const ctx = makeContext({
+      locale: "nl",
+      placedPlants: [
+        makePlacedPlant({
+          plant: makePlant({
+            id: "tomato",
+            name: "Tomato",
+            daysToHarvest: 60,
+          }),
+          plantingDate: "2026-03-01T00:00:00.000Z",
+        }),
+      ],
+    });
+
+    const harvestResult = runRules(ctx).find((result) => result.type === "harvest");
+
+    expect(harvestResult?.description).toBe(
+      "Tomaat is al aan oogst toe — oogst nu om doorschieten te voorkomen",
+    );
+  });
+
+  it("localizes empty-state static tips", () => {
+    const suggestions = mergeSuggestions([], [], true, "nl");
+
+    expect(suggestions[0]?.description).toBe(
+      "Voeg planten toe aan je planters om persoonlijke suggesties te krijgen",
+    );
+    expect(suggestions[1]?.description).toBe(
+      "Probeer combinatieteelt — basilicum en tomaten groeien goed samen",
+    );
   });
 });
 

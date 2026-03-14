@@ -5,6 +5,14 @@
  * for the AI plant data lookup feature.
  */
 
+export {
+  PLANT_ALIASES,
+  normalizePlantName,
+  normalizePlantReference,
+} from "../../lib/plantReferences";
+
+import { getAIResponseLanguage } from "./locale";
+
 // ---------------------------------------------------------------------------
 // Response type
 // ---------------------------------------------------------------------------
@@ -22,8 +30,12 @@ export interface PlantAIResponse {
   sowIndoorMonths: number[];
   sowDirectMonths: number[];
   harvestMonths: number[];
+  /** Canonical relationship refs (locale-independent slugs). */
   companions: string[];
   antagonists: string[];
+  /** Optional localized labels for the requested response language, keyed by canonical ref. */
+  localizedCompanionLabels?: Record<string, string>;
+  localizedAntagonistLabels?: Record<string, string>;
   /** Single emoji, only when confidence is high. */
   icon?: string;
   /** Hex colour, only when confidence is high. */
@@ -41,6 +53,8 @@ export interface PlantAIResponse {
     harvestMonths: number;
     companions: number;
     antagonists: number;
+    localizedCompanionLabels?: number;
+    localizedAntagonistLabels?: number;
     icon?: number;
     color?: number;
   };
@@ -70,12 +84,17 @@ Rules:
 - All month fields use 1-indexed arrays (1=January, 12=December)
 - Interpret sowing and harvest windows using the supplied Köppen–Geiger climate zone and coordinates when provided
 - spacingCm is the minimum distance between plants in centimeters
-- companions and antagonists are lowercase plant names
+- companions and antagonists are canonical lowercase plant slugs using hyphens for spaces
 - daysToHarvest is from transplant/direct sow to first harvest
 - sunRequirement is one of: "full", "partial", "shade"
 - watering should be a short practical watering note focused on frequency or soil moisture
 - growingTips should be 1-2 concise practical sentences
 - description should be 1-2 practical growing sentences, not marketing copy
+- Write description, watering, and growingTips in the requested response language.
+- Keep companions and antagonists locale-independent. Do not translate the canonical slug arrays.
+- Include localizedCompanionLabels and localizedAntagonistLabels as objects keyed by canonical ref.
+- Each localized label value must be written in the requested response language.
+- If you do not know a localized label for a returned ref, omit that ref from the localized label object.
 - icon and color are optional convenience fields; only include them when confidence is high
 - Include a confidence object with a score (0-1) for each AI-managed field
 
@@ -95,6 +114,8 @@ Return ONLY valid JSON with EXACTLY these field names:
   "harvestMonths": number[],
   "companions": string[],
   "antagonists": string[],
+  "localizedCompanionLabels": { [canonicalRef: string]: string },
+  "localizedAntagonistLabels": { [canonicalRef: string]: string },
   "icon": string (optional, single emoji),
   "color": string (optional, hex color),
   "confidence": {
@@ -109,7 +130,9 @@ Return ONLY valid JSON with EXACTLY these field names:
     "sowDirectMonths": number,
     "harvestMonths": number,
     "companions": number,
-    "antagonists": number
+    "antagonists": number,
+    "localizedCompanionLabels": number,
+    "localizedAntagonistLabels": number
   }
 }`;
 
@@ -143,6 +166,14 @@ export const PLANT_LOOKUP_SCHEMA = {
     },
     companions: { type: "array", items: { type: "string" } },
     antagonists: { type: "array", items: { type: "string" } },
+    localizedCompanionLabels: {
+      type: "object",
+      additionalProperties: { type: "string" },
+    },
+    localizedAntagonistLabels: {
+      type: "object",
+      additionalProperties: { type: "string" },
+    },
     icon: { type: "string", description: "Single emoji" },
     color: { type: "string", description: "Hex color code" },
     confidence: {
@@ -160,6 +191,8 @@ export const PLANT_LOOKUP_SCHEMA = {
         harvestMonths: { type: "number" },
         companions: { type: "number" },
         antagonists: { type: "number" },
+        localizedCompanionLabels: { type: "number" },
+        localizedAntagonistLabels: { type: "number" },
         icon: { type: "number" },
         color: { type: "number" },
       },
@@ -205,7 +238,9 @@ export function buildPlantLookupUserPrompt(input: {
   koeppenZone?: string;
   latitude?: number;
   longitude?: number;
+  locale?: string;
 }): string {
+  const { locale, languageName } = getAIResponseLanguage(input.locale);
   const lines = [`Plant: "${truncate(input.plantName, 80, "plantName")}"`];
   if (input.variety) lines.push(`Variety: "${truncate(input.variety, 80, "variety")}"`);
   if (input.koeppenZone) {
@@ -217,26 +252,9 @@ export function buildPlantLookupUserPrompt(input: {
   ) {
     lines.push(`Coordinates: ${input.latitude}, ${input.longitude}`);
   }
+  lines.push(`Response language: ${languageName} (${locale})`);
+  lines.push(
+    "Use canonical slug refs for companions/antagonists and provide localizedCompanionLabels/localizedAntagonistLabels keyed by those refs when known.",
+  );
   return lines.join("\n");
-}
-
-// ---------------------------------------------------------------------------
-// Common plant alias map — prevents duplicate lookups for regional name variants
-// ---------------------------------------------------------------------------
-
-export const PLANT_ALIASES: Record<string, string> = {
-  zucchini: "courgette",
-  "bell pepper": "pepper",
-  "sweet pepper": "pepper",
-  chili: "chilli",
-  cilantro: "coriander",
-  arugula: "rocket",
-  eggplant: "aubergine",
-  "green onion": "spring onion",
-  scallion: "spring onion",
-};
-
-export function normalizePlantName(name: string): string {
-  const lower = name.toLowerCase().trim();
-  return PLANT_ALIASES[lower] ?? lower;
 }

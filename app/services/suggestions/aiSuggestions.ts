@@ -12,8 +12,10 @@
  */
 
 import { OpenRouterClient } from "../ai/openrouter";
+import { getAIResponseLanguage } from "../ai/locale";
 import { truncate } from "../ai/prompts";
 import { RateLimiter } from "../ai/rateLimiter";
+import { getPlantName } from "../../i18n/utils/plantTranslation";
 import type {
   RuleContext,
   AISuggestionContext,
@@ -79,6 +81,12 @@ SUGGESTION PRINCIPLES
 - Each suggestion must be directly supported by at least one piece of data in
   the input context (plant name, planting date, weather reading, seedling status).
   Never invent plants or events not present in the context.
+- The input includes responseLocale and responseLanguage.
+- Write description and rationale entirely in responseLanguage.
+- If a plant or seedling includes displayName fields, use those localized names
+  in prose.
+- Keep plantName and planterName in the JSON response equal to the canonical
+  input name and planterName values so the application can match entities.
 - description: one imperative sentence, ≤ 120 characters, no plant emoji.
 - rationale: one internal sentence (≤ 100 chars) explaining why — for logging only,
   never displayed to the user.
@@ -127,9 +135,12 @@ Return schema (JSON):
 export function buildAISuggestionContext(
   ctx: RuleContext,
   ruleResults: SuggestionResult[],
+  locale?: string,
 ): AISuggestionContext {
   const today = ctx.today;
   const hemisphere: "N" | "S" = (ctx.lat ?? 45) >= 0 ? "N" : "S";
+  const { locale: responseLocale, languageName: responseLanguage } =
+    getAIResponseLanguage(locale);
 
   // Weather summary
   let weatherSummary: AISuggestionContext["weather"] = null;
@@ -167,8 +178,16 @@ export function buildAISuggestionContext(
           (1000 * 60 * 60 * 24),
       );
     }
+
+    const displayName = truncate(
+      getPlantName(p.plant.id, p.plant.name, responseLocale),
+      80,
+      "plant.displayName",
+    );
+
     return {
       name: truncate(p.plant.name, 80, "plant.name"),
+      displayName,
       planterName: truncate(p.planterName, 80, "planterName"),
       plantedDaysAgo,
       daysToHarvest: p.plant.daysToHarvest,
@@ -177,12 +196,24 @@ export function buildAISuggestionContext(
       companions: p.plant.companions,
       antagonists: p.plant.antagonists,
       adjacentPlants: p.adjacentPlantNames,
+      adjacentPlantDisplayNames: (p.adjacentPlants ?? []).map((adjacentPlant) =>
+        truncate(
+          getPlantName(adjacentPlant.id, adjacentPlant.name, responseLocale),
+          80,
+          "plant.adjacentDisplayName",
+        ),
+      ),
     };
   });
 
   // Seedlings
   const seedlings = ctx.seedlings.map((s) => ({
     name: truncate(s.plant.name, 80, "seedling.name"),
+    displayName: truncate(
+      getPlantName(s.plant.id, s.plant.name, responseLocale),
+      80,
+      "seedling.displayName",
+    ),
     status: s.status,
     daysSinceSeeded: Math.floor(
       (today.getTime() - new Date(s.plantedDate).getTime()) /
@@ -218,6 +249,8 @@ export function buildAISuggestionContext(
     koeppenZone: ctx.koeppenZone,
     hemisphere,
     currentMonth: ctx.currentMonth,
+    responseLocale,
+    responseLanguage,
     weather: weatherSummary,
     plants,
     seedlings,
@@ -325,7 +358,7 @@ export async function getAISuggestions(
 ): Promise<AISuggestionResult[]> {
   if (settings.aiProvider.type === "none") return [];
   if (!settings.lat || !settings.lng) return [];
-  const aiContext = buildAISuggestionContext(ctx, ruleResults);
+  const aiContext = buildAISuggestionContext(ctx, ruleResults, settings.locale);
 
   // Check cache first
   const cached = await getCachedAISuggestions(aiContext);
@@ -360,7 +393,7 @@ export async function getAISuggestions(
     ],
     {
       temperature: 0.3,
-      maxTokens: 8192,
+      maxTokens: 1536,
       responseFormat: { type: "json_object" },
       signal,
     },

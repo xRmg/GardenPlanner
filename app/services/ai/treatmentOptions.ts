@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getAIResponseLanguage } from "./locale";
 
 export const TreatmentMethodSchema = z.enum([
   "biological",
@@ -37,6 +38,7 @@ export interface TreatmentOptionsPromptInput {
   growthZone?: string;
   latestPestNote: string;
   latestTreatmentNote?: string;
+  locale?: string;
 }
 
 const METHOD_ORDER: Record<TreatmentMethod, number> = {
@@ -59,6 +61,8 @@ Rules:
 - If the pest note may be wrong or mismatched for the crop, set verifyFirst=true.
 - Give 2 to 4 options total.
 - Each option must be concise and actionable.
+- Write summary, titles, summaries, steps, and cautions in the requested response language.
+- Keep JSON keys and methodType enum values in English.
 
 Return EXACTLY this schema:
 {
@@ -87,6 +91,7 @@ export function sanitizeTreatmentObservation(
 export function buildTreatmentOptionsPrompt(
   input: TreatmentOptionsPromptInput,
 ): string {
+  const { locale, languageName } = getAIResponseLanguage(input.locale);
   const lines = [
     `Plant: "${sanitizeTreatmentObservation(input.plantName, 80)}"`,
     `Observed pest note: "${sanitizeTreatmentObservation(input.latestPestNote)}"`,
@@ -110,6 +115,8 @@ export function buildTreatmentOptionsPrompt(
       `Most recent treatment note: "${sanitizeTreatmentObservation(input.latestTreatmentNote)}"`,
     );
   }
+
+  lines.push(`Response language: ${languageName} (${locale})`);
 
   lines.push(
     "Goal: propose home-garden treatment options, preferring biological or low-toxicity controls before synthetic products.",

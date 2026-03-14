@@ -54,6 +54,22 @@ describe("PlantSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts localized plant prose overrides", () => {
+    const result = PlantSchema.safeParse({
+      ...validPlant,
+      description: "Legacy fallback description.",
+      localizedContent: {
+        nl: {
+          description: "Nederlandse beschrijving.",
+          watering: null,
+          growingTips: "Regelmatig toppen.",
+        },
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("rejects a plant with an empty name", () => {
     const result = PlantSchema.safeParse({ ...validPlant, name: "" });
     expect(result.success).toBe(false);

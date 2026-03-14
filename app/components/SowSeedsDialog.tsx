@@ -13,6 +13,7 @@ import { Input } from "./ui/input";
 import { Plant } from "./PlanterGrid";
 import { Sprout } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
 
 interface SowSeedsDialogProps {
   open: boolean;
@@ -27,7 +28,7 @@ export function SowSeedsDialog({
   plant,
   onSow,
 }: SowSeedsDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [seedCount, setSeedCount] = useState(1);
   const [location, setLocation] = useState("Indoor Tray");
 
@@ -72,7 +73,9 @@ export function SowSeedsDialog({
             </div>
             <div>
               <DialogTitle className="text-xl font-black tracking-tight">
-                {t("dialogs.sowSeedsDialog.title", { name: plant.name })}
+                {t("dialogs.sowSeedsDialog.title", {
+                  name: getPlantDisplayName(plant, i18n.language),
+                })}
               </DialogTitle>
               <DialogDescription className="text-xs uppercase font-bold tracking-widest text-muted-foreground/60">
                 {t("dialogs.sowSeedsDialog.description")}

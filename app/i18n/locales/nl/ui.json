@@ -21,7 +21,25 @@
     "infiniteUnlimited": "∞ Onbeperkt",
     "infinite": "∞",
     "seeds": "zaden",
-    "qty": "aantal"
+    "qty": "aantal",
+    "priorities": {
+      "high": "Hoog",
+      "medium": "Gemiddeld",
+      "low": "Laag"
+    },
+    "eventTypes": {
+      "planted": "Geplant",
+      "watered": "Water gegeven",
+      "composted": "Gecomposteerd",
+      "weeded": "Gewied",
+      "harvested": "Geoogst",
+      "sown": "Gezaaid",
+      "sprouted": "Ontkiemd",
+      "removed": "Verwijderd",
+      "pest": "Plaag gemeld",
+      "treatment": "Behandeling geregistreerd",
+      "observation": "Observatie"
+    }
   },
   "toolbar": {
     "garden": "Tuin",
@@ -67,6 +85,25 @@
       "rulesWeather": "🌤 Weer",
       "rules": "📅 Regels",
       "static": "📋 Tips"
+    },
+    "staticTips": {
+      "addPlants": "Voeg planten toe aan je planters om persoonlijke suggesties te krijgen",
+      "companionPlanting": "Probeer combinatieteelt — basilicum en tomaten groeien goed samen"
+    },
+    "suggestionDescriptions": {
+      "timeToWeed": "Het is tijd om {{planterName}} te wieden — de omstandigheden bevorderen onkruidgroei",
+      "startSeedsIndoors": "Zaai {{plantName}} nu binnen voor — het zaaivenster is open",
+      "sowDirectly": "Zaai {{plantName}} direct buiten — de omstandigheden zijn geschikt",
+      "checkHarvestReady": "Controleer of {{plantName}} oogstklaar is",
+      "harvestOverdue": "{{plantName}} is al aan oogst toe — oogst nu om doorschieten te voorkomen",
+      "harvestThisWeek": "{{plantName}} zou deze week oogstklaar moeten zijn",
+      "approachingHarvest": "{{plantName}} nadert het oogstmoment",
+      "harvestWindow": "{{plantName}} zit nu in het oogstvenster",
+      "addCompostOrFertilizer": "Voeg compost of mest toe aan {{planterName}}",
+      "waterLowMoisture": "Geef {{planterName}} water — de bodem is te droog",
+      "noNeedToWaterRain": "Geen water nodig voor {{planterName}} — er wordt {{mm}} mm regen verwacht",
+      "frostRiskProtect": "Vorstrisico in {{planterName}} — bescherm vorstgevoelige planten vannacht",
+      "reviewTreatment": "Controleer {{plantName}} en behandel de recente plaag"
     }
   },
   "areas": {
@@ -266,17 +303,17 @@
       "sowIndoors": "Binnen Zaaien",
       "sowDirect": "Direct / Buiten Zaaien",
       "harvestMonths": "Oogstmaanden",
-      "goodWith": "Goed Mee",
+      "goodWith": "Gaat goed samen met",
       "goodWithPlaceholder": "basilicum, wortel, ui",
-      "avoidNear": "Vermijd Naast",
+      "avoidNear": "Niet naast zetten",
       "avoidNearPlaceholder": "venkel, aardappel",
       "shortDescription": "Korte Beschrijving",
-      "descriptionPlaceholder": "Vertel ons over deze plant...",
+      "descriptionPlaceholder": "Beschrijf deze plant kort...",
       "savePlant": "Plant Opslaan",
       "nameError": "Voer een plantnaam in"
     },
     "plantPickerDialog": {
-      "titleTransplant": "Selecteer Plant om te Verpotten",
+      "titleTransplant": "Selecteer plant om te verplanten",
       "titleDirectSow": "Selecteer Zaad om Direct te Zaaien",
       "searchSeeds": "Zaden zoeken…",
       "searchPlants": "Planten zoeken…",
@@ -288,17 +325,40 @@
     "plantDetailsDialog": {
       "description": "Bekijk en beheer details van deze plant",
       "descriptionSection": "Beschrijving",
-      "yourPlantDetails": "Jouw Plantdetails",
+      "yourPlantDetails": "Details van deze plant",
+      "singlePlantMode": "Enkele-plantmodus — wijzigingen gelden alleen voor deze plant",
+      "partOfGroup": "Onderdeel van een groep van {{count}} {{name}}-planten — plaagnotities, gezondheidsstatus en groeifase gelden voor planten met dezelfde huidige status",
       "planted": "Geplant",
       "notRecorded": "Niet geregistreerd",
       "expectedHarvest": "Verwachte Oogst",
       "notSet": "Niet ingesteld",
+      "varietyLabel": "Variëteit",
       "varietyOptional": "Variëteit (optioneel)",
       "varietyPlaceholder": "bijv., Kers, Biefstuk, Roma...",
-      "growingInformation": "Kweekinfo",
+      "growingInformation": "Groeiinformatie",
+      "growthStageLabel": "Groeifase",
+      "growthStageAutoCurrent": "Automatisch ({{value}})",
+      "growthStageAutoUnknown": "Automatisch (onbekend)",
+      "growthStageCurrent": "Huidig: {{value}}",
+      "growthStages": {
+        "sprouting": "Ontkiemend",
+        "vegetative": "Vegetatieve groei",
+        "flowering": "Bloei",
+        "fruiting": "Vruchtvorming",
+        "dormant": "Rust"
+      },
+      "healthStateLabel": "Gezondheidsstatus",
+      "healthStateNotSet": "Niet ingesteld",
+      "healthStates": {
+        "healthy": "Gezond",
+        "stressed": "Gestrest",
+        "damaged": "Beschadigd",
+        "diseased": "Aangetast",
+        "dead": "Dood"
+      },
       "sunlight": "Zonlicht",
       "sunFull": "Volle zon",
-      "sunPartial": "Gedeeltelijke zon",
+      "sunPartial": "Halfschaduw",
       "sunShade": "Schaduw",
       "watering": "Water geven",
       "spacing": "Afstand",
@@ -307,7 +367,7 @@
       "daysToHarvestValue": "{{count}} dagen",
       "growingTips": "💡 Kweektips",
       "noTips": "Nog geen specifieke tips geregistreerd.",
-      "pestLog": "Plaag- & Behandelingslogboek",
+      "pestLog": "Plaag- en behandellogboek",
       "pestSpotted": "🐛 Plaag Gespot",
       "treatmentApplied": "💊 Behandeling Toegepast",
       "eventPlaceholder": "Beschrijf wat er is gebeurd...",
@@ -411,6 +471,33 @@
     "harvestEmpty": "Geen geplante gewassen vallen in een oogstvenster voor deze maand.",
     "harvestWindowTitle": "{{count}} oogstvensters",
     "harvestSingle": "{{name}} oogst",
+    "harvestStates": {
+      "upcoming": "Binnenkort",
+      "ready": "Klaar",
+      "overdue": "Te laat",
+      "seasonal": "Seizoensgebonden"
+    },
+    "harvestTiming": {
+      "monthLevelOnly": "Voor dit gewas is alleen oogsttiming op maandniveau bekend.",
+      "readyOn": "Klaar {{date}}",
+      "range": "{{start}} tot {{end}}"
+    },
+    "dayDetail": {
+      "emptyTitle": "Niets geregistreerd voor deze dag.",
+      "emptyHint": "Gebruik de sneltoevoegknoppen hieronder om een gebeurtenis te loggen.",
+      "journalEntries": "Dagboeknotities",
+      "suggestionsDue": "Openstaande Suggesties",
+      "harvestWindows": "Oogstvensters",
+      "quickAdd": "Snel Toevoegen",
+      "quickAddActions": {
+        "watered": "Water gegeven",
+        "harvested": "Geoogst",
+        "pest": "Plaag gespot",
+        "observation": "Notitie"
+      },
+      "notePlaceholder": "Schrijf je observatie…",
+      "addNote": "Notitie Toevoegen"
+    },
     "taskCount_one": "{{count}} taak",
     "taskCount_other": "{{count}} taken",
     "logCount_one": "{{count}} notitie",

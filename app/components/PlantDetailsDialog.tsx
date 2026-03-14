@@ -25,6 +25,10 @@ import { cn } from "./ui/utils";
 import { getBundledPlantByMatch } from "../data/bundledPlants";
 import { deriveGrowthStage } from "../services/plantGrowthStage";
 import type { GrowthStage, HealthState } from "../data/schema";
+import {
+  getLocalizedPlantContent,
+  getPlantDisplayName,
+} from "../i18n/utils/plantTranslation";
 
 interface PlantDetailsDialogProps {
   open: boolean;
@@ -42,12 +46,48 @@ interface PestEvent {
   description: string;
 }
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("en-US", {
+function formatDate(dateString: string, locale: string) {
+  return new Date(dateString).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
+}
+
+function getGrowthStageLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  stage: GrowthStage,
+): string {
+  switch (stage) {
+    case "sprouting":
+      return t("dialogs.plantDetailsDialog.growthStages.sprouting");
+    case "vegetative":
+      return t("dialogs.plantDetailsDialog.growthStages.vegetative");
+    case "flowering":
+      return t("dialogs.plantDetailsDialog.growthStages.flowering");
+    case "fruiting":
+      return t("dialogs.plantDetailsDialog.growthStages.fruiting");
+    case "dormant":
+      return t("dialogs.plantDetailsDialog.growthStages.dormant");
+  }
+}
+
+function getHealthStateLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  state: HealthState,
+): string {
+  switch (state) {
+    case "healthy":
+      return t("dialogs.plantDetailsDialog.healthStates.healthy");
+    case "stressed":
+      return t("dialogs.plantDetailsDialog.healthStates.stressed");
+    case "damaged":
+      return t("dialogs.plantDetailsDialog.healthStates.damaged");
+    case "diseased":
+      return t("dialogs.plantDetailsDialog.healthStates.diseased");
+    case "dead":
+      return t("dialogs.plantDetailsDialog.healthStates.dead");
+  }
 }
 
 export function PlantDetailsDialog({
@@ -58,8 +98,9 @@ export function PlantDetailsDialog({
   groupSize,
   singleCellMode,
 }: PlantDetailsDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!plantInstance) return null;
+  const displayPlantName = getPlantDisplayName(plantInstance.plant, i18n.language);
 
   const [variety, setVariety] = useState(plantInstance?.variety || "");
   const [pestEvents, setPestEvents] = useState<PestEvent[]>(
@@ -86,6 +127,21 @@ export function PlantDetailsDialog({
   const mergedPlant = useMemo(
     () => ({ ...fallbackPlant, ...plantInstance.plant }),
     [fallbackPlant, plantInstance.plant],
+  );
+  const descriptionText = getLocalizedPlantContent(
+    mergedPlant,
+    "description",
+    i18n.language,
+  );
+  const wateringText = getLocalizedPlantContent(
+    mergedPlant,
+    "watering",
+    i18n.language,
+  );
+  const growingTipsText = getLocalizedPlantContent(
+    mergedPlant,
+    "growingTips",
+    i18n.language,
   );
   const sortedPestEvents = useMemo(
     () =>
@@ -186,7 +242,7 @@ export function PlantDetailsDialog({
               {plantInstance.plant.icon}
             </span>
             <div>
-              <div>{plantInstance.plant.name}</div>
+              <div>{displayPlantName}</div>
               {mergedPlant.latinName && (
                 <div className="text-sm text-muted-foreground font-normal italic mt-1">
                   {mergedPlant.latinName}
@@ -194,7 +250,7 @@ export function PlantDetailsDialog({
               )}
               {variety && (
                 <div className="text-sm text-muted-foreground font-normal mt-1">
-                  Variety: {variety}
+                  {t("dialogs.plantDetailsDialog.varietyLabel")}: {variety}
                 </div>
               )}
             </div>
@@ -218,16 +274,19 @@ export function PlantDetailsDialog({
                 style={{ backgroundColor: singleCellMode ? "#f59e0b" : "var(--primary)" }}
               />
               {singleCellMode
-                ? `Single-plant mode — changes apply to this plant only`
-                : `Part of a group of ${groupSize} ${plantInstance.plant.name} plants — pest events, health state, and growth stage will apply to plants with the same current state`}
+                ? t("dialogs.plantDetailsDialog.singlePlantMode")
+                : t("dialogs.plantDetailsDialog.partOfGroup", {
+                    count: groupSize,
+                    name: displayPlantName,
+                  })}
             </div>
           )}
 
           {/* Plant Description */}
-          {mergedPlant.description && (
+          {descriptionText && (
             <div className="bg-accent/30 rounded-xl p-4 border border-accent">
               <h3 className="text-xs font-black uppercase tracking-widest text-foreground mb-2">{t("dialogs.plantDetailsDialog.descriptionSection")}</h3>
-              <p className="text-sm text-foreground/80">{mergedPlant.description}</p>
+              <p className="text-sm text-foreground/80">{descriptionText}</p>
             </div>
           )}
 
@@ -241,7 +300,7 @@ export function PlantDetailsDialog({
                   <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.planted")}</div>
                   <div className="text-sm font-medium">
                     {plantInstance.plantingDate
-                      ? formatDate(plantInstance.plantingDate)
+                      ? formatDate(plantInstance.plantingDate, i18n.language)
                       : t("dialogs.plantDetailsDialog.notRecorded")}
                   </div>
                 </div>
@@ -252,7 +311,7 @@ export function PlantDetailsDialog({
                   <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.expectedHarvest")}</div>
                   <div className="text-sm font-medium">
                     {plantInstance.harvestDate
-                      ? formatDate(plantInstance.harvestDate)
+                      ? formatDate(plantInstance.harvestDate, i18n.language)
                       : t("dialogs.plantDetailsDialog.notSet")}
                   </div>
                 </div>
@@ -277,7 +336,7 @@ export function PlantDetailsDialog({
             <div className="mt-4">
               <label className="text-xs font-bold text-muted-foreground block mb-1 flex items-center gap-1.5">
                 <Leaf className="w-3.5 h-3.5" />
-                Growth Stage
+                {t("dialogs.plantDetailsDialog.growthStageLabel")}
               </label>
               <div className="flex items-center gap-2">
                 <select
@@ -295,17 +354,23 @@ export function PlantDetailsDialog({
                   className="flex-1 bg-white/50 border border-border/40 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                 >
                   <option value="auto">
-                    Auto{autoGrowthStage ? ` (${autoGrowthStage})` : " (unknown)"}
+                    {autoGrowthStage
+                      ? t("dialogs.plantDetailsDialog.growthStageAutoCurrent", {
+                          value: getGrowthStageLabel(t, autoGrowthStage),
+                        })
+                      : t("dialogs.plantDetailsDialog.growthStageAutoUnknown")}
                   </option>
-                  <option value="sprouting">🌱 Sprouting</option>
-                  <option value="vegetative">🌿 Vegetative</option>
-                  <option value="flowering">🌸 Flowering</option>
-                  <option value="fruiting">🍅 Fruiting</option>
-                  <option value="dormant">💤 Dormant</option>
+                  <option value="sprouting">🌱 {getGrowthStageLabel(t, "sprouting")}</option>
+                  <option value="vegetative">🌿 {getGrowthStageLabel(t, "vegetative")}</option>
+                  <option value="flowering">🌸 {getGrowthStageLabel(t, "flowering")}</option>
+                  <option value="fruiting">🍅 {getGrowthStageLabel(t, "fruiting")}</option>
+                  <option value="dormant">💤 {getGrowthStageLabel(t, "dormant")}</option>
                 </select>
                 {displayedGrowthStage && (
                   <span className="text-xs text-muted-foreground font-medium px-2 py-1 bg-muted/30 rounded-lg whitespace-nowrap">
-                    Current: {displayedGrowthStage}
+                    {t("dialogs.plantDetailsDialog.growthStageCurrent", {
+                      value: getGrowthStageLabel(t, displayedGrowthStage),
+                    })}
                   </span>
                 )}
               </div>
@@ -315,7 +380,7 @@ export function PlantDetailsDialog({
             <div className="mt-4">
               <label className="text-xs font-bold text-muted-foreground block mb-1 flex items-center gap-1.5">
                 <Heart className="w-3.5 h-3.5" />
-                Health State
+                {t("dialogs.plantDetailsDialog.healthStateLabel")}
               </label>
               <select
                 value={healthState ?? ""}
@@ -325,12 +390,12 @@ export function PlantDetailsDialog({
                 }}
                 className="w-full bg-white/50 border border-border/40 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
               >
-                <option value="">— Not set —</option>
-                <option value="healthy">💚 Healthy</option>
-                <option value="stressed">🟡 Stressed</option>
-                <option value="damaged">🟠 Damaged</option>
-                <option value="diseased">🔴 Diseased</option>
-                <option value="dead">⬛ Dead</option>
+                <option value="">— {t("dialogs.plantDetailsDialog.healthStateNotSet")} —</option>
+                <option value="healthy">💚 {getHealthStateLabel(t, "healthy")}</option>
+                <option value="stressed">🟡 {getHealthStateLabel(t, "stressed")}</option>
+                <option value="damaged">🟠 {getHealthStateLabel(t, "damaged")}</option>
+                <option value="diseased">🔴 {getHealthStateLabel(t, "diseased")}</option>
+                <option value="dead">⬛ {getHealthStateLabel(t, "dead")}</option>
               </select>
             </div>
           </div>
@@ -359,7 +424,7 @@ export function PlantDetailsDialog({
                 <div>
                   <div className="text-xs text-muted-foreground">{t("dialogs.plantDetailsDialog.watering")}</div>
                   <div className="text-sm">
-                    {mergedPlant.watering || t("dialogs.plantDetailsDialog.notRecorded")}
+                    {wateringText || t("dialogs.plantDetailsDialog.notRecorded")}
                   </div>
                 </div>
               </div>
@@ -389,7 +454,7 @@ export function PlantDetailsDialog({
             <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
               <div className="text-xs font-bold text-muted-foreground mb-1">{t("dialogs.plantDetailsDialog.growingTips")}</div>
               <div className="text-sm">
-                {mergedPlant.growingTips || t("dialogs.plantDetailsDialog.noTips")}
+                {growingTipsText || t("dialogs.plantDetailsDialog.noTips")}
               </div>
             </div>
           </div>
@@ -454,7 +519,7 @@ export function PlantDetailsDialog({
                     <div className="flex-1 min-w-0">
                       <div className="text-sm">{event.description}</div>
                       <div className="text-xs text-muted-foreground">
-                        {formatDate(event.date)}
+                        {formatDate(event.date, i18n.language)}
                       </div>
                     </div>
                     <button

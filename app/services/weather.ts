@@ -9,6 +9,7 @@
  */
 
 import { getGardenPlannerDB } from "../data/dexieRepository";
+import { createTimeoutAbortHandle } from "../lib/abortTimeout";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -62,6 +63,7 @@ export interface WeatherData {
 // ---------------------------------------------------------------------------
 
 const CACHE_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours
+const WEATHER_REQUEST_TIMEOUT_MS = 6_000;
 
 // ---------------------------------------------------------------------------
 // Open-Meteo fetch
@@ -135,12 +137,25 @@ function parseOpenMeteoResponse(json: Record<string, unknown>, lat: number, lng:
 /** Fetch fresh weather data from Open-Meteo for the given coordinates. */
 async function fetchWeather(lat: number, lng: number, signal?: AbortSignal): Promise<WeatherData> {
   const url = buildUrl(lat, lng);
-  const res = await fetch(url, { signal });
-  if (!res.ok) {
-    throw new Error(`Open-Meteo forecast API error: ${res.status}`);
+  const request = createTimeoutAbortHandle(WEATHER_REQUEST_TIMEOUT_MS, signal);
+
+  try {
+    const res = await fetch(url, { signal: request.signal });
+    if (!res.ok) {
+      throw new Error(`Open-Meteo forecast API error: ${res.status}`);
+    }
+    const json = (await res.json()) as Record<string, unknown>;
+    return parseOpenMeteoResponse(json, lat, lng);
+  } catch (error) {
+    if (request.didTimeout() && !signal?.aborted) {
+      throw new Error(
+        `Open-Meteo forecast request timed out after ${WEATHER_REQUEST_TIMEOUT_MS / 1000}s`,
+      );
+    }
+    throw error;
+  } finally {
+    request.cleanup();
   }
-  const json = (await res.json()) as Record<string, unknown>;
-  return parseOpenMeteoResponse(json, lat, lng);
 }
 
 // ---------------------------------------------------------------------------

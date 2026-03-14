@@ -86,6 +86,17 @@ export const PrioritySchema = z.enum(["low", "medium", "high"]);
  */
 export const PlantSourceSchema = z.enum(["bundled", "synced", "custom"]);
 
+export const PlantLocalizedContentEntrySchema = z.object({
+  description: z.string().nullable().optional(),
+  watering: z.string().nullable().optional(),
+  growingTips: z.string().max(500).nullable().optional(),
+});
+
+export const PlantLocalizedContentSchema = z.record(
+  z.string(),
+  PlantLocalizedContentEntrySchema,
+);
+
 // ---------------------------------------------------------------------------
 // VirtualSection — a named row/column band within a Planter
 // (previously exported from PlanterDialog.tsx)
@@ -126,6 +137,7 @@ export const PlantSchema = z.object({
   frostSensitive: z.boolean().optional(),
   watering: z.string().optional(),
   growingTips: z.string().max(500).optional(),
+  localizedContent: PlantLocalizedContentSchema.optional(),
   companions: z.array(z.string()).default([]),
   antagonists: z.array(z.string()).default([]),
   sowIndoorMonths: z.array(z.number().int().min(1).max(12)).default([]),

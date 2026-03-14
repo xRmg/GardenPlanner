@@ -166,7 +166,10 @@ export function useGardenEvents({
   };
 
   const handleCompleteSuggestion = (suggestion: Suggestion) => {
-    // Map suggestion type → event type for the journal log
+    // Map suggestion type → event type for the journal log.
+    // "no_water" carries no positive action — skip journal logging entirely.
+    if (suggestion.type === "no_water") return;
+
     const eventType: GardenEvent["type"] =
       suggestion.type === "water"
         ? "watered"
@@ -174,14 +177,18 @@ export function useGardenEvents({
           ? "harvested"
           : suggestion.type === "treatment"
             ? "treatment"
-            : suggestion.type === "fertilize" || suggestion.type === "compost"
+            : suggestion.type === "fertilize" ||
+                suggestion.type === "compost" ||
+                suggestion.type === "mulch"
               ? "composted"
               : suggestion.type === "weed"
                 ? "weeded"
                 : suggestion.type === "sow" ||
                     suggestion.type === "succession_sow"
                   ? "sown"
-                  : "composted";
+                  : suggestion.type === "pest_alert"
+                    ? "pest"
+                    : "observation"; // companion_conflict, disease_risk, frost_protect, prune, repot, thin_seedlings, harden_seedlings, end_of_season
 
     const completedEvent: GardenEvent = {
       id: `event-${Date.now()}-${Math.random()}`,

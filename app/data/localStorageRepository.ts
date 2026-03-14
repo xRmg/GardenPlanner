@@ -41,6 +41,7 @@ import {
   type Settings,
 } from "./schema";
 import type { GardenRepository } from "./repository";
+import { normalizePlantReferenceList } from "../lib/plantReferences";
 
 // ---------------------------------------------------------------------------
 // Storage key constants
@@ -153,7 +154,14 @@ export class LocalStorageRepository implements GardenRepository {
 
   async savePlant(plant: Plant): Promise<void> {
     const current = await this.getCustomPlants();
-    writeRaw(KEYS.customPlants, upsert(current, plant));
+    writeRaw(
+      KEYS.customPlants,
+      upsert(current, {
+        ...plant,
+        companions: normalizePlantReferenceList(plant.companions),
+        antagonists: normalizePlantReferenceList(plant.antagonists),
+      }),
+    );
   }
 
   async deletePlant(id: string): Promise<void> {
