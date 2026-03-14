@@ -7,7 +7,8 @@ import { RemovalConfirmDialog } from "./RemovalConfirmDialog";
 import { VirtualSection } from "./PlanterDialog";
 import { cn } from "./ui/utils";
 import { useIsMobile } from "./ui/use-mobile";
-import type { Area as MoveArea, GrowthStage, HealthState } from "../data/schema";
+import type { Area as MoveArea, CellDimensions, GrowthStage, HealthState, PlanterLayout } from "../data/schema";
+import { formatDimensions } from "../i18n/utils/formatting";
 import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
 import type { PlantMoveLocation } from "../services/plantMovement";
 import {
@@ -91,6 +92,11 @@ interface PlanterGridProps {
   virtualSections?: VirtualSection[];
   backgroundColor?: string;
   viewOnly?: boolean;
+  /** Physical dimensions of each grid cell.
+   * When absent the header dimension label is omitted. */
+  cellDimensions?: CellDimensions;
+  /** Visual layout type: 'grid' (default squares) or 'pot-container' (round pots). */
+  layout?: PlanterLayout;
   getAvailableStock?: (plantId: string) => number;
   onPlantAdded?: (plantInstance: PlantInstance, planterId: string) => void;
   onPlantRemoved?: (
@@ -185,6 +191,8 @@ export function PlanterGrid({
   virtualSections,
   backgroundColor,
   viewOnly = false,
+  cellDimensions,
+  layout = "grid",
   getAvailableStock,
   onPlantAdded,
   onPlantRemoved,
@@ -616,7 +624,11 @@ export function PlanterGrid({
               {name}
             </h3>
             <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-0.5">
-              {rows} × {cols} Grid • {rows * cols} SQ FT
+              {rows} × {cols}{" "}
+              {layout === "pot-container"
+                ? t("dialogs.planterDialog.layoutPotContainer")
+                : t("dialogs.planterDialog.layoutGrid")}
+              {cellDimensions ? ` • ${formatDimensions(cellDimensions)}` : ""}
             </span>
           </div>
           <div className="flex gap-1">
@@ -805,7 +817,9 @@ export function PlanterGrid({
                                 })
                         }
                         className={cn(
-                          "w-12 h-12 rounded-lg relative transition-[transform,background-color,box-shadow,outline] duration-150 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2",
+                          "w-12 h-12 relative transition-[transform,background-color,box-shadow,outline] duration-150 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2",
+                          // Round cells for pot-container layout, square for grid
+                          layout === "pot-container" ? "rounded-full" : "rounded-lg",
                           square.plantInstance
                             ? "bg-white/90"
                             : "bg-white/40 hover:bg-white/80",

@@ -146,7 +146,8 @@
     "movePlantTitle": "Move plant",
     "movePlantAriaLabel": "Move {{name}} from row {{row}}, column {{col}}",
     "removePlantTitle": "Remove plant",
-    "removePlantAriaLabel": "Remove {{name}}"
+    "removePlantAriaLabel": "Remove {{name}}",
+    "dimensionLabel": "{{rows}} × {{cols}} Grid"
   },
   "plants": {
     "title": "My Plants & Seeds",
@@ -244,7 +245,11 @@
       "groupPolar": "E — Polar",
       "ET": "ET — Tundra",
       "EF": "EF — Ice Cap"
-    }
+    },
+    "unitSystem": "Measurement Units",
+    "unitSystemHint": "Sets default cell size presets when creating new planters.",
+    "unitSystemImperial": "Imperial (feet)",
+    "unitSystemMetric": "Metric (cm)"
   },
   "dbError": "⚠ Database error – data will not persist:",
   "dialogs": {
@@ -286,7 +291,26 @@
       "columnsLabel": "Columns",
       "rangeDisplay": "{{start}} to {{end}}",
       "saveChanges": "Save Changes",
-      "createPlanter": "Create Planter"
+      "createPlanter": "Create Planter",
+      "cellDimensions": "Cell Size",
+      "cellDimensionsHint": "Physical size of each grid cell.",
+      "cellDimensionPreset": "Preset",
+      "cellDimensionCustom": "Custom",
+      "cellDimensionPresetImperialSqFt": "1 ft × 1 ft (square-foot)",
+      "cellDimensionPresetMetric30": "30 cm × 30 cm (standard)",
+      "cellDimensionPresetMetric25": "25 cm × 25 cm (compact)",
+      "cellDimensionWidth": "Width",
+      "cellDimensionDepth": "Depth",
+      "cellDimensionUnit": "Unit",
+      "cellDimensionUnitFeet": "feet (ft)",
+      "cellDimensionUnitInches": "inches (in)",
+      "cellDimensionUnitCm": "centimetres (cm)",
+      "cellDimensionUnitM": "metres (m)",
+      "cellDimensionInvalid": "Width and depth must be positive numbers.",
+      "layoutType": "Layout Type",
+      "layoutGrid": "Grid",
+      "layoutPotContainer": "Pot / Container",
+      "layoutPotContainerHint": "Cells render as round pots."
     },
     "plantDefinitionDialog": {
       "titleEditSeed": "Edit Seed Packet",

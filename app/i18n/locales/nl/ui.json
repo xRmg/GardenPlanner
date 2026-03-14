@@ -146,7 +146,8 @@
     "movePlantTitle": "Plant verplaatsen",
     "movePlantAriaLabel": "Verplaats {{name}} vanaf rij {{row}}, kolom {{col}}",
     "removePlantTitle": "Plant verwijderen",
-    "removePlantAriaLabel": "{{name}} verwijderen"
+    "removePlantAriaLabel": "{{name}} verwijderen",
+    "dimensionLabel": "{{rows}} × {{cols}} Raster"
   },
   "plants": {
     "title": "Mijn Planten & Zaden",
@@ -244,7 +245,11 @@
       "groupPolar": "E — Polair",
       "ET": "ET — Toendra",
       "EF": "EF — IJskap"
-    }
+    },
+    "unitSystem": "Maateenheden",
+    "unitSystemHint": "Bepaalt de standaard celgrootte bij het aanmaken van nieuwe planters.",
+    "unitSystemImperial": "Imperiaal (voet)",
+    "unitSystemMetric": "Metrisch (cm)"
   },
   "dbError": "⚠ Databasefout – gegevens worden niet opgeslagen:",
   "dialogs": {
@@ -286,7 +291,26 @@
       "columnsLabel": "Kolommen",
       "rangeDisplay": "{{start}} tot {{end}}",
       "saveChanges": "Wijzigingen Opslaan",
-      "createPlanter": "Planter Aanmaken"
+      "createPlanter": "Planter Aanmaken",
+      "cellDimensions": "Celgrootte",
+      "cellDimensionsHint": "De fysieke afmeting van elke cel in het raster.",
+      "cellDimensionPreset": "Voorinstelling",
+      "cellDimensionCustom": "Aangepast",
+      "cellDimensionPresetImperialSqFt": "1 ft × 1 ft (vierkante voet)",
+      "cellDimensionPresetMetric30": "30 cm × 30 cm (standaard)",
+      "cellDimensionPresetMetric25": "25 cm × 25 cm (compact)",
+      "cellDimensionWidth": "Breedte",
+      "cellDimensionDepth": "Diepte",
+      "cellDimensionUnit": "Eenheid",
+      "cellDimensionUnitFeet": "voet (ft)",
+      "cellDimensionUnitInches": "inch (in)",
+      "cellDimensionUnitCm": "centimeter (cm)",
+      "cellDimensionUnitM": "meter (m)",
+      "cellDimensionInvalid": "Breedte en diepte moeten positieve getallen zijn.",
+      "layoutType": "Lay-outtype",
+      "layoutGrid": "Raster",
+      "layoutPotContainer": "Pot / Container",
+      "layoutPotContainerHint": "Cellen worden weergegeven als ronde potten."
     },
     "plantDefinitionDialog": {
       "titleEditSeed": "Zaadpakket Bewerken",

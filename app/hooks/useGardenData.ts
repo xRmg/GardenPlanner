@@ -32,6 +32,7 @@ import type { GardenEvent } from "../components/EventsBar";
 import { getPlantCache } from "../services/ai/plantCache";
 import i18n, { detectBrowserLocale, supportedLocales } from "../i18n/config";
 import type { SupportedLocale } from "../i18n/config";
+import { detectUnitSystem } from "../i18n/utils/formatting";
 import { loadPlantNameOverridesForLocale } from "../i18n/plantNameOverrides";
 
 export interface GardenDataState {
@@ -155,6 +156,15 @@ export function useGardenData(): GardenDataState {
         i18n.changeLanguage(finalSettings.locale);
         await loadPlantNameOverridesForLocale(finalSettings.locale);
         document.documentElement.lang = finalSettings.locale;
+
+        // ── Unit system bootstrap ────────────────────────────────────────────
+        // If no explicit unitSystem has been stored yet, detect from the
+        // browser locale and persist so it is ready for the planter dialog.
+        if (finalSettings.unitSystem === undefined || finalSettings.unitSystem === null) {
+          const detectedUnit = detectUnitSystem(navigator.language ?? "en");
+          finalSettings = { ...finalSettings, unitSystem: detectedUnit };
+          await repo.saveSettings(finalSettings);
+        }
 
         setSettings(finalSettings);
         setEvents(loadedEvents as unknown as GardenEvent[]);

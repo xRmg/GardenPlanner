@@ -9,6 +9,7 @@
 
 import type { Plant, PlantInstance, PlanterSquare } from "./components/PlanterGrid";
 import type { VirtualSection } from "./components/PlanterDialog";
+import type { CellDimensions, PlanterLayout } from "./data/schema";
 
 export interface Planter {
   id: string;
@@ -19,6 +20,10 @@ export interface Planter {
   virtualSections?: VirtualSection[];
   backgroundColor?: string;
   tagline?: string;
+  /** Physical dimensions of each grid cell. */
+  cellDimensions?: CellDimensions;
+  /** Visual layout type for the planter. */
+  layout?: PlanterLayout;
 }
 
 export interface Area {
