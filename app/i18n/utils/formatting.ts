@@ -36,6 +36,7 @@ function unitSymbol(unit: CellDimensions["unit"]): string {
     case "inches": return "in";
     case "m":      return "m";
     case "cm":     return "cm";
+    default:       return unit;
   }
 }
 

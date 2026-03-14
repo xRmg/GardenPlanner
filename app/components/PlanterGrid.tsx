@@ -92,7 +92,8 @@ interface PlanterGridProps {
   virtualSections?: VirtualSection[];
   backgroundColor?: string;
   viewOnly?: boolean;
-  /** Physical dimensions of each grid cell. Falls back to metric 30 cm default if absent. */
+  /** Physical dimensions of each grid cell.
+   * When absent the header dimension label is omitted. */
   cellDimensions?: CellDimensions;
   /** Visual layout type: 'grid' (default squares) or 'pot-container' (round pots). */
   layout?: PlanterLayout;

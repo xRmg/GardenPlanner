@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -123,13 +123,17 @@ export function PlanterDialog({
     initialConfig?.layout ?? "grid",
   );
 
+  // Keep a stable ref to handleSave so the keyboard handler doesn't need to
+  // list all form state as dependencies, avoiding unnecessary listener churn.
+  const handleSaveRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        handleSave();
+        handleSaveRef.current();
       } else if (e.key === "Escape") {
         e.preventDefault();
         onOpenChange(false);
@@ -138,9 +142,9 @@ export function PlanterDialog({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, name, tagline, backgroundColor, rows, cols, virtualSections, cellPreset, customWidth, customDepth, customUnit, layout]);
+  }, [open, onOpenChange]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!name.trim()) {
       setNameError(t("dialogs.planterDialog.nameRequired"));
       return;
@@ -175,7 +179,10 @@ export function PlanterDialog({
     });
 
     onOpenChange(false);
-  };
+  }, [name, tagline, backgroundColor, rows, cols, virtualSections, cellPreset, customWidth, customDepth, customUnit, layout, t, onSave, onOpenChange, initialConfig?.id]);
+
+  // Keep the ref in sync so the keyboard handler always calls the latest version
+  handleSaveRef.current = handleSave;
 
   const handleAddVirtualSection = () => {
     setSectionNameError("");
