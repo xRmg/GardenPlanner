@@ -135,7 +135,10 @@ export class OpenRouterClient {
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         if (isDev)
-          console.error(`[OpenRouter] Proxy returned ${response.status}:`, error);
+          console.error(
+            `[OpenRouter] Proxy returned ${response.status}:`,
+            error,
+          );
         throw new OpenRouterError(response.status, error);
       }
       return response.json() as Promise<OpenRouterResponse>;

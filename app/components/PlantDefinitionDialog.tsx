@@ -107,10 +107,7 @@ function ConfidenceBadge({
     );
   }
   return (
-    <span
-      className="text-red-500 text-[10px] font-bold ml-1"
-      title={lowTitle}
-    >
+    <span className="text-red-500 text-[10px] font-bold ml-1" title={lowTitle}>
       ⚠⚠
     </span>
   );
@@ -175,8 +172,7 @@ export function PlantDialog({
   const [latinName, setLatinName] = useState(initialPlant?.latinName || "");
   const [variety, setVariety] = useState(initialPlant?.variety || "");
   const [description, setDescription] = useState(
-    getLocalizedPlantContent(initialPlant, "description", i18n.language) ||
-      "",
+    getLocalizedPlantContent(initialPlant, "description", i18n.language) || "",
   );
   const [icon, setIcon] = useState(initialPlant?.icon || EMOJIS[0]);
   const [color, setColor] = useState(initialPlant?.color || COLORS[0]);
@@ -196,8 +192,7 @@ export function PlantDialog({
     getLocalizedPlantContent(initialPlant, "watering", i18n.language) || "",
   );
   const [growingTips, setGrowingTips] = useState(
-    getLocalizedPlantContent(initialPlant, "growingTips", i18n.language) ||
-      "",
+    getLocalizedPlantContent(initialPlant, "growingTips", i18n.language) || "",
   );
   const [sowIndoorMonths, setSowIndoorMonths] = useState<number[]>(
     initialPlant?.sowIndoorMonths || [],
@@ -254,8 +249,7 @@ export function PlantDialog({
       setSpacingCm(initialPlant?.spacingCm || 30);
       setFrostHardy(initialPlant?.frostHardy ?? false);
       setWatering(
-        getLocalizedPlantContent(initialPlant, "watering", i18n.language) ||
-          "",
+        getLocalizedPlantContent(initialPlant, "watering", i18n.language) || "",
       );
       setGrowingTips(
         getLocalizedPlantContent(initialPlant, "growingTips", i18n.language) ||
@@ -316,8 +310,7 @@ export function PlantDialog({
       const next = new Set(prev);
       if (!overrides.has("description") && aiResult.description)
         next.add("description");
-      if (!overrides.has("watering") && aiResult.watering)
-        next.add("watering");
+      if (!overrides.has("watering") && aiResult.watering) next.add("watering");
       if (!overrides.has("growingTips") && aiResult.growingTips)
         next.add("growingTips");
       return next;
@@ -412,12 +405,8 @@ export function PlantDialog({
           ? "custom"
           : (initialPlant.source ?? "custom")
         : "custom",
-      companions: parsedCompanions.length
-        ? parsedCompanions
-        : undefined,
-      antagonists: parsedAntagonists.length
-        ? parsedAntagonists
-        : undefined,
+      companions: parsedCompanions.length ? parsedCompanions : undefined,
+      antagonists: parsedAntagonists.length ? parsedAntagonists : undefined,
       localizedContent: initialPlant?.localizedContent,
     };
 
@@ -480,8 +469,13 @@ export function PlantDialog({
             </div>
             <div className="ml-auto flex items-center gap-3">
               <div className="flex flex-col items-end gap-1">
-                <label htmlFor="plant-amount" className="text-sm font-black text-muted-foreground uppercase tracking-widest block">
-                  {isSeed ? t("dialogs.plantDefinitionDialog.seedCount") : t("dialogs.plantDefinitionDialog.quantity")}
+                <label
+                  htmlFor="plant-amount"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest block"
+                >
+                  {isSeed
+                    ? t("dialogs.plantDefinitionDialog.seedCount")
+                    : t("dialogs.plantDefinitionDialog.quantity")}
                 </label>
                 <div className="flex items-center gap-2">
                   {infiniteStock ? (
@@ -516,7 +510,10 @@ export function PlantDialog({
           {/* Plant Name + icon preview */}
           <div className="grid grid-cols-4 gap-4">
             <div className="col-span-3">
-              <label htmlFor="plant-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-name"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 {t("dialogs.plantDefinitionDialog.plantName")}
               </label>
               <input
@@ -540,7 +537,12 @@ export function PlantDialog({
                 className={`w-full px-4 py-3 bg-muted/30 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner ${nameError ? "border-destructive" : "border-white/20"}`}
               />
               {nameError && (
-                <p id="plant-name-error" className="text-destructive text-xs mt-1 ml-1 animate-error-appear">{nameError}</p>
+                <p
+                  id="plant-name-error"
+                  className="text-destructive text-xs mt-1 ml-1 animate-error-appear"
+                >
+                  {nameError}
+                </p>
               )}
             </div>
             <div>
@@ -614,9 +616,12 @@ export function PlantDialog({
                   markOverride("icon");
                 }}
                 className={`w-10 h-10 flex items-center justify-center text-xl rounded-lg transition-[background-color,transform] hover:bg-white/80 active:scale-95 ${icon === e ? "bg-white shadow-md ring-2 ring-primary/20" : ""}`}
-                aria-label={t("dialogs.plantDefinitionDialog.selectIconAriaLabel", {
-                  icon: e,
-                })}
+                aria-label={t(
+                  "dialogs.plantDefinitionDialog.selectIconAriaLabel",
+                  {
+                    icon: e,
+                  },
+                )}
                 aria-pressed={icon === e}
               >
                 {e}
@@ -656,7 +661,10 @@ export function PlantDialog({
 
           {/* Latin Name */}
           <div>
-            <label htmlFor="plant-latin-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label
+              htmlFor="plant-latin-name"
+              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+            >
               {t("dialogs.plantDefinitionDialog.latinName")}
               <ConfidenceBadge
                 confidence={confidence?.latinName}
@@ -671,7 +679,9 @@ export function PlantDialog({
                 setLatinName(e.target.value);
                 markOverride("latinName");
               }}
-              placeholder={t("dialogs.plantDefinitionDialog.latinNamePlaceholder")}
+              placeholder={t(
+                "dialogs.plantDefinitionDialog.latinNamePlaceholder",
+              )}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner italic"
             />
           </div>
@@ -679,7 +689,10 @@ export function PlantDialog({
           {/* Variety, Days to Harvest, Spacing */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label htmlFor="plant-variety" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-variety"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 {t("dialogs.plantDefinitionDialog.variety")}
               </label>
               <input
@@ -687,12 +700,17 @@ export function PlantDialog({
                 type="text"
                 value={variety}
                 onChange={(e) => setVariety(e.target.value)}
-                placeholder={t("dialogs.plantDefinitionDialog.varietyPlaceholder")}
+                placeholder={t(
+                  "dialogs.plantDefinitionDialog.varietyPlaceholder",
+                )}
                 className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
               />
             </div>
             <div>
-              <label htmlFor="plant-days-to-harvest" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-days-to-harvest"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 {t("dialogs.plantDefinitionDialog.daysToHarvest")}
                 <ConfidenceBadge
                   confidence={confidence?.daysToHarvest}
@@ -711,7 +729,10 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label htmlFor="plant-spacing" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-spacing"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 {t("dialogs.plantDefinitionDialog.spacingCm")}
                 <ConfidenceBadge
                   confidence={confidence?.spacingCm}
@@ -788,7 +809,10 @@ export function PlantDialog({
           </div>
 
           <div>
-            <label htmlFor="plant-watering" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label
+              htmlFor="plant-watering"
+              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+            >
               {t("dialogs.plantDefinitionDialog.watering")}
               <ConfidenceBadge
                 confidence={confidence?.watering}
@@ -803,13 +827,18 @@ export function PlantDialog({
                 markOverride("watering");
                 markLocalizedProseDirty("watering");
               }}
-              placeholder={t("dialogs.plantDefinitionDialog.wateringPlaceholder")}
+              placeholder={t(
+                "dialogs.plantDefinitionDialog.wateringPlaceholder",
+              )}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-18 text-sm"
             />
           </div>
 
           <div>
-            <label htmlFor="plant-growing-tips" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label
+              htmlFor="plant-growing-tips"
+              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+            >
               {t("dialogs.plantDefinitionDialog.growingTips")}
               <ConfidenceBadge
                 confidence={confidence?.growingTips}
@@ -824,7 +853,9 @@ export function PlantDialog({
                 markOverride("growingTips");
                 markLocalizedProseDirty("growingTips");
               }}
-              placeholder={t("dialogs.plantDefinitionDialog.growingTipsPlaceholder")}
+              placeholder={t(
+                "dialogs.plantDefinitionDialog.growingTipsPlaceholder",
+              )}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-24 text-sm"
             />
           </div>
@@ -839,29 +870,27 @@ export function PlantDialog({
               />
             </label>
             <div className="flex flex-wrap gap-1">
-              {monthLabels.map(
-                (m, i) => {
-                  const month = i + 1;
-                  const active = sowIndoorMonths.includes(month);
-                  return (
-                    <button
-                      key={month}
-                      type="button"
-                      onClick={() => {
-                        setSowIndoorMonths((prev) =>
-                          active
-                            ? prev.filter((x) => x !== month)
-                            : [...prev, month],
-                        );
-                        markOverride("sowIndoorMonths");
-                      }}
-                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-green-500 text-white border-green-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
-                    >
-                      {m}
-                    </button>
-                  );
-                },
-              )}
+              {monthLabels.map((m, i) => {
+                const month = i + 1;
+                const active = sowIndoorMonths.includes(month);
+                return (
+                  <button
+                    key={month}
+                    type="button"
+                    onClick={() => {
+                      setSowIndoorMonths((prev) =>
+                        active
+                          ? prev.filter((x) => x !== month)
+                          : [...prev, month],
+                      );
+                      markOverride("sowIndoorMonths");
+                    }}
+                    className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-green-500 text-white border-green-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -875,29 +904,27 @@ export function PlantDialog({
               />
             </label>
             <div className="flex flex-wrap gap-1">
-              {monthLabels.map(
-                (m, i) => {
-                  const month = i + 1;
-                  const active = sowDirectMonths.includes(month);
-                  return (
-                    <button
-                      key={month}
-                      type="button"
-                      onClick={() => {
-                        setSowDirectMonths((prev) =>
-                          active
-                            ? prev.filter((x) => x !== month)
-                            : [...prev, month],
-                        );
-                        markOverride("sowDirectMonths");
-                      }}
-                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-emerald-600 text-white border-emerald-600 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
-                    >
-                      {m}
-                    </button>
-                  );
-                },
-              )}
+              {monthLabels.map((m, i) => {
+                const month = i + 1;
+                const active = sowDirectMonths.includes(month);
+                return (
+                  <button
+                    key={month}
+                    type="button"
+                    onClick={() => {
+                      setSowDirectMonths((prev) =>
+                        active
+                          ? prev.filter((x) => x !== month)
+                          : [...prev, month],
+                      );
+                      markOverride("sowDirectMonths");
+                    }}
+                    className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-emerald-600 text-white border-emerald-600 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -911,36 +938,37 @@ export function PlantDialog({
               />
             </label>
             <div className="flex flex-wrap gap-1">
-              {monthLabels.map(
-                (m, i) => {
-                  const month = i + 1;
-                  const active = harvestMonths.includes(month);
-                  return (
-                    <button
-                      key={month}
-                      type="button"
-                      onClick={() => {
-                        setHarvestMonths((prev) =>
-                          active
-                            ? prev.filter((x) => x !== month)
-                            : [...prev, month],
-                        );
-                        markOverride("harvestMonths");
-                      }}
-                      className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-amber-500 text-white border-amber-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
-                    >
-                      {m}
-                    </button>
-                  );
-                },
-              )}
+              {monthLabels.map((m, i) => {
+                const month = i + 1;
+                const active = harvestMonths.includes(month);
+                return (
+                  <button
+                    key={month}
+                    type="button"
+                    onClick={() => {
+                      setHarvestMonths((prev) =>
+                        active
+                          ? prev.filter((x) => x !== month)
+                          : [...prev, month],
+                      );
+                      markOverride("harvestMonths");
+                    }}
+                    className={`w-8 h-8 rounded-lg text-[10px] font-black border transition-[color,background-color,border-color] ${active ? "bg-amber-500 text-white border-amber-500 shadow" : "bg-muted/30 text-muted-foreground border-white/20 hover:bg-white/60"}`}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Companions / Antagonists */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="plant-companions" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-companions"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 {t("dialogs.plantDefinitionDialog.goodWith")}
                 <ConfidenceBadge
                   confidence={confidence?.companions}
@@ -955,12 +983,17 @@ export function PlantDialog({
                   setCompanions(e.target.value);
                   markOverride("companions");
                 }}
-                placeholder={t("dialogs.plantDefinitionDialog.goodWithPlaceholder")}
+                placeholder={t(
+                  "dialogs.plantDefinitionDialog.goodWithPlaceholder",
+                )}
                 className="w-full px-3 py-2 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner text-sm"
               />
             </div>
             <div>
-              <label htmlFor="plant-antagonists" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+              <label
+                htmlFor="plant-antagonists"
+                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+              >
                 {t("dialogs.plantDefinitionDialog.avoidNear")}
                 <ConfidenceBadge
                   confidence={confidence?.antagonists}
@@ -975,7 +1008,9 @@ export function PlantDialog({
                   setAntagonists(e.target.value);
                   markOverride("antagonists");
                 }}
-                placeholder={t("dialogs.plantDefinitionDialog.avoidNearPlaceholder")}
+                placeholder={t(
+                  "dialogs.plantDefinitionDialog.avoidNearPlaceholder",
+                )}
                 className="w-full px-3 py-2 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner text-sm"
               />
             </div>
@@ -983,7 +1018,10 @@ export function PlantDialog({
 
           {/* Description */}
           <div>
-            <label htmlFor="plant-description" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
+            <label
+              htmlFor="plant-description"
+              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+            >
               {t("dialogs.plantDefinitionDialog.shortDescription")}
               <ConfidenceBadge
                 confidence={confidence?.description}
@@ -998,7 +1036,9 @@ export function PlantDialog({
                 markOverride("description");
                 markLocalizedProseDirty("description");
               }}
-              placeholder={t("dialogs.plantDefinitionDialog.descriptionPlaceholder")}
+              placeholder={t(
+                "dialogs.plantDefinitionDialog.descriptionPlaceholder",
+              )}
               className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner min-h-20 text-sm"
             />
           </div>
