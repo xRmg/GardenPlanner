@@ -241,6 +241,7 @@ describe("GardenEventSchema", () => {
       id: "e-pest-1",
       type: "pest",
       date: new Date().toISOString(),
+      instanceId: "inst-1",
       note: "Found aphids on new growth",
     });
     expect(result.success).toBe(true);

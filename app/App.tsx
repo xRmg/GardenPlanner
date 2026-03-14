@@ -51,6 +51,8 @@ import { useGardenEvents } from "./hooks/useGardenEvents";
 import { useSuggestions } from "./hooks/useSuggestions";
 import { useGlobalAsyncErrorToasts } from "./hooks/useGlobalAsyncErrorToasts";
 import type { PestEvent } from "./data/schema";
+import type { PlantMoveLocation } from "./services/plantMovement";
+import { movePlantBetweenLocations } from "./services/plantMovement";
 
 export default function App() {
   useGlobalAsyncErrorToasts();
@@ -94,6 +96,8 @@ export default function App() {
   const [selectedPlant, setSelectedPlant] = useState<
     PlantInstance["plant"] | null
   >(null);
+  const [activePlantDragSource, setActivePlantDragSource] =
+    useState<PlantMoveLocation | null>(null);
   const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false);
   const [treatmentTarget, setTreatmentTarget] =
     useState<TreatmentSuggestionTarget | null>(null);
@@ -377,6 +381,14 @@ export default function App() {
     setTreatmentTarget(null);
   };
 
+  const handleMovePlant = (
+    source: PlantMoveLocation,
+    target: PlantMoveLocation,
+  ) => {
+    setAreas((prev) => movePlantBetweenLocations(prev, source, target));
+    setLastSelected(target.areaId, target.planterId);
+  };
+
   return (
     <div className="size-full flex flex-col bg-background relative overflow-hidden">
       {dbError && (
@@ -597,6 +609,7 @@ export default function App() {
                                 className="transition-transform hover:scale-[1.01] duration-300"
                               >
                                 <PlanterGrid
+                                  areaId={area.id}
                                   id={planter.id}
                                   name={planter.name}
                                   rows={planter.rows}
@@ -625,6 +638,10 @@ export default function App() {
                                       })),
                                     );
                                   }}
+                                  moveAreas={areas as unknown as import("./data/schema").Area[]}
+                                  activeDragSource={activePlantDragSource}
+                                  onDragSourceChange={setActivePlantDragSource}
+                                  onMovePlant={handleMovePlant}
                                   onEdit={
                                     isEditMode
                                       ? () =>

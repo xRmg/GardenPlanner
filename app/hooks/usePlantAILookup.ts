@@ -14,6 +14,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { Settings } from "../data/schema";
+import { getBundledPlantByMatch } from "../data/bundledPlants";
 import {
   dismissErrorToast,
   ERROR_TOAST_IDS,
@@ -27,7 +28,9 @@ import {
 } from "../lib/plantReferences";
 import { upsertMissingPlantNameOverrides } from "../i18n/plantNameOverrides";
 import {
+  getLocalizedPlantReferenceName,
   getKnownPlantReferences,
+  hasPlantNameTranslation,
   parseLocalizedPlantReferenceList,
 } from "../i18n/utils/plantTranslation";
 
@@ -36,9 +39,13 @@ import {
   PLANT_LOOKUP_SYSTEM_PROMPT,
   buildPlantLookupUserPrompt,
   CONFIDENCE,
+  normalizePlantName,
+  type FilteredPlantAIResponse,
   type PlantAIResponse,
 } from "../services/ai/prompts";
 import { getPlantCache } from "../services/ai/plantCache";
+
+const PLANT_AI_LOOKUP_TIMEOUT_MS = 25_000;
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -46,7 +53,7 @@ import { getPlantCache } from "../services/ai/plantCache";
 
 export interface PlantAILookupState {
   /** The most-recently received AI response, or null if not yet fetched. */
-  aiResult: PlantAIResponse | null;
+  aiResult: FilteredPlantAIResponse | null;
   /** True while the API call (or cache lookup) is in progress. */
   aiLoading: boolean;
   /** Non-empty when the last lookup failed. */
@@ -69,7 +76,7 @@ export interface PlantAILookupState {
 // ---------------------------------------------------------------------------
 
 export function usePlantAILookup(settings: Settings): PlantAILookupState {
-  const [aiResult, setAiResult] = useState<PlantAIResponse | null>(null);
+  const [aiResult, setAiResult] = useState<FilteredPlantAIResponse | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiModel, setAiModel] = useState("");
@@ -189,6 +196,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
             // room to think AND produce output. Tested: stepfun/step-3.5-flash:free
             // uses ~3600 reasoning tokens + ~800 output tokens = ~4400 total.
             maxTokens: 8192,
+            timeoutMs: PLANT_AI_LOOKUP_TIMEOUT_MS,
             signal: controller.signal,
           },
         );
@@ -240,8 +248,18 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 
         if (isDev) console.log("[usePlantAILookup] ✓ JSON parsed:", parsed);
 
+        if (!isPlantLookupNameMatch(name, parsed.name, settings.locale)) {
+          throw new Error(
+            `AI returned data for a different plant (requested: ${name}, received: ${parsed.name})`,
+          );
+        }
+
         // 5. Filter out fields below the rejection threshold
-        const filtered = filterLowConfidenceFields(parsed, settings.locale);
+        const filtered = filterLowConfidenceFields(
+          parsed,
+          settings.locale,
+          name,
+        );
         if (isDev)
           console.log(
             "[usePlantAILookup] ✓ Filtered (low-confidence fields removed):",
@@ -315,36 +333,78 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 export function filterLowConfidenceFields(
   result: PlantAIResponse,
   locale?: string,
-): PlantAIResponse {
+  requestedPlantName?: string,
+): FilteredPlantAIResponse {
   const c = result.confidence;
+  const selfRefs = new Set<string>();
+
+  if (requestedPlantName) {
+    resolvePlantLookupRefs(requestedPlantName, locale).forEach((ref) =>
+      selfRefs.add(ref),
+    );
+  }
+
+  resolvePlantLookupRefs(result.name, locale).forEach((ref) => selfRefs.add(ref));
+
   const normalizedCompanionLabels =
     (c.localizedCompanionLabels ?? c.companions ?? 1) >= CONFIDENCE.REJECT
-      ? normalizeLocalizedLabelMap(result.localizedCompanionLabels)
+      ? normalizeLocalizedLabelMap(result.localizedCompanionLabels, locale)
       : {};
   const normalizedAntagonistLabels =
     (c.localizedAntagonistLabels ?? c.antagonists ?? 1) >=
     CONFIDENCE.REJECT
-      ? normalizeLocalizedLabelMap(result.localizedAntagonistLabels)
+      ? normalizeLocalizedLabelMap(result.localizedAntagonistLabels, locale)
       : {};
-  const companions =
+  const companions = stripSelfReferences(
     (c.companions ?? 1) >= CONFIDENCE.REJECT
       ? normalizeRelationshipRefs(
           result.companions,
           normalizedCompanionLabels,
           locale,
         )
-      : [];
-  const antagonists =
+      : [],
+    selfRefs,
+  );
+  const antagonists = stripSelfReferences(
     (c.antagonists ?? 1) >= CONFIDENCE.REJECT
       ? normalizeRelationshipRefs(
           result.antagonists,
           normalizedAntagonistLabels,
           locale,
         )
-      : [];
+      : [],
+    selfRefs,
+  );
+  const conflictingRefs = new Set(
+    companions.filter((ref) => antagonists.includes(ref)),
+  );
+  const filteredCompanions = companions.filter(
+    (ref) => !conflictingRefs.has(ref),
+  );
+  const filteredAntagonists = antagonists.filter(
+    (ref) => !conflictingRefs.has(ref),
+  );
 
-  return {
+  const filtered: FilteredPlantAIResponse = {
     ...result,
+    latinName:
+      (c.latinName ?? 1) >= CONFIDENCE.REJECT
+        ? result.latinName?.trim() || undefined
+        : undefined,
+    description:
+      (c.description ?? 1) >= CONFIDENCE.REJECT
+        ? result.description?.trim() || undefined
+        : undefined,
+    daysToHarvest:
+      (c.daysToHarvest ?? 1) >= CONFIDENCE.REJECT
+        ? result.daysToHarvest
+        : undefined,
+    spacingCm:
+      (c.spacingCm ?? 1) >= CONFIDENCE.REJECT ? result.spacingCm : undefined,
+    sunRequirement:
+      (c.sunRequirement ?? 1) >= CONFIDENCE.REJECT
+        ? result.sunRequirement
+        : undefined,
     watering:
       (c.watering ?? 1) >= CONFIDENCE.REJECT ? result.watering : undefined,
     growingTips:
@@ -361,19 +421,82 @@ export function filterLowConfidenceFields(
         : [],
     harvestMonths:
       (c.harvestMonths ?? 1) >= CONFIDENCE.REJECT ? result.harvestMonths : [],
-    companions,
-    antagonists,
+    companions: filteredCompanions,
+    antagonists: filteredAntagonists,
     localizedCompanionLabels: filterLocalizedLabelMap(
       normalizedCompanionLabels,
-      companions,
+      filteredCompanions,
     ),
     localizedAntagonistLabels: filterLocalizedLabelMap(
       normalizedAntagonistLabels,
-      antagonists,
+      filteredAntagonists,
     ),
     icon: (c.icon ?? 0) >= CONFIDENCE.HIGH ? result.icon : undefined,
     color: (c.color ?? 0) >= CONFIDENCE.HIGH ? result.color : undefined,
   };
+
+  return enforceBundledPlantConsistency(requestedPlantName, filtered, locale);
+}
+
+function isPlantLookupNameMatch(
+  requestedName: string,
+  returnedName: string,
+  locale?: string,
+): boolean {
+  if (normalizePlantName(requestedName) === normalizePlantName(returnedName)) {
+    return true;
+  }
+
+  const requestedRefs = resolvePlantLookupRefs(requestedName, locale);
+  const returnedRefs = resolvePlantLookupRefs(returnedName, locale);
+
+  return [...requestedRefs].some((ref) => returnedRefs.has(ref));
+}
+
+function resolvePlantLookupRefs(name: string, locale?: string): Set<string> {
+  return new Set(
+    [normalizePlantReference(name), ...parseLocalizedPlantReferenceList(name, locale)]
+      .filter(Boolean),
+  );
+}
+
+function stripSelfReferences(values: string[], selfRefs: Set<string>): string[] {
+  return values.filter((ref) => !selfRefs.has(ref));
+}
+
+function normalizeLatinName(value: string | undefined): string {
+  return value?.trim().toLowerCase().replace(/\s+/g, " ") ?? "";
+}
+
+function enforceBundledPlantConsistency(
+  requestedPlantName: string | undefined,
+  result: FilteredPlantAIResponse,
+  locale?: string,
+): FilteredPlantAIResponse {
+  if (!requestedPlantName || !result.latinName) return result;
+
+  const requestedRefs = resolvePlantLookupRefs(requestedPlantName, locale);
+  const bundledMatch = [
+    getBundledPlantByMatch({ name: requestedPlantName }),
+    ...[...requestedRefs].map((ref) => getBundledPlantByMatch({ id: ref })),
+  ].find(Boolean);
+
+  if (!bundledMatch?.latinName) return result;
+
+  if (
+    normalizeLatinName(result.latinName) !==
+    normalizeLatinName(bundledMatch.latinName)
+  ) {
+    console.warn(
+      `[usePlantAILookup] Dropping latinName "${result.latinName}" because bundled data for "${requestedPlantName}" expects "${bundledMatch.latinName}"`,
+    );
+    return {
+      ...result,
+      latinName: undefined,
+    };
+  }
+
+  return result;
 }
 
 function normalizeRelationshipRefs(
@@ -408,6 +531,7 @@ function normalizeRelationshipRefs(
 
 function normalizeLocalizedLabelMap(
   labels: Record<string, string> | undefined,
+  locale?: string,
 ): Record<string, string> {
   const normalized: Record<string, string> = {};
 
@@ -415,6 +539,16 @@ function normalizeLocalizedLabelMap(
     const normalizedRef = normalizePlantReference(ref);
     const trimmedLabel = label.trim();
     if (!normalizedRef || !trimmedLabel) return;
+
+    if (locale && hasPlantNameTranslation(normalizedRef, locale)) {
+      const existingLabel = getLocalizedPlantReferenceName(normalizedRef, locale);
+      if (existingLabel.trim().toLowerCase() !== trimmedLabel.toLowerCase()) {
+        console.warn(
+          `[usePlantAILookup] Dropping AI label "${trimmedLabel}" for "${normalizedRef}" because the locale bundle already provides "${existingLabel}"`,
+        );
+      }
+      return;
+    }
 
     normalized[normalizedRef] = trimmedLabel;
   });
@@ -433,7 +567,7 @@ function filterLocalizedLabelMap(
 }
 
 async function persistLocalizedRelationshipLabels(
-  result: PlantAIResponse,
+  result: FilteredPlantAIResponse,
   locale?: string,
 ): Promise<void> {
   const labels: Record<

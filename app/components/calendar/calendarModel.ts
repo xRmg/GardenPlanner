@@ -4,7 +4,10 @@ import type {
   Priority,
   Suggestion,
 } from "../../data/schema";
-import { buildPlacedPlants } from "../../services/gardenState";
+import {
+  buildPlacedPlants,
+  buildPlantLocationLookup,
+} from "../../services/gardenState";
 import i18n from "../../i18n/config";
 import { getPlantName } from "../../i18n/utils/plantTranslation";
 
@@ -262,8 +265,14 @@ function buildEventItem(
   event: GardenEvent,
   dateKey: string,
   locations: Map<string, PlanterLocation>,
+  instanceLocations: Map<string, PlanterLocation>,
 ): CalendarEventItem {
-  const location = event.gardenId ? locations.get(event.gardenId) : undefined;
+  const location = event.instanceId
+    ? instanceLocations.get(event.instanceId) ??
+      (event.gardenId ? locations.get(event.gardenId) : undefined)
+    : event.gardenId
+      ? locations.get(event.gardenId)
+      : undefined;
   const plantName = event.plant
     ? getPlantName(event.plant.id, event.plant.name)
     : undefined;
@@ -386,6 +395,7 @@ export function buildCalendarMonth({
   const todayLocal = normalizeDate(today) ?? startOfCalendarMonth(new Date());
   const isCurrentMonth = isSameMonth(monthStart, todayLocal);
   const locations = getPlanterLookup(areas);
+  const instanceLocations = buildPlantLocationLookup(areas);
 
   const eventMap = new Map<string, CalendarEventItem[]>();
   const datedSuggestionMap = new Map<string, CalendarSuggestionItem[]>();
@@ -405,7 +415,11 @@ export function buildCalendarMonth({
     const date = normalizeDate(event.date);
     if (!date) continue;
 
-    pushItem(eventMap, dateKey, buildEventItem(event, dateKey, locations));
+    pushItem(
+      eventMap,
+      dateKey,
+      buildEventItem(event, dateKey, locations, instanceLocations),
+    );
     if (isSameMonth(date, monthStart)) {
       counts.events += 1;
     }

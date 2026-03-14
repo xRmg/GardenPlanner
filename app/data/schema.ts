@@ -360,6 +360,8 @@ export const GardenEventSchema = z.object({
   date: z.string().datetime({ offset: true }),
   /** The planter ID this event relates to, if applicable. */
   gardenId: z.string().optional(),
+  /** The placed plant instance this event relates to, if applicable. */
+  instanceId: z.string().optional(),
   note: z.string().max(500).optional(),
   /** Forward-compatibility for Tier 1c / Tier 4. */
   profileId: z.string().default("default"),

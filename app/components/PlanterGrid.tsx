@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
-import { X, Settings, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { X, Settings, Trash2, ArrowUp, ArrowDown, Move } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PlantDetailsDialog } from "./PlantDetailsDialog";
+import { MovePlantPicker } from "./MovePlantPicker";
 import { RemovalConfirmDialog } from "./RemovalConfirmDialog";
 import { VirtualSection } from "./PlanterDialog";
 import { cn } from "./ui/utils";
-import type { GrowthStage, HealthState } from "../data/schema";
+import { useIsMobile } from "./ui/use-mobile";
+import type { Area as MoveArea, GrowthStage, HealthState } from "../data/schema";
 import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
+import type { PlantMoveLocation } from "../services/plantMovement";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -78,6 +81,7 @@ export interface PlanterSquare {
 }
 
 interface PlanterGridProps {
+  areaId: string;
   id: string;
   name: string;
   rows: number;
@@ -101,6 +105,10 @@ interface PlanterGridProps {
   ) => void;
   onSquaresChange?: (squares: PlanterSquare[][], planterId: string) => void;
   onHealthStateChange?: (instance: PlantInstance, planterId: string) => void;
+  moveAreas: MoveArea[];
+  activeDragSource: PlantMoveLocation | null;
+  onDragSourceChange: (source: PlantMoveLocation | null) => void;
+  onMovePlant: (source: PlantMoveLocation, target: PlantMoveLocation) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onMoveUp?: () => void;
@@ -167,6 +175,7 @@ function abbreviatePlantName(name: string): string {
 }
 
 export function PlanterGrid({
+  areaId,
   id,
   name,
   rows,
@@ -182,12 +191,17 @@ export function PlanterGrid({
   onPlantUpdated,
   onSquaresChange,
   onHealthStateChange,
+  moveAreas,
+  activeDragSource,
+  onDragSourceChange,
+  onMovePlant,
   onEdit,
   onDelete,
   onMoveUp,
   onMoveDown,
 }: PlanterGridProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isMobile = useIsMobile();
   const buildEmptyGrid = () =>
     Array(rows)
       .fill(null)
@@ -223,15 +237,29 @@ export function PlanterGrid({
   const [singleCellMode, setSingleCellMode] = useState(false);
   // Set of "row,col" keys whose group is currently hovered (for group-wide zoom)
   const [hoveredCells, setHoveredCells] = useState<Set<string>>(new Set());
-  // Drag-and-drop state for moving plants between cells
-  const [dragSourceCell, setDragSourceCell] = useState<{
-    row: number;
-    col: number;
-  } | null>(null);
   const [dragOverCell, setDragOverCell] = useState<{
     row: number;
     col: number;
   } | null>(null);
+  const [movePickerSource, setMovePickerSource] = useState<{
+    location: PlantMoveLocation;
+    plantInstance: PlantInstance;
+  } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressClickRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      initialSquares &&
+      initialSquares.length === rows &&
+      initialSquares[0]?.length === cols
+    ) {
+      setSquares(initialSquares);
+      return;
+    }
+
+    setSquares(buildEmptyGrid());
+  }, [cols, initialSquares, rows]);
 
   useEffect(() => {
     if (!detailsOpen) {
@@ -239,6 +267,12 @@ export function PlanterGrid({
       setSingleCellMode(false);
     }
   }, [detailsOpen]);
+
+  useEffect(() => {
+    if (!activeDragSource) {
+      setDragOverCell(null);
+    }
+  }, [activeDragSource]);
 
   // Precompute group sizes for all cells to avoid repeated flood-fills in render
   const groupSizeMap = useMemo(() => {
@@ -299,6 +333,13 @@ export function PlanterGrid({
     colIndex: number,
     e: React.MouseEvent,
   ) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     const currentSquare = squares[rowIndex][colIndex];
 
     if (currentSquare.plantInstance) {
@@ -468,9 +509,10 @@ export function PlanterGrid({
     e: React.DragEvent,
   ) => {
     if (!squares[rowIndex][colIndex].plantInstance) return;
-    setDragSourceCell({ row: rowIndex, col: colIndex });
+    const source = { areaId, planterId: id, row: rowIndex, col: colIndex };
+    onDragSourceChange(source);
     e.dataTransfer.effectAllowed = "move";
-    // A non-empty setData call is required by some browsers to initiate a valid drag
+    e.dataTransfer.setData("application/gardenplanner-plant", JSON.stringify(source));
     e.dataTransfer.setData("text/plain", `${rowIndex},${colIndex}`);
   };
 
@@ -480,9 +522,15 @@ export function PlanterGrid({
     e: React.DragEvent,
   ) => {
     e.preventDefault();
-    if (!dragSourceCell) return;
-    if (dragSourceCell.row === rowIndex && dragSourceCell.col === colIndex)
+    if (!activeDragSource) return;
+    if (
+      activeDragSource.areaId === areaId &&
+      activeDragSource.planterId === id &&
+      activeDragSource.row === rowIndex &&
+      activeDragSource.col === colIndex
+    ) {
       return;
+    }
     e.dataTransfer.dropEffect = "move";
     setDragOverCell({ row: rowIndex, col: colIndex });
   };
@@ -502,32 +550,62 @@ export function PlanterGrid({
     e: React.DragEvent,
   ) => {
     e.preventDefault();
-    if (!dragSourceCell) return;
-    const { row: srcRow, col: srcCol } = dragSourceCell;
-    setDragSourceCell(null);
+    if (!activeDragSource) return;
     setDragOverCell(null);
-    if (srcRow === rowIndex && srcCol === colIndex) return;
+    const target = { areaId, planterId: id, row: rowIndex, col: colIndex };
+    if (
+      activeDragSource.areaId === target.areaId &&
+      activeDragSource.planterId === target.planterId &&
+      activeDragSource.row === target.row &&
+      activeDragSource.col === target.col
+    ) {
+      onDragSourceChange(null);
+      return;
+    }
 
-    const newSquares = squares.map((row) => [...row]);
-    const sourceInstance = newSquares[srcRow][srcCol].plantInstance;
-    const targetInstance = newSquares[rowIndex][colIndex].plantInstance;
-    newSquares[rowIndex][colIndex] = {
-      ...newSquares[rowIndex][colIndex],
-      plantInstance: sourceInstance,
-    };
-    newSquares[srcRow][srcCol] = {
-      ...newSquares[srcRow][srcCol],
-      plantInstance: targetInstance,
-    };
-
-    setSquares(newSquares);
-    onSquaresChange?.(newSquares, id);
+    onMovePlant(activeDragSource, target);
+    onDragSourceChange(null);
   };
 
   const handleDragEnd = () => {
-    setDragSourceCell(null);
+    onDragSourceChange(null);
     setDragOverCell(null);
   };
+
+  const clearLongPressTimer = () => {
+    if (!longPressTimerRef.current) return;
+    clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+  };
+
+  const openMovePicker = (
+    rowIndex: number,
+    colIndex: number,
+    plantInstance: PlantInstance,
+  ) => {
+    setMovePickerSource({
+      location: { areaId, planterId: id, row: rowIndex, col: colIndex },
+      plantInstance,
+    });
+  };
+
+  const handleTouchStart = (
+    rowIndex: number,
+    colIndex: number,
+    plantInstance: PlantInstance | null,
+  ) => {
+    if (!isMobile || viewOnly || !plantInstance) return;
+
+    clearLongPressTimer();
+    longPressTimerRef.current = setTimeout(() => {
+      suppressClickRef.current = true;
+      openMovePicker(rowIndex, colIndex, plantInstance);
+      clearLongPressTimer();
+    }, 450);
+  };
+
+  const isDragSourceCell =
+    activeDragSource?.areaId === areaId && activeDragSource?.planterId === id;
 
   return (
     <>
@@ -546,8 +624,8 @@ export function PlanterGrid({
               <button
                 onClick={onMoveUp}
                 className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
-                title="Move planter up"
-                aria-label={`Move ${name} up`}
+                title={t("planterGrid.movePlanterUpTitle")}
+                aria-label={t("planterGrid.movePlanterUpAriaLabel", { name })}
               >
                 <ArrowUp className="w-4 h-4" />
               </button>
@@ -556,8 +634,8 @@ export function PlanterGrid({
               <button
                 onClick={onMoveDown}
                 className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
-                title="Move planter down"
-                aria-label={`Move ${name} down`}
+                title={t("planterGrid.movePlanterDownTitle")}
+                aria-label={t("planterGrid.movePlanterDownAriaLabel", { name })}
               >
                 <ArrowDown className="w-4 h-4" />
               </button>
@@ -566,8 +644,8 @@ export function PlanterGrid({
               <button
                 onClick={onEdit}
                 className="p-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
-                title="Edit planter"
-                aria-label={`Edit ${name}`}
+                title={t("planterGrid.editPlanterTitle")}
+                aria-label={t("planterGrid.editPlanterAriaLabel", { name })}
               >
                 <Settings className="w-4 h-4" />
               </button>
@@ -577,27 +655,32 @@ export function PlanterGrid({
                 <AlertDialogTrigger asChild>
                   <button
                     className="p-2 bg-destructive/5 hover:bg-destructive/10 text-destructive rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
-                    title="Remove planter"
-                    aria-label={`Remove ${name}`}
+                    title={t("planterGrid.removePlanterTitle")}
+                    aria-label={t("planterGrid.removePlanterAriaLabel", {
+                      name,
+                    })}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Remove Planter?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {t("planterGrid.removePlanterDialogTitle")}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete "{name}" and all its planted
-                      vegetables. This action cannot be undone.
+                      {t("planterGrid.removePlanterDialogDescription", {
+                        name,
+                      })}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={onDelete}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      Delete Planter
+                      {t("planterGrid.deletePlanter")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -682,39 +765,67 @@ export function PlanterGrid({
                         }
                         onDrop={(e) => handleDrop(rowIndex, colIndex, e)}
                         onDragEnd={handleDragEnd}
+                        onTouchStart={() =>
+                          handleTouchStart(
+                            rowIndex,
+                            colIndex,
+                            square.plantInstance,
+                          )
+                        }
+                        onTouchEnd={clearLongPressTimer}
+                        onTouchCancel={clearLongPressTimer}
+                        onTouchMove={clearLongPressTimer}
                         title={
                           square.plantInstance
-                            ? `${getPlantDisplayName(square.plantInstance.plant, i18n.language)}${square.plantInstance.plant.spacingCm ? ` · ${square.plantInstance.plant.spacingCm}cm spacing` : ""}`
+                            ? `${getPlantDisplayName(square.plantInstance.plant, i18n.language)}${square.plantInstance.plant.spacingCm ? ` · ${t("common.spacingCm", { count: square.plantInstance.plant.spacingCm })}` : ""}`
                             : undefined
                         }
                         aria-label={
                           square.plantInstance
-                            ? `${getPlantDisplayName(square.plantInstance.plant, i18n.language)} at row ${rowIndex + 1}, column ${colIndex + 1}`
+                            ? t("planterGrid.cellPlantAriaLabel", {
+                                name: getPlantDisplayName(
+                                  square.plantInstance.plant,
+                                  i18n.language,
+                                ),
+                                row: rowIndex + 1,
+                                col: colIndex + 1,
+                              })
                             : selectedPlant
-                              ? `Place ${getPlantDisplayName(selectedPlant, i18n.language)} at row ${rowIndex + 1}, column ${colIndex + 1}`
-                              : `Row ${rowIndex + 1}, column ${colIndex + 1} — empty`
+                              ? t("planterGrid.cellPlacePlantAriaLabel", {
+                                  name: getPlantDisplayName(
+                                    selectedPlant,
+                                    i18n.language,
+                                  ),
+                                  row: rowIndex + 1,
+                                  col: colIndex + 1,
+                                })
+                              : t("planterGrid.cellEmptyAriaLabel", {
+                                  row: rowIndex + 1,
+                                  col: colIndex + 1,
+                                })
                         }
                         className={cn(
-                          "w-12 h-12 rounded-lg relative transition-[transform,background-color,box-shadow,outline] duration-150 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden",
+                          "w-12 h-12 rounded-lg relative transition-[transform,background-color,box-shadow,outline] duration-150 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2",
                           square.plantInstance
                             ? "bg-white/90"
                             : "bg-white/40 hover:bg-white/80",
                           // Drag source: dim the cell being dragged
-                          dragSourceCell?.row === rowIndex &&
-                            dragSourceCell?.col === colIndex &&
+                          isDragSourceCell &&
+                            activeDragSource?.row === rowIndex &&
+                            activeDragSource?.col === colIndex &&
                             "opacity-40 scale-95",
                           // Drop target highlight (sky-blue ring)
-                          dragSourceCell &&
+                          activeDragSource &&
                             dragOverCell?.row === rowIndex &&
                             dragOverCell?.col === colIndex &&
                             "ring-2 ring-sky-400/70 ring-offset-1 scale-105",
                           // Grab cursor on draggable cells
                           !viewOnly &&
                             !!square.plantInstance &&
-                            !dragSourceCell &&
+                            !activeDragSource &&
                             "cursor-grab",
                           // Group hover zoom (applied to all cells in the hovered group)
-                          !dragSourceCell &&
+                          !activeDragSource &&
                             hoveredCells.has(`${rowIndex},${colIndex}`) &&
                             "scale-105",
                           // Group highlight (green ring)
@@ -768,14 +879,18 @@ export function PlanterGrid({
                                     square.plantInstance.healthState === "diseased" && "bg-red-500",
                                     square.plantInstance.healthState === "dead" && "bg-gray-400",
                                   )}
-                                  title={`Health: ${square.plantInstance.healthState}`}
+                                  title={t("planterGrid.healthTitle", {
+                                    state: t(
+                                      `dialogs.plantDetailsDialog.healthStates.${square.plantInstance.healthState}`,
+                                    ),
+                                  })}
                                 />
                               )}
                             {/* Group membership indicator: shown before any click */}
                             {(groupSizeMap.get(`${rowIndex},${colIndex}`) ?? 1) > 1 && (
                               <span
                                 className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-primary/40"
-                                title="Part of a metaplant group"
+                                title={t("planterGrid.metaplantGroupTitle")}
                               />
                             )}
                           </div>
@@ -792,7 +907,7 @@ export function PlanterGrid({
                                 </div>
                               ) : (
                                 <div className="opacity-0 group-hover/square:opacity-100 flex items-center justify-center bg-red-50/80 text-red-600 text-xs font-semibold">
-                                  No stock
+                                  {t("planterGrid.noStock")}
                                 </div>
                               )}
                             </>
@@ -801,12 +916,37 @@ export function PlanterGrid({
                       </button>
                       {!viewOnly && square.plantInstance && (
                         <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openMovePicker(rowIndex, colIndex, square.plantInstance!);
+                          }}
+                          className="absolute -top-1 -left-1 bg-white border border-primary/20 text-primary rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 group-focus-within/square:opacity-100 hover:bg-primary/5 transition-[opacity,background-color,transform] duration-150 hover:scale-110 active:scale-95 z-10 hidden sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                          title={t("planterGrid.movePlantTitle")}
+                          aria-label={t("planterGrid.movePlantAriaLabel", {
+                            name: getPlantDisplayName(
+                              square.plantInstance.plant,
+                              i18n.language,
+                            ),
+                            row: rowIndex + 1,
+                            col: colIndex + 1,
+                          })}
+                        >
+                          <Move className="w-3 h-3" />
+                        </button>
+                      )}
+                      {!viewOnly && square.plantInstance && (
+                        <button
                           onClick={(e) =>
                             handleRemovePlant(rowIndex, colIndex, e)
                           }
                           className="absolute -top-1 -right-1 bg-white border border-red-100 text-red-500 rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 hover:bg-red-50 transition-[opacity,background-color,transform] duration-150 hover:scale-110 active:scale-95 z-10"
-                          title="Remove plant"
-                          aria-label={`Remove ${getPlantDisplayName(square.plantInstance.plant, i18n.language)}`}
+                          title={t("planterGrid.removePlantTitle")}
+                          aria-label={t("planterGrid.removePlantAriaLabel", {
+                            name: getPlantDisplayName(
+                              square.plantInstance.plant,
+                              i18n.language,
+                            ),
+                          })}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -836,6 +976,19 @@ export function PlanterGrid({
         onUpdate={handleUpdatePlant}
         groupSize={highlightedCells.size}
         singleCellMode={singleCellMode}
+      />
+
+      <MovePlantPicker
+        open={movePickerSource !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMovePickerSource(null);
+          }
+        }}
+        source={movePickerSource}
+        areas={moveAreas}
+        mobile={isMobile}
+        onConfirmMove={onMovePlant}
       />
     </>
   );

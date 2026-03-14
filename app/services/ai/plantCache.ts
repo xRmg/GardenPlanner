@@ -12,7 +12,7 @@
 import { getGardenPlannerDB } from "../../data/dexieRepository";
 import type { Plant } from "../../data/schema";
 import { normalizePlantReference } from "../../lib/plantReferences";
-import type { PlantAIResponse } from "./prompts";
+import type { FilteredPlantAIResponse } from "./prompts";
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -23,7 +23,7 @@ const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export class PlantCache {
   private memCache = new Map<
     string,
-    { data: PlantAIResponse; timestamp: number; model: string }
+    { data: FilteredPlantAIResponse; timestamp: number; model: string }
   >();
 
   private normalizeKey(
@@ -45,7 +45,7 @@ export class PlantCache {
     latinName?: string,
     koeppenZone?: string,
     locale?: string,
-  ): Promise<PlantAIResponse | null> {
+  ): Promise<FilteredPlantAIResponse | null> {
     const key = this.normalizeKey(name, latinName, koeppenZone, locale);
 
     // 1. Memory cache
@@ -65,11 +65,11 @@ export class PlantCache {
         return null;
       }
       this.memCache.set(key, {
-        data: cached.data as PlantAIResponse,
+        data: cached.data as FilteredPlantAIResponse,
         timestamp: cached.timestamp,
         model: cached.model,
       });
-      return cached.data as PlantAIResponse;
+      return cached.data as FilteredPlantAIResponse;
     } catch {
       // IndexedDB unavailable (e.g. tests without a real browser)
       return null;
@@ -78,7 +78,7 @@ export class PlantCache {
 
   async set(
     name: string,
-    data: PlantAIResponse,
+    data: FilteredPlantAIResponse,
     model: string,
     latinName?: string,
     koeppenZone?: string,
@@ -105,7 +105,7 @@ export class PlantCache {
       const key = this.normalizeKey(p.name, p.latinName);
       if (this.memCache.has(key)) continue;
       // Build a minimal PlantAIResponse from the saved Plant
-      const data: PlantAIResponse = {
+      const data: FilteredPlantAIResponse = {
         name: p.name,
         latinName: p.latinName,
         variety: p.variety,

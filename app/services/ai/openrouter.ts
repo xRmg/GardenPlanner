@@ -79,7 +79,7 @@ export const MODEL_CHAIN = [
 // ---------------------------------------------------------------------------
 
 const rateLimiter = new RateLimiter(10, 60_000);
-const AI_PROXY_TIMEOUT_MS = 8_000;
+const AI_PROXY_TIMEOUT_MS = 25_000;
 
 export class OpenRouterClient {
   private config: OpenRouterConfig;
@@ -96,6 +96,7 @@ export class OpenRouterClient {
       maxTokens?: number;
       responseFormat?: { type: "json_object" };
       signal?: AbortSignal;
+      timeoutMs?: number;
     } = {},
   ): Promise<OpenRouterResponse> {
     const isDev = import.meta.env.DEV;
@@ -116,7 +117,8 @@ export class OpenRouterClient {
       );
     }
 
-    const request = createTimeoutAbortHandle(AI_PROXY_TIMEOUT_MS, options.signal);
+    const timeoutMs = options.timeoutMs ?? AI_PROXY_TIMEOUT_MS;
+    const request = createTimeoutAbortHandle(timeoutMs, options.signal);
 
     try {
       const response = await fetch(this.config.proxyUrl, {
@@ -139,9 +141,7 @@ export class OpenRouterClient {
       return response.json() as Promise<OpenRouterResponse>;
     } catch (error) {
       if (request.didTimeout() && !options.signal?.aborted) {
-        throw new Error(
-          `AI suggestion request timed out after ${AI_PROXY_TIMEOUT_MS / 1000}s`,
-        );
+        throw new Error(`AI request timed out after ${timeoutMs / 1000}s`);
       }
       throw error;
     } finally {
@@ -161,6 +161,7 @@ export class OpenRouterClient {
       maxTokens?: number;
       responseFormat?: { type: "json_object" };
       signal?: AbortSignal;
+      timeoutMs?: number;
     } = {},
   ): Promise<{ content: string; model: string }> {
     const isDev = import.meta.env.DEV;

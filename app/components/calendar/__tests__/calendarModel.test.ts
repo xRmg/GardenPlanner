@@ -157,6 +157,78 @@ describe("calendarModel", () => {
     expect(model.counts.datedSuggestions).toBe(1);
   });
 
+  it("shows the current planter location for plant-specific events after a move", () => {
+    const model = buildCalendarMonth({
+      month: new Date("2026-03-01T12:00:00.000Z"),
+      areas: [
+        makeArea({
+          planters: [
+            { id: "planter-1", name: "Bed A", rows: 1, cols: 1, squares: [[{ plantInstance: null }]], virtualSections: [] },
+            {
+              id: "planter-2",
+              name: "Bed B",
+              rows: 1,
+              cols: 1,
+              squares: [
+                [
+                  {
+                    plantInstance: {
+                      instanceId: "instance-1",
+                      plantingDate: "2026-03-01T10:00:00.000Z",
+                      plant: {
+                        id: "lettuce",
+                        name: "Lettuce",
+                        color: "#84cc16",
+                        icon: "🥬",
+                        companions: [],
+                        antagonists: [],
+                        sowIndoorMonths: [],
+                        sowDirectMonths: [],
+                        harvestMonths: [],
+                        isSeed: false,
+                        source: "bundled",
+                      },
+                      pestEvents: [],
+                      growthStage: null,
+                      growthStageOverride: false,
+                      healthState: null,
+                    },
+                  },
+                ],
+              ],
+              virtualSections: [],
+            },
+          ],
+        }),
+      ],
+      events: [
+        makeEvent({
+          gardenId: "planter-1",
+          instanceId: "instance-1",
+          plant: {
+            id: "lettuce",
+            name: "Lettuce",
+            color: "#84cc16",
+            icon: "🥬",
+            companions: [],
+            antagonists: [],
+            sowIndoorMonths: [],
+            sowDirectMonths: [],
+            harvestMonths: [],
+            isSeed: false,
+            source: "bundled",
+          },
+        }),
+      ],
+      suggestions: [],
+      today: new Date("2026-03-12T12:00:00.000Z"),
+    });
+
+    const march15 = model.days.find((day) => day.dateKey === "2026-03-15");
+
+    expect(march15?.events[0].detail).toContain("Kitchen Garden · Bed B");
+  });
+
   it("keeps undated suggestions on the current month only", () => {
     const currentMonthModel = buildCalendarMonth({
       month: new Date("2026-03-01T12:00:00.000Z"),

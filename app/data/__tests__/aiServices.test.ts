@@ -206,6 +206,31 @@ describe("PlantCache (in-memory)", () => {
 });
 
 describe("filterLowConfidenceFields", () => {
+  it("drops low-confidence scalar plant fields instead of auto-filling them", () => {
+    const source = makeAiResponse("tomato");
+    const filtered = filterLowConfidenceFields(
+      {
+        ...source,
+        confidence: {
+          ...source.confidence,
+          latinName: 0.2,
+          description: 0.2,
+          daysToHarvest: 0.2,
+          spacingCm: 0.2,
+          sunRequirement: 0.2,
+        },
+      },
+      "en",
+      "Tomato",
+    );
+
+    expect(filtered.latinName).toBeUndefined();
+    expect(filtered.description).toBeUndefined();
+    expect(filtered.daysToHarvest).toBeUndefined();
+    expect(filtered.spacingCm).toBeUndefined();
+    expect(filtered.sunRequirement).toBeUndefined();
+  });
+
   it("drops unknown relationship refs that have no localized label", () => {
     const filtered = filterLowConfidenceFields(
       {
@@ -214,6 +239,7 @@ describe("filterLowConfidenceFields", () => {
         localizedCompanionLabels: {},
       },
       "nl",
+      "Tomato",
     );
 
     expect(filtered.companions).toEqual(["basil"]);
@@ -227,12 +253,55 @@ describe("filterLowConfidenceFields", () => {
         localizedCompanionLabels: { "mystery herb": "Mysterie Kruid" },
       },
       "nl",
+      "Tomato",
     );
 
     expect(filtered.companions).toEqual(["mystery-herb"]);
     expect(filtered.localizedCompanionLabels).toEqual({
       "mystery-herb": "Mysterie Kruid",
     });
+  });
+
+  it("drops self-references from companions and antagonists", () => {
+    const filtered = filterLowConfidenceFields(
+      {
+        ...makeAiResponse("parsley"),
+        companions: ["parsley", "basil"],
+        antagonists: ["parsley"],
+      },
+      "nl",
+      "Peterselie",
+    );
+
+    expect(filtered.companions).toEqual(["basil"]);
+    expect(filtered.antagonists).toEqual([]);
+  });
+
+  it("drops AI labels when the locale bundle already has a translation", () => {
+    const filtered = filterLowConfidenceFields(
+      {
+        ...makeAiResponse("mint"),
+        antagonists: ["chamomile"],
+        localizedAntagonistLabels: { chamomile: "Kamperfoelie" },
+      },
+      "nl",
+      "Munt",
+    );
+
+    expect(filtered.localizedAntagonistLabels).toEqual({});
+  });
+
+  it("drops bundled latin names that contradict the authoritative catalogue", () => {
+    const filtered = filterLowConfidenceFields(
+      {
+        ...makeAiResponse("tomato"),
+        latinName: "Cucumis sativus",
+      },
+      "en",
+      "Tomato",
+    );
+
+    expect(filtered.latinName).toBeUndefined();
   });
 });
 

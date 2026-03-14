@@ -55,20 +55,6 @@ const COLORS = [
   "#ec4899", // Pink
 ];
 
-const COLOR_NAMES: Record<string, string> = {
-  "#ef4444": "Red",
-  "#f97316": "Orange",
-  "#f59e0b": "Amber",
-  "#84cc16": "Lime",
-  "#22c55e": "Green",
-  "#10b981": "Emerald",
-  "#06b6d4": "Cyan",
-  "#3b82f6": "Blue",
-  "#8b5cf6": "Violet",
-  "#d946ef": "Fuchsia",
-  "#ec4899": "Pink",
-};
-
 const EMOJIS = [
   "🌱",
   "🍅",
@@ -100,13 +86,21 @@ const EMOJIS = [
 // Confidence badge helper
 // ---------------------------------------------------------------------------
 
-function ConfidenceBadge({ confidence }: { confidence: number | undefined }) {
+function ConfidenceBadge({
+  confidence,
+  mediumTitle,
+  lowTitle,
+}: {
+  confidence: number | undefined;
+  mediumTitle: string;
+  lowTitle: string;
+}) {
   if (confidence === undefined || confidence >= CONFIDENCE.HIGH) return null;
   if (confidence >= CONFIDENCE.MEDIUM) {
     return (
       <span
         className="text-amber-500 text-[10px] font-bold ml-1"
-        title="AI suggestion — please verify"
+        title={mediumTitle}
       >
         ⚠
       </span>
@@ -115,7 +109,7 @@ function ConfidenceBadge({ confidence }: { confidence: number | undefined }) {
   return (
     <span
       className="text-red-500 text-[10px] font-bold ml-1"
-      title="Low confidence — please check carefully"
+      title={lowTitle}
     >
       ⚠⚠
     </span>
@@ -141,6 +135,38 @@ export function PlantDialog({
   settings,
 }: PlantDialogProps) {
   const { t, i18n } = useTranslation();
+  const confidenceBadgeTitles = {
+    mediumTitle: t("dialogs.plantDefinitionDialog.aiSuggestionVerifyTitle"),
+    lowTitle: t("dialogs.plantDefinitionDialog.lowConfidenceTitle"),
+  };
+  const getLocalizedColorName = (colorValue: string) => {
+    switch (colorValue) {
+      case "#ef4444":
+        return t("dialogs.plantDefinitionDialog.colorNames.red");
+      case "#f97316":
+        return t("dialogs.plantDefinitionDialog.colorNames.orange");
+      case "#f59e0b":
+        return t("dialogs.plantDefinitionDialog.colorNames.amber");
+      case "#84cc16":
+        return t("dialogs.plantDefinitionDialog.colorNames.lime");
+      case "#22c55e":
+        return t("dialogs.plantDefinitionDialog.colorNames.green");
+      case "#10b981":
+        return t("dialogs.plantDefinitionDialog.colorNames.emerald");
+      case "#06b6d4":
+        return t("dialogs.plantDefinitionDialog.colorNames.cyan");
+      case "#3b82f6":
+        return t("dialogs.plantDefinitionDialog.colorNames.blue");
+      case "#8b5cf6":
+        return t("dialogs.plantDefinitionDialog.colorNames.violet");
+      case "#d946ef":
+        return t("dialogs.plantDefinitionDialog.colorNames.fuchsia");
+      case "#ec4899":
+        return t("dialogs.plantDefinitionDialog.colorNames.pink");
+      default:
+        return colorValue;
+    }
+  };
   const monthLabels = useMemo(
     () => Array.from({ length: 12 }, (_, i) => formatMonthNarrow(i + 1)),
     [i18n.language],
@@ -345,6 +371,8 @@ export function PlantDialog({
     setLocalizedProseDirtyFields((prev) => new Set(prev).add(field));
   };
 
+  const canLookupWithAi = name.trim().length >= 2;
+
   const handleSave = () => {
     if (!name.trim()) {
       setNameError(t("dialogs.plantDefinitionDialog.nameError"));
@@ -528,7 +556,7 @@ export function PlantDialog({
           </div>
 
           {/* AI Auto-fill Bar */}
-          {aiEnabled && name.trim().length >= 2 && (
+          {aiEnabled && (
             <div className="flex items-center gap-2 px-4 py-2.5 bg-primary/5 rounded-xl border border-primary/20">
               {aiLoading ? (
                 <>
@@ -561,6 +589,7 @@ export function PlantDialog({
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={!canLookupWithAi}
                     onClick={() => handleAiLookup(name, variety)}
                     className="ml-auto shrink-0"
                   >
@@ -585,7 +614,9 @@ export function PlantDialog({
                   markOverride("icon");
                 }}
                 className={`w-10 h-10 flex items-center justify-center text-xl rounded-lg transition-[background-color,transform] hover:bg-white/80 active:scale-95 ${icon === e ? "bg-white shadow-md ring-2 ring-primary/20" : ""}`}
-                aria-label={`Select ${e} icon`}
+                aria-label={t("dialogs.plantDefinitionDialog.selectIconAriaLabel", {
+                  icon: e,
+                })}
                 aria-pressed={icon === e}
               >
                 {e}
@@ -609,7 +640,14 @@ export function PlantDialog({
                   }}
                   className={`w-8 h-8 rounded-full border-2 transition-[transform,border-color] hover:scale-110 active:scale-90 ${color === c ? "border-primary ring-2 ring-primary/20" : "border-white"}`}
                   style={{ backgroundColor: c }}
-                  aria-label={`${COLOR_NAMES[c] ?? c} color${color === c ? ", currently selected" : ""}`}
+                  aria-label={t(
+                    color === c
+                      ? "dialogs.plantDefinitionDialog.colorAriaLabelSelected"
+                      : "dialogs.plantDefinitionDialog.colorAriaLabel",
+                    {
+                      color: getLocalizedColorName(c),
+                    },
+                  )}
                   aria-pressed={color === c}
                 />
               ))}
@@ -620,7 +658,10 @@ export function PlantDialog({
           <div>
             <label htmlFor="plant-latin-name" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.latinName")}
-              <ConfidenceBadge confidence={confidence?.latinName} />
+              <ConfidenceBadge
+                confidence={confidence?.latinName}
+                {...confidenceBadgeTitles}
+              />
             </label>
             <input
               id="plant-latin-name"
@@ -653,7 +694,10 @@ export function PlantDialog({
             <div>
               <label htmlFor="plant-days-to-harvest" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.daysToHarvest")}
-                <ConfidenceBadge confidence={confidence?.daysToHarvest} />
+                <ConfidenceBadge
+                  confidence={confidence?.daysToHarvest}
+                  {...confidenceBadgeTitles}
+                />
               </label>
               <input
                 id="plant-days-to-harvest"
@@ -669,7 +713,10 @@ export function PlantDialog({
             <div>
               <label htmlFor="plant-spacing" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.spacingCm")}
-                <ConfidenceBadge confidence={confidence?.spacingCm} />
+                <ConfidenceBadge
+                  confidence={confidence?.spacingCm}
+                  {...confidenceBadgeTitles}
+                />
               </label>
               <input
                 id="plant-spacing"
@@ -710,7 +757,10 @@ export function PlantDialog({
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.sunlight")}
-              <ConfidenceBadge confidence={confidence?.sunRequirement} />
+              <ConfidenceBadge
+                confidence={confidence?.sunRequirement}
+                {...confidenceBadgeTitles}
+              />
             </label>
             <div className="flex gap-2">
               {(["full", "partial", "shade"] as const).map((opt) => (
@@ -740,7 +790,10 @@ export function PlantDialog({
           <div>
             <label htmlFor="plant-watering" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.watering")}
-              <ConfidenceBadge confidence={confidence?.watering} />
+              <ConfidenceBadge
+                confidence={confidence?.watering}
+                {...confidenceBadgeTitles}
+              />
             </label>
             <textarea
               id="plant-watering"
@@ -758,7 +811,10 @@ export function PlantDialog({
           <div>
             <label htmlFor="plant-growing-tips" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.growingTips")}
-              <ConfidenceBadge confidence={confidence?.growingTips} />
+              <ConfidenceBadge
+                confidence={confidence?.growingTips}
+                {...confidenceBadgeTitles}
+              />
             </label>
             <textarea
               id="plant-growing-tips"
@@ -777,7 +833,10 @@ export function PlantDialog({
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.sowIndoors")}
-              <ConfidenceBadge confidence={confidence?.sowIndoorMonths} />
+              <ConfidenceBadge
+                confidence={confidence?.sowIndoorMonths}
+                {...confidenceBadgeTitles}
+              />
             </label>
             <div className="flex flex-wrap gap-1">
               {monthLabels.map(
@@ -810,7 +869,10 @@ export function PlantDialog({
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.sowDirect")}
-              <ConfidenceBadge confidence={confidence?.sowDirectMonths} />
+              <ConfidenceBadge
+                confidence={confidence?.sowDirectMonths}
+                {...confidenceBadgeTitles}
+              />
             </label>
             <div className="flex flex-wrap gap-1">
               {monthLabels.map(
@@ -843,7 +905,10 @@ export function PlantDialog({
           <div>
             <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.harvestMonths")}
-              <ConfidenceBadge confidence={confidence?.harvestMonths} />
+              <ConfidenceBadge
+                confidence={confidence?.harvestMonths}
+                {...confidenceBadgeTitles}
+              />
             </label>
             <div className="flex flex-wrap gap-1">
               {monthLabels.map(
@@ -877,7 +942,10 @@ export function PlantDialog({
             <div>
               <label htmlFor="plant-companions" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.goodWith")}
-                <ConfidenceBadge confidence={confidence?.companions} />
+                <ConfidenceBadge
+                  confidence={confidence?.companions}
+                  {...confidenceBadgeTitles}
+                />
               </label>
               <input
                 id="plant-companions"
@@ -894,7 +962,10 @@ export function PlantDialog({
             <div>
               <label htmlFor="plant-antagonists" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
                 {t("dialogs.plantDefinitionDialog.avoidNear")}
-                <ConfidenceBadge confidence={confidence?.antagonists} />
+                <ConfidenceBadge
+                  confidence={confidence?.antagonists}
+                  {...confidenceBadgeTitles}
+                />
               </label>
               <input
                 id="plant-antagonists"
@@ -914,7 +985,10 @@ export function PlantDialog({
           <div>
             <label htmlFor="plant-description" className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
               {t("dialogs.plantDefinitionDialog.shortDescription")}
-              <ConfidenceBadge confidence={confidence?.description} />
+              <ConfidenceBadge
+                confidence={confidence?.description}
+                {...confidenceBadgeTitles}
+              />
             </label>
             <textarea
               id="plant-description"

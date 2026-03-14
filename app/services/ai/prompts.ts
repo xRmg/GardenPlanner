@@ -60,6 +60,26 @@ export interface PlantAIResponse {
   };
 }
 
+export interface FilteredPlantAIResponse
+  extends Omit<
+    PlantAIResponse,
+    | "latinName"
+    | "description"
+    | "daysToHarvest"
+    | "spacingCm"
+    | "sunRequirement"
+    | "watering"
+    | "growingTips"
+  > {
+  latinName?: string;
+  description?: string;
+  daysToHarvest?: number;
+  spacingCm?: number;
+  sunRequirement?: "full" | "partial" | "shade";
+  watering?: string;
+  growingTips?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Confidence thresholds
 // ---------------------------------------------------------------------------
@@ -80,11 +100,14 @@ export const PLANT_LOOKUP_SYSTEM_PROMPT = `You are a horticultural database assi
 Rules:
 - Return ONLY valid JSON. No markdown, no prose.
 - Echo the requested plant name and variety instead of inventing a different plant.
+- Do not substitute a related plant or a different species just because the requested name is ambiguous or localized.
 - Include latinName using accepted botanical nomenclature when known.
+- If you are not confident about the botanical match, keep the requested plant name unchanged and lower confidence on uncertain fields instead of guessing.
 - All month fields use 1-indexed arrays (1=January, 12=December)
 - Interpret sowing and harvest windows using the supplied Köppen–Geiger climate zone and coordinates when provided
 - spacingCm is the minimum distance between plants in centimeters
 - companions and antagonists are canonical lowercase plant slugs using hyphens for spaces
+- Never include the plant itself in companions or antagonists.
 - daysToHarvest is from transplant/direct sow to first harvest
 - sunRequirement is one of: "full", "partial", "shade"
 - watering should be a short practical watering note focused on frequency or soil moisture

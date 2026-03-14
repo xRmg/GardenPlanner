@@ -1202,6 +1202,71 @@ describe("buildRuleContext", () => {
     expect(ctx.lat).toBe(52.3);
   });
 
+  it("normalizes missing plant arrays from legacy area snapshots", () => {
+    const legacyPlant = {
+      id: "legacy-mint",
+      name: "Legacy Mint",
+      color: "#22c55e",
+      icon: "🌿",
+    } as Plant;
+
+    const area: Area = {
+      id: "area-1",
+      name: "Garden",
+      planters: [
+        {
+          id: "planter-1",
+          name: "Raised Bed A",
+          rows: 1,
+          cols: 1,
+          squares: [
+            [
+              {
+                plantInstance: {
+                  instanceId: "inst-1",
+                  plant: legacyPlant,
+                  pestEvents: [],
+                  growthStage: null,
+                  growthStageOverride: false,
+                  healthState: null,
+                },
+              },
+            ],
+          ],
+          virtualSections: [],
+        },
+      ],
+      profileId: "default",
+    };
+
+    const settings: Settings = {
+      location: "Amsterdam",
+      growthZone: "Cfb",
+      aiProvider: { type: "none" },
+      aiModel: "google/gemini-2.0-flash",
+      locale: "en",
+      lat: 52.3,
+      lng: 4.9,
+      profileId: "default",
+      isEditMode: false,
+    };
+
+    const ctx = buildRuleContext({
+      areas: [area],
+      seedlings: [],
+      events: [],
+      settings,
+      weather: null,
+    });
+
+    expect(ctx.placedPlants[0].plant.sowIndoorMonths).toEqual([]);
+    expect(ctx.placedPlants[0].plant.sowDirectMonths).toEqual([]);
+    expect(ctx.placedPlants[0].plant.harvestMonths).toEqual([]);
+    expect(ctx.placedPlants[0].plant.companions).toEqual([]);
+    expect(ctx.placedPlants[0].plant.antagonists).toEqual([]);
+    expect(() => runRules(ctx)).not.toThrow();
+  });
+
   it("builds lastEvents map from events array", () => {
     const plant = makePlant();
     const area: Area = {
@@ -1257,5 +1322,69 @@ describe("buildRuleContext", () => {
     const globalKey = "planter-1:global";
     expect(ctx.lastEvents.has(globalKey)).toBe(true);
     expect(ctx.lastEvents.get(globalKey)?.get("watered")).toBeInstanceOf(Date);
+  });
+
+  it("keeps plant-specific event continuity after a cross-planter move when instanceId is present", () => {
+    const plant = makePlant();
+    const area: Area = {
+      id: "area-1",
+      name: "Garden",
+      planters: [
+        {
+          id: "planter-2",
+          name: "Raised Bed B",
+          rows: 1,
+          cols: 1,
+          squares: [
+            [
+              {
+                plantInstance: {
+                  instanceId: "inst-1",
+                  plant,
+                  pestEvents: [],
+                  growthStage: null,
+                  growthStageOverride: false,
+                  healthState: null,
+                },
+              },
+            ],
+          ],
+          virtualSections: [],
+        },
+      ],
+      profileId: "default",
+    };
+
+    const events: GardenEvent[] = [
+      {
+        id: "ev-1",
+        type: "harvested",
+        date: "2026-05-10T10:00:00+00:00",
+        gardenId: "planter-1",
+        instanceId: "inst-1",
+        plant,
+        profileId: "default",
+      },
+    ];
+
+    const settings: Settings = {
+      location: "",
+      growthZone: "Cfb",
+      aiProvider: { type: "none" },
+      aiModel: "google/gemini-2.0-flash",
+      locale: "en",
+      profileId: "default",
+      isEditMode: false,
+    };
+
+    const ctx = buildRuleContext({
+      areas: [area],
+      seedlings: [],
+      events,
+      settings,
+      weather: null,
+    });
+
+    expect(ctx.lastEvents.get("planter-2:inst-1")?.get("harvested")).toBeInstanceOf(Date);
   });
 });

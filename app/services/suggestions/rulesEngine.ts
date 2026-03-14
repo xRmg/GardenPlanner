@@ -145,6 +145,25 @@ function translateSuggestion(
   return String(i18n.t(translationKey, { lng: ctx.locale, ...options }));
 }
 
+function normalizeSuggestionPlant<T extends RuleContext["placedPlants"][number]["plant"]>(
+  plant: T,
+): T {
+  return {
+    ...plant,
+    companions: Array.isArray(plant.companions) ? plant.companions : [],
+    antagonists: Array.isArray(plant.antagonists) ? plant.antagonists : [],
+    sowIndoorMonths: Array.isArray(plant.sowIndoorMonths)
+      ? plant.sowIndoorMonths
+      : [],
+    sowDirectMonths: Array.isArray(plant.sowDirectMonths)
+      ? plant.sowDirectMonths
+      : [],
+    harvestMonths: Array.isArray(plant.harvestMonths)
+      ? plant.harvestMonths
+      : [],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Rule: Weeding
 // ---------------------------------------------------------------------------
@@ -786,7 +805,13 @@ export function buildRuleContext(params: {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const placedPlants = buildPlacedPlants(areas);
+  const placedPlants = buildPlacedPlants(areas).map((placedPlant) => ({
+    ...placedPlant,
+    plant: normalizeSuggestionPlant(placedPlant.plant),
+  }));
+  const placedPlantsByInstanceId = new Map(
+    placedPlants.map((placedPlant) => [placedPlant.instanceId, placedPlant]),
+  );
 
   // Build lastEvents map
   const lastEvents = new Map<string, Map<string, Date>>();
@@ -801,20 +826,37 @@ export function buildRuleContext(params: {
         lastEvents.get(globalKey)!.set(event.type, evDate);
       }
     }
-    // Per-instance events (harvested, planted, etc.)
-    // We match by finding plants with the same name in placedPlants
-    if (event.plant) {
-      for (const placed of placedPlants) {
-        if (placed.plant.name === event.plant.name) {
-          const instanceKey = `${placed.planterId}:${placed.instanceId}`;
-          if (!lastEvents.has(instanceKey))
-            lastEvents.set(instanceKey, new Map());
-          const existing = lastEvents.get(instanceKey)!.get(event.type);
-          const evDate = new Date(event.date);
-          if (!existing || evDate > existing) {
-            lastEvents.get(instanceKey)!.set(event.type, evDate);
-          }
+    // Per-instance events (harvested, planted, treatment, etc.)
+    const evDate = new Date(event.date);
+    let instanceMatch = event.instanceId
+      ? placedPlantsByInstanceId.get(event.instanceId)
+      : undefined;
+
+    if (!instanceMatch && event.plant) {
+      const eventPlant = event.plant;
+      const matches = placedPlants.filter((placed) => {
+        if (event.gardenId && placed.planterId !== event.gardenId) {
+          return false;
         }
+
+        return eventPlant.id
+          ? placed.plant.id === eventPlant.id
+          : placed.plant.name === eventPlant.name;
+      });
+
+      if (matches.length === 1) {
+        instanceMatch = matches[0];
+      }
+    }
+
+    if (instanceMatch) {
+      const instanceKey = `${instanceMatch.planterId}:${instanceMatch.instanceId}`;
+      if (!lastEvents.has(instanceKey)) {
+        lastEvents.set(instanceKey, new Map());
+      }
+      const existing = lastEvents.get(instanceKey)!.get(event.type);
+      if (!existing || evDate > existing) {
+        lastEvents.get(instanceKey)!.set(event.type, evDate);
       }
     }
   }

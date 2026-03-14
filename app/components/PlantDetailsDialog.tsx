@@ -99,8 +99,9 @@ export function PlantDetailsDialog({
   singleCellMode,
 }: PlantDetailsDialogProps) {
   const { t, i18n } = useTranslation();
-  if (!plantInstance) return null;
-  const displayPlantName = getPlantDisplayName(plantInstance.plant, i18n.language);
+  const displayPlantName = plantInstance
+    ? getPlantDisplayName(plantInstance.plant, i18n.language)
+    : "";
 
   const [variety, setVariety] = useState(plantInstance?.variety || "");
   const [pestEvents, setPestEvents] = useState<PestEvent[]>(
@@ -121,28 +122,25 @@ export function PlantDetailsDialog({
   );
 
   const fallbackPlant = useMemo(
-    () => getBundledPlantByMatch(plantInstance.plant),
-    [plantInstance.plant],
+    () => (plantInstance ? getBundledPlantByMatch(plantInstance.plant) : undefined),
+    [plantInstance],
   );
   const mergedPlant = useMemo(
-    () => ({ ...fallbackPlant, ...plantInstance.plant }),
-    [fallbackPlant, plantInstance.plant],
+    () =>
+      plantInstance
+        ? { ...fallbackPlant, ...plantInstance.plant }
+        : null,
+    [fallbackPlant, plantInstance],
   );
-  const descriptionText = getLocalizedPlantContent(
-    mergedPlant,
-    "description",
-    i18n.language,
-  );
-  const wateringText = getLocalizedPlantContent(
-    mergedPlant,
-    "watering",
-    i18n.language,
-  );
-  const growingTipsText = getLocalizedPlantContent(
-    mergedPlant,
-    "growingTips",
-    i18n.language,
-  );
+  const descriptionText = mergedPlant
+    ? getLocalizedPlantContent(mergedPlant, "description", i18n.language)
+    : undefined;
+  const wateringText = mergedPlant
+    ? getLocalizedPlantContent(mergedPlant, "watering", i18n.language)
+    : undefined;
+  const growingTipsText = mergedPlant
+    ? getLocalizedPlantContent(mergedPlant, "growingTips", i18n.language)
+    : undefined;
   const sortedPestEvents = useMemo(
     () =>
       [...pestEvents].sort(
@@ -153,20 +151,22 @@ export function PlantDetailsDialog({
 
   const autoGrowthStage = useMemo(
     () =>
-      deriveGrowthStage({
-        plantingDate: plantInstance.plantingDate,
-        plant: {
-          daysToHarvest: plantInstance.plant.daysToHarvest,
-          daysToFlower: plantInstance.plant.daysToFlower,
-          daysToFruit: plantInstance.plant.daysToFruit,
-        },
-      }),
+      plantInstance
+        ? deriveGrowthStage({
+            plantingDate: plantInstance.plantingDate,
+            plant: {
+              daysToHarvest: plantInstance.plant.daysToHarvest,
+              daysToFlower: plantInstance.plant.daysToFlower,
+              daysToFruit: plantInstance.plant.daysToFruit,
+            },
+          })
+        : null,
     // instanceId covers the whole plant definition changing; plantingDate is
     // the only runtime-mutable field that affects derivation. Plant timeline
     // fields (daysToHarvest/Flower/Fruit) are static once a PlantInstance is
     // created, so omitting them avoids spurious recomputes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [plantInstance.instanceId, plantInstance.plantingDate],
+    [plantInstance?.instanceId, plantInstance?.plantingDate],
   );
 
   const displayedGrowthStage = growthStageOverride
@@ -174,6 +174,8 @@ export function PlantDetailsDialog({
     : autoGrowthStage;
 
   const handleSave = () => {
+    if (!plantInstance) return;
+
     onUpdate({
       ...plantInstance,
       variety: variety || undefined,
@@ -204,7 +206,7 @@ export function PlantDetailsDialog({
   };
 
   useEffect(() => {
-    if (open) {
+    if (open && plantInstance) {
       setVariety(plantInstance.variety || "");
       setPestEvents(plantInstance.pestEvents || []);
       setNewEventDescription("");
@@ -229,6 +231,8 @@ export function PlantDetailsDialog({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, variety, pestEvents, growthStageOverride, manualGrowthStage, healthState]);
+
+  if (!plantInstance || !mergedPlant) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -270,7 +274,7 @@ export function PlantDetailsDialog({
                 : "bg-primary/5 border-primary/20 text-primary",
             )}>
               <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
+                className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: singleCellMode ? "#f59e0b" : "var(--primary)" }}
               />
               {singleCellMode
@@ -334,7 +338,7 @@ export function PlantDetailsDialog({
 
             {/* Growth Stage */}
             <div className="mt-4">
-              <label className="text-xs font-bold text-muted-foreground block mb-1 flex items-center gap-1.5">
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
                 <Leaf className="w-3.5 h-3.5" />
                 {t("dialogs.plantDetailsDialog.growthStageLabel")}
               </label>
@@ -378,7 +382,7 @@ export function PlantDetailsDialog({
 
             {/* Health State */}
             <div className="mt-4">
-              <label className="text-xs font-bold text-muted-foreground block mb-1 flex items-center gap-1.5">
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
                 <Heart className="w-3.5 h-3.5" />
                 {t("dialogs.plantDetailsDialog.healthStateLabel")}
               </label>

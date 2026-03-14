@@ -38,6 +38,7 @@ export interface GardenEvent {
   plant?: Plant;
   date: string;
   gardenId?: string;
+  instanceId?: string;
   note?: string;
 }
 

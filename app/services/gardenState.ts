@@ -29,6 +29,14 @@ export interface PlacedPlant {
   healthState: HealthState | null;
 }
 
+export interface PlantLocation {
+  instanceId: string;
+  planterId: string;
+  planterName: string;
+  areaId: string;
+  areaName: string;
+}
+
 function buildAdjacentPlants(
   squares:
     | Array<
@@ -122,4 +130,19 @@ export function buildPlacedPlants(areas: Area[]): PlacedPlant[] {
   }
 
   return placedPlants;
+}
+
+export function buildPlantLocationLookup(areas: Area[]): Map<string, PlantLocation> {
+  return new Map(
+    buildPlacedPlants(areas).map((placedPlant) => [
+      placedPlant.instanceId,
+      {
+        instanceId: placedPlant.instanceId,
+        planterId: placedPlant.planterId,
+        planterName: placedPlant.planterName,
+        areaId: placedPlant.areaId,
+        areaName: placedPlant.areaName,
+      },
+    ]),
+  );
 }

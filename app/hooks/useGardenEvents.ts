@@ -65,6 +65,7 @@ export function useGardenEvents({
       plant: plantInstance.plant,
       date: new Date().toISOString(),
       gardenId: planterId,
+      instanceId: plantInstance.instanceId,
     };
     setEvents((prev) => [eventLog, ...prev]);
     void repositoryRef.current.saveEvent(
@@ -92,6 +93,7 @@ export function useGardenEvents({
       plant: plantInstance.plant,
       date: new Date().toISOString(),
       gardenId: planterId,
+      instanceId: plantInstance.instanceId,
     };
     setEvents((prev) => [eventLog, ...prev]);
     void repositoryRef.current.saveEvent(
@@ -127,6 +129,7 @@ export function useGardenEvents({
       plant: plantInstance.plant,
       date: event.date,
       gardenId: planterId,
+      instanceId: plantInstance.instanceId,
       note: event.description,
     }));
 
@@ -141,6 +144,7 @@ export function useGardenEvents({
         plant: plantInstance.plant,
         date: new Date().toISOString(),
         gardenId: planterId,
+        instanceId: plantInstance.instanceId,
         note: `Health state changed to: ${plantInstance.healthState}`,
       });
     }
@@ -196,6 +200,7 @@ export function useGardenEvents({
       plant: suggestion.plant,
       date: new Date().toISOString(),
       gardenId: suggestion.planterId,
+      instanceId: suggestion.instanceId,
       note:
         suggestion.type === "treatment" ? suggestion.description : undefined,
     };

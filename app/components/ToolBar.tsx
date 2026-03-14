@@ -151,7 +151,7 @@ export function ToolBar({
             <button
               onClick={() => scroll("left")}
               className="relative z-10 w-6 h-6 rounded-full bg-card border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-md transition-[box-shadow,color] ml-0.5"
-              aria-label="Scroll plants left"
+              aria-label={t("toolbar.scrollPlantsLeft")}
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -258,7 +258,7 @@ export function ToolBar({
             <button
               onClick={() => scroll("right")}
               className="relative z-10 w-6 h-6 rounded-full bg-card border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-md transition-[box-shadow,color] mr-0.5"
-              aria-label="Scroll plants right"
+              aria-label={t("toolbar.scrollPlantsRight")}
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
