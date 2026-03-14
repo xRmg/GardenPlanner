@@ -12,6 +12,7 @@ import type {
   GardenEventType,
   Priority,
   SuggestionType,
+  SuggestionScope,
 } from "../../data/schema";
 import type { PlacedPlant } from "../gardenState";
 import type { WeatherData } from "../weather";
@@ -74,6 +75,8 @@ export interface SuggestionResult {
   areaName?: string;
   /** Human-readable planter name for display. */
   planterName?: string;
+  /** Explicit scope of the suggestion target. */
+  scope?: SuggestionScope;
 }
 
 export interface AISuggestionResult {
@@ -85,6 +88,14 @@ export interface AISuggestionResult {
   description: string;
   dueDate?: string;
   source: "ai";
+  /** Area ID for area-scoped AI suggestions. */
+  areaId?: string;
+  /** Human-readable area name. */
+  areaName?: string;
+  /** Human-readable planter name. */
+  planterName?: string;
+  /** Explicit scope of the suggestion target. */
+  scope?: SuggestionScope;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,6 +135,8 @@ export interface AISuggestionContext {
   currentMonth: number;
   responseLocale: "en" | "nl";
   responseLanguage: string;
+  /** AI model used to generate this batch — included in the cache key. */
+  model: string;
   weather: {
     todayTempMaxC: number;
     todayPrecipMm: number;
@@ -147,11 +160,15 @@ export interface RawAISuggestion {
   type: string;
   plantName?: string | null;
   planterName?: string | null;
+  /** Area name — used for area-scoped suggestions mentioning sensitive plants. */
+  areaName?: string | null;
   priority: string;
   description: string;
   dueDate?: string | null;
   rationale: string;
   confidence: number;
+  /** Target scope declared by the AI. */
+  scope?: string | null;
 }
 
 export interface AISuggestionsResponse {

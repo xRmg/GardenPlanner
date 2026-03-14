@@ -86,6 +86,8 @@ export interface Suggestion {
   areaName?: string;
   /** Human-readable planter name for display. */
   planterName?: string;
+  /** Explicit scope of the suggestion target. */
+  scope?: "area" | "planter" | "plant";
 }
 
 interface EventsBarProps {
@@ -490,6 +492,58 @@ export function EventsBar({
                           <p className="text-xs font-bold text-foreground mt-0.5 leading-tight">
                             {suggestion.description}
                           </p>
+                          {/* Scope-aware location context (LAS.2) */}
+                          {(() => {
+                            const scope = suggestion.scope;
+                            // Area scope: show area name prominently
+                            if (scope === "area" && suggestion.areaName) {
+                              return (
+                                <div className="flex items-center gap-1 mt-0.5 opacity-60">
+                                  <span className="text-[7.5px] font-black uppercase text-muted-foreground tracking-wider">
+                                    {suggestion.areaName}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            // Planter scope: show planter name, then area if available
+                            if (scope === "planter" && (suggestion.planterName || suggestion.areaName)) {
+                              const label = suggestion.planterName
+                                ? suggestion.areaName
+                                  ? `${suggestion.areaName} › ${suggestion.planterName}`
+                                  : suggestion.planterName
+                                : suggestion.areaName!;
+                              return (
+                                <div className="flex items-center gap-1 mt-0.5 opacity-60">
+                                  <span className="text-[7.5px] font-black uppercase text-muted-foreground tracking-wider">
+                                    {label}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            // Plant scope with no plant object but names available
+                            if (scope === "plant" && !suggestion.plant && (suggestion.planterName || suggestion.areaName)) {
+                              const label = suggestion.planterName ?? suggestion.areaName!;
+                              return (
+                                <div className="flex items-center gap-1 mt-0.5 opacity-60">
+                                  <span className="text-[7.5px] font-black uppercase text-muted-foreground tracking-wider">
+                                    {label}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            // Fallback: no scope set but planter/area names available
+                            if (!scope && (suggestion.planterName || suggestion.areaName)) {
+                              const label = suggestion.planterName ?? suggestion.areaName!;
+                              return (
+                                <div className="flex items-center gap-1 mt-0.5 opacity-60">
+                                  <span className="text-[7.5px] font-black uppercase text-muted-foreground tracking-wider">
+                                    {label}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                           {suggestion.plant && (
                             <div className="flex items-center gap-1 mt-0.5 opacity-60">
                               <span className="text-xs scale-90 origin-left">

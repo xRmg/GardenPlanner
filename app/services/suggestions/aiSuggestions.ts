@@ -82,14 +82,24 @@ SUGGESTION PRINCIPLES
   the input context (plant name, planting date, weather reading, seedling status).
   Never invent plants or events not present in the context.
 - The input includes responseLocale and responseLanguage.
-- Write description and rationale entirely in responseLanguage.
+- CRITICAL: Write ALL text fields (description, rationale) entirely in responseLanguage.
+  Never mix languages. If responseLanguage is Dutch, respond in Dutch. If English, respond in English.
 - If a plant or seedling includes displayName fields, use those localized names
-  in prose.
+  in prose (description/rationale).
 - Keep plantName and planterName in the JSON response equal to the canonical
   input name and planterName values so the application can match entities.
 - description: one imperative sentence, ≤ 120 characters, no plant emoji.
 - rationale: one internal sentence (≤ 100 chars) explaining why — for logging only,
   never displayed to the user.
+
+SCOPE RULES
+- Set "scope" to "area" for broad risk affecting multiple planters (frost, storm, heat stress).
+  Area suggestions may mention especially sensitive plants in the description when it improves
+  actionability, but the primary target must remain the whole area.
+- Set "scope" to "planter" for maintenance affecting one specific planter.
+- Set "scope" to "plant" for instance-specific work (harvest timing, pest treatment, pruning).
+- When setting scope="area", set areaName to the area name if only plants from one area are involved;
+  otherwise omit areaName.
 
 CLIMATE AWARENESS
 - Apply the supplied Köppen–Geiger zone and hemisphere to all timing advice.
@@ -117,8 +127,10 @@ Return schema (JSON):
   "suggestions": [
     {
       "type": string,
+      "scope": "area" | "planter" | "plant",
       "plantName": string | null,
       "planterName": string | null,
+      "areaName": string | null,
       "priority": "high" | "medium" | "low",
       "description": string,
       "dueDate": string | null,
@@ -136,6 +148,7 @@ export function buildAISuggestionContext(
   ctx: RuleContext,
   ruleResults: SuggestionResult[],
   locale?: string,
+  model?: string,
 ): AISuggestionContext {
   const today = ctx.today;
   const hemisphere: "N" | "S" = (ctx.lat ?? 45) >= 0 ? "N" : "S";
@@ -251,6 +264,7 @@ export function buildAISuggestionContext(
     currentMonth: ctx.currentMonth,
     responseLocale,
     responseLanguage,
+    model: model ?? "unknown",
     weather: weatherSummary,
     plants,
     seedlings,
@@ -305,12 +319,31 @@ function parseAIResponse(
 
     // Planter matching (optional)
     let planterId: string | undefined;
+    let planterName: string | undefined;
     if (item.planterName) {
       const matched = ctx.plants.find(
         (p) => p.planterName.toLowerCase() === item.planterName!.toLowerCase(),
       );
       // We don't have the planter ID in the context, so we store the name and resolve later
       planterId = matched?.planterName;
+      planterName = item.planterName;
+    }
+
+    // Area name (optional — for area-scoped suggestions, LAS.3)
+    const areaName = item.areaName ?? undefined;
+
+    // Scope — infer from presence of fields if not explicitly provided (LAS.1)
+    let scope: AISuggestionResult["scope"] = item.scope as AISuggestionResult["scope"] | undefined;
+    if (!scope || !["area", "planter", "plant"].includes(scope as string)) {
+      if (areaName && !planterId && !plant) {
+        scope = "area";
+      } else if (plant || item.plantName) {
+        scope = "plant";
+      } else if (planterId || item.planterName) {
+        scope = "planter";
+      } else {
+        scope = "area"; // broad suggestion with no specific target
+      }
     }
 
     // Due date validation
@@ -326,14 +359,25 @@ function parseAIResponse(
       }
     }
 
+    // LAS.13 — debug explainability
+    console.debug(
+      `[aiSuggestions] Parsed suggestion: type=${type} scope=${scope} ` +
+        `plant=${item.plantName ?? "-"} planter=${item.planterName ?? "-"} ` +
+        `area=${areaName ?? "-"} confidence=${item.confidence.toFixed(2)} ` +
+        `locale=${ctx.responseLocale}`,
+    );
+
     results.push({
       type,
       plant,
       planterId,
+      planterName,
+      areaName,
       priority,
       description,
       dueDate,
       source: "ai",
+      scope,
     });
   }
 
@@ -358,12 +402,29 @@ export async function getAISuggestions(
 ): Promise<AISuggestionResult[]> {
   if (settings.aiProvider.type === "none") return [];
   if (!settings.lat || !settings.lng) return [];
-  const aiContext = buildAISuggestionContext(ctx, ruleResults, settings.locale);
+  const aiContext = buildAISuggestionContext(
+    ctx,
+    ruleResults,
+    settings.locale,
+    settings.aiModel,
+  );
 
-  // Check cache first
+  // Check cache first (LAS.4, LAS.7, LAS.9)
   const cached = await getCachedAISuggestions(aiContext);
   if (cached) {
-    return parseAIResponse({ suggestions: cached }, aiContext, allPlants);
+    console.debug(
+      `[aiSuggestions] Serving cached batch (spawnedAt=${new Date(cached.spawnedAt).toISOString()}, ` +
+        `expiresAt=${new Date(cached.expiresAt).toISOString()}, ` +
+        `needsRefresh=${cached.needsBackgroundRefresh}, locale=${aiContext.responseLocale})`,
+    );
+    const results = parseAIResponse(
+      { suggestions: cached.suggestions },
+      aiContext,
+      allPlants,
+    );
+    // LAS.9: if the cache is ageing, signal caller to refresh (handled by useSuggestions)
+    // For now, return cached results — background refresh is managed by the hook.
+    return results;
   }
 
   // Rate limit check
@@ -384,6 +445,11 @@ export async function getAISuggestions(
   });
 
   const userMessage = JSON.stringify(aiContext, null, 0);
+
+  console.debug(
+    `[aiSuggestions] Calling AI (model=${settings.aiModel}, locale=${aiContext.responseLocale}, ` +
+      `plants=${aiContext.plants.length}, seedlings=${aiContext.seedlings.length})`,
+  );
 
   const response = await client.chatCompletion(
     settings.aiModel,
@@ -413,13 +479,18 @@ export async function getAISuggestions(
 
   const results = parseAIResponse(parsed, aiContext, allPlants);
 
-  // Cache raw suggestions for next call
+  // Cache raw suggestions with lifecycle metadata (LAS.5, LAS.6)
   if (Array.isArray((parsed as Record<string, unknown>)?.suggestions)) {
-    await cacheAISuggestions(
-      aiContext,
-      (parsed as { suggestions: unknown[] }).suggestions,
-    );
+    const rawSuggestions = (parsed as { suggestions: unknown[] }).suggestions;
+    // Collect the suggestion types for per-type TTL policy
+    const types = results.map((r) => r.type);
+    await cacheAISuggestions(aiContext, rawSuggestions, types);
   }
+
+  console.debug(
+    `[aiSuggestions] AI returned ${results.length} suggestions ` +
+      `(locale=${aiContext.responseLocale}, model=${settings.aiModel})`,
+  );
 
   return results;
 }

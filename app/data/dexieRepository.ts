@@ -71,11 +71,20 @@ export interface WeatherCacheRow {
 // ---------------------------------------------------------------------------
 
 export interface AiSuggestionsCacheRow {
-  /** Deterministic hash of context inputs. */
+  /** Deterministic hash of context inputs (locale + model + garden state). */
   id: string;
-  /** Array of suggestion objects. */
+  /** Array of raw suggestion objects as returned by the AI. */
   suggestions: unknown[];
+  /** Unix ms timestamp when this batch was created. */
   createdAt: number;
+  /** Unix ms timestamp after which this batch is considered stale. */
+  expiresAt: number;
+  /** Locale the AI was asked to respond in ("en" | "nl"). */
+  locale: string;
+  /** AI model that generated this batch. */
+  model: string;
+  /** Cache schema version — increment when the row shape changes. */
+  cacheVersion: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -297,6 +306,19 @@ export class GardenPlannerDB extends Dexie {
               }
             }
           });
+      });
+    // v12: upgrade aiSuggestionsCache with lifecycle metadata index;
+    //      clear all existing rows — they lack locale/model/cacheVersion and are
+    //      considered stale (LAS.14 migration safety).
+    this.version(12)
+      .stores({
+        aiSuggestionsCache: "id, createdAt, expiresAt, locale",
+      })
+      .upgrade((trans) => {
+        console.info(
+          "[DB] Running v12 migration: clearing legacy aiSuggestionsCache rows (no lifecycle metadata)",
+        );
+        return trans.table("aiSuggestionsCache").clear();
       });
   }
 }
