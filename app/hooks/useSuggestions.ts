@@ -104,7 +104,9 @@ export function useSuggestions({
       console.debug(
         `[useSuggestions] Invalidation trigger: locale=${localeChanged} model=${modelChanged} — clearing AI cache`,
       );
-      void clearAISuggestionsCache();
+      clearAISuggestionsCache().catch((err) => {
+        console.warn("[useSuggestions] Failed to clear AI suggestions cache:", err);
+      });
     }
     prevLocaleRef.current = settings.locale;
     prevModelRef.current = settings.aiModel;

@@ -333,8 +333,13 @@ function parseAIResponse(
     const areaName = item.areaName ?? undefined;
 
     // Scope — infer from presence of fields if not explicitly provided (LAS.1)
-    let scope: AISuggestionResult["scope"] = item.scope as AISuggestionResult["scope"] | undefined;
-    if (!scope || !["area", "planter", "plant"].includes(scope as string)) {
+    const VALID_SCOPES = ["area", "planter", "plant"] as const;
+    let scope: AISuggestionResult["scope"] = VALID_SCOPES.includes(
+      item.scope as (typeof VALID_SCOPES)[number],
+    )
+      ? (item.scope as AISuggestionResult["scope"])
+      : undefined;
+    if (!scope) {
       if (areaName && !planterId && !plant) {
         scope = "area";
       } else if (plant || item.plantName) {

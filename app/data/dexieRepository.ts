@@ -312,7 +312,7 @@ export class GardenPlannerDB extends Dexie {
     //      considered stale (LAS.14 migration safety).
     this.version(12)
       .stores({
-        aiSuggestionsCache: "id, createdAt, expiresAt, locale",
+        aiSuggestionsCache: "id, createdAt, expiresAt, locale, model",
       })
       .upgrade((trans) => {
         console.info(

@@ -293,7 +293,7 @@ describe("merger — LAS.11 scope-aware deduplication", () => {
 
     const merged = mergeSuggestions([planterResult], [areaResult], false, "en");
     // Both should appear since they have different scopes
-    expect(merged.length).toBeGreaterThanOrEqual(2);
+    expect(merged).toHaveLength(2);
   });
 
   it("deduplicates two planter-scope suggestions with same key", () => {
