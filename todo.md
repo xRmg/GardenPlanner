@@ -101,30 +101,45 @@
 
 ### Locale-Aware AI Suggestion Lifecycle
 
-**Status**: Investigated, not yet scheduled into a phase.
+**Status**: Investigated. This is the next feature to start after **Scoped Garden Actions**.
 
-**Why this belongs in the roadmap**: AI suggestions already combine garden state, weather, and user settings, but they remain vulnerable to two quality failures: mixed-language cache leakage and overly coarse cache freshness. Locale-specific suggestions must never show stale text from another language, and expensive AI inference should be reused deliberately instead of re-run on every refresh.
+**Why this belongs in the roadmap**: The current suggestion system mixes two concerns that now need to be handled together: whole-app suggestion flow and AI-specific lifecycle quality. Suggestions already combine rules, weather, AI, calendar visibility, and completion flows, but they still lack a consistent model for scope, freshness, and locale. The next phase should make suggestions behave predictably across the full app for **Area**, **Planter**, and **Plant** targets while also fixing the AI-specific quality failures of mixed-language cache leakage and overly coarse cache freshness.
 
-**Product shape**: Suggestions should feel local to the active gardener context. When the locale changes, all user-visible AI copy should switch cleanly without English fallback leakage. Cached AI suggestions should carry lifecycle metadata so the UI and rules engine know when to reuse, refresh, or drop them. The experience should stay fast, predictable, and transparent without introducing a separate cache management UI.
+**Critical product note**: Despite the title, this feature can no longer be treated as only an AI cache improvement. It must define the lifecycle for the full suggestion pipeline, with AI-specific caching and locale behavior layered on top. If we leave the scope narrow, the app will still produce inconsistent suggestion behavior between EventsBar, calendar, quick-add, and future scoped completion flows.
+
+**Product shape**: Suggestions should feel native to the gardener's current context and should use one coherent flow across the app. The system should support three explicit suggestion scopes:
+
+- **Area** — broad work or risk affecting multiple sibling planters, such as frost protection, heavy-rain preparation, or heat stress.
+- **Planter** — focused maintenance affecting one planter, such as watering, weeding, fertilising, mulching, or planter-level observation.
+- **Plant** — instance-specific work, such as harvest, treatment, pruning, disease risk, or pest follow-up.
+
+The same scoped suggestion model should drive EventsBar, calendar detail, suggestion completion, and future quick-add flows. Area-wide suggestions may call out especially sensitive plants when that improves actionability, but the primary target scope must remain explicit. For example, a frost warning should target the whole area while still being allowed to mention especially vulnerable plants within that area. When the locale changes, all user-visible AI copy should switch cleanly without English fallback leakage. Cached AI suggestion batches should carry lifecycle metadata so the UI and engine know when to reuse, refresh, aggregate, or drop them. The experience should stay fast, predictable, and transparent without introducing a separate cache management UI.
 
 ### Requirements
 
-- [ ] **LAS.1 — Locale-partitioned cache keys** — Every AI suggestion cache key must include `locale` together with the existing garden/weather context hash so English and Dutch batches cannot collide.
-- [ ] **LAS.2 — Suggestion lifecycle metadata** — Persist `spawnedAt`, `expiresAt`, `locale`, `model`, and cache-version metadata for each AI suggestion batch so freshness and invalidation decisions are explicit.
-- [ ] **LAS.3 — Per-type TTL policy** — Introduce policy-based cache durations by suggestion type. Fast-changing suggestions such as weather risk or pest alerts should expire in hours; slower strategic suggestions such as succession sowing or mulch can persist for days.
-- [ ] **LAS.4 — Locale switch invalidation** — Changing `settings.locale` must never reuse previously cached AI copy from another locale. The app should either fetch a matching locale batch or fall back to localized rules and weather suggestions only.
-- [ ] **LAS.5 — No mixed-language suggestion bodies** — AI suggestion titles, descriptions, and rationale shown in the UI must always be generated in the active locale. Canonical IDs such as plant refs and planter IDs remain locale-independent.
-- [ ] **LAS.6 — Spawn-aware refresh behavior** — The suggestion engine should be able to keep a still-valid cached batch, serve it immediately, and decide whether a background refresh is needed based on `spawnedAt`, freshness window, and relevant context changes.
-- [ ] **LAS.7 — Deterministic invalidation triggers** — Cache entries must be invalidated when relevant context changes materially, including locale, selected AI model, growth zone, coordinates, planted areas, or recent events that affect due work.
-- [ ] **LAS.8 — Explainability in debug paths** — Development logs and any future diagnostics should show whether a suggestion batch came from cache or fresh inference, which locale it belongs to, and when it expires.
-- [ ] **LAS.9 — Migration safety** — Existing `aiSuggestionsCache` rows without locale or lifecycle metadata should be treated as stale and rebuilt safely after migration.
-- [ ] **LAS.10 — Test coverage** — Add unit tests covering locale cache separation, TTL expiry, stale invalidation, and fallback behavior when a requested locale batch does not exist.
+- [ ] **LAS.1 — Scoped suggestion model** — Suggestions must support explicit **Area**, **Planter**, and **Plant** scopes across the full suggestion pipeline, not only AI output. Each suggestion must persist or derive clear target metadata so the UI, completion flow, and future analytics can distinguish broad area work from planter maintenance and plant-specific care.
+- [ ] **LAS.2 — Scope-aware presentation across the app** — EventsBar, calendar detail, and any quick-add or completion flow must show suggestion scope clearly with human-readable location context. Area suggestions must identify the area first. Planter suggestions must identify the planter. Plant suggestions must identify the plant and its location.
+- [ ] **LAS.3 — Area suggestions may name sensitive plants** — Area-scoped suggestions such as frost warnings, heat protection, or storm preparation may mention especially sensitive plants when relevant, but the suggestion must remain area-targeted rather than degrading into a list of separate plant suggestions unless the action itself is truly plant-specific.
+- [ ] **LAS.4 — Locale-partitioned AI cache keys** — Every AI suggestion cache key must include `locale` together with the existing garden, weather, and scope context hash so English and Dutch batches cannot collide.
+- [ ] **LAS.5 — Suggestion lifecycle metadata** — Persist `spawnedAt`, `expiresAt`, `locale`, `model`, `cacheVersion`, and scope metadata for each AI suggestion batch so freshness, invalidation, and UI behavior are explicit.
+- [ ] **LAS.6 — Per-type and per-scope TTL policy** — Introduce policy-based cache durations by suggestion type and scope. Fast-changing suggestions such as weather risk, frost alerts, or pest alerts should expire in hours. Slower strategic suggestions such as succession sowing or mulch can persist for days. TTL policy must be explicit rather than one global cache duration.
+- [ ] **LAS.7 — Locale switch invalidation** — Changing `settings.locale` must never reuse cached AI copy from another locale. The app should either load a matching locale batch or immediately fall back to localized rules and weather suggestions while AI refreshes in the background.
+- [ ] **LAS.8 — No mixed-language suggestion bodies** — AI suggestion titles, descriptions, and rationale shown in the UI must always be generated in the active locale. Canonical identifiers such as plant refs, planter IDs, and area IDs remain locale-independent.
+- [ ] **LAS.9 — Spawn-aware refresh behavior** — The suggestion engine should be able to serve a still-valid cached batch immediately, then decide whether background refresh is needed based on `spawnedAt`, freshness window, scope, and relevant context changes. This should apply consistently to suggestion visibility in EventsBar and calendar surfaces.
+- [ ] **LAS.10 — Deterministic invalidation triggers** — Cache entries must be invalidated when relevant context changes materially, including locale, selected AI model, growth zone, coordinates, area and planter structure, planted instances, and recent events that affect due work or scope aggregation.
+- [ ] **LAS.11 — Scope-aware suggestion aggregation** — The engine should promote suggestions to **Area** scope only when multiple sibling planters genuinely share the same due action. Otherwise it should keep the more precise **Planter** or **Plant** suggestion. Area aggregation should not erase important plant-specific risk detail.
+- [ ] **LAS.12 — Completion flow consistency** — Completing a suggestion anywhere in the app must respect its scope. Area completion should resolve the area-targeted work without forcing synthetic plant suggestions. Planter completion should only affect that planter. Plant completion should preserve instance-specific continuity.
+- [ ] **LAS.13 — Explainability in debug paths** — Development logs and future diagnostics should show whether a suggestion came from rules, weather, AI, or cache, which locale it belongs to, which scope it targets, why it was aggregated or not aggregated, and when it expires.
+- [ ] **LAS.14 — Migration safety** — Existing `aiSuggestionsCache` rows without locale, lifecycle, or scope metadata should be treated as stale and rebuilt safely after migration.
+- [ ] **LAS.15 — Test coverage** — Add unit tests covering locale cache separation, TTL expiry, stale invalidation, scope-aware aggregation, fallback behavior when a requested locale batch does not exist, and area-level suggestion copy that includes sensitive plant detail without losing primary scope.
 
 ### Non-goals for the first phase of this feature
 
 - [ ] No machine-translation fallback layer for AI copy.
 - [ ] No user-facing cache controls or manual refresh history.
 - [ ] No sharing of AI suggestion cache rows across different locales, even when the underlying semantic content is similar.
+- [ ] No separate suggestion center or task dashboard outside the existing app surfaces.
+- [ ] No forced breakup of every **Area** suggestion into synthetic **Planter** or **Plant** suggestions unless later reporting needs justify it.
 
 
 
