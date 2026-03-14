@@ -447,7 +447,7 @@ export default function App() {
               value="areas"
               className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
-              <div className="flex-1 overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]">
+              <div className={`flex-1 overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar ${isEditMode ? 'h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]' : 'h-[calc(100dvh-8rem)] md:h-[calc(100dvh-7rem)]'}`}>
                 <div className="mb-4 px-1 flex items-center justify-between">
                   <div>
                     <h1 className="text-xl font-black text-foreground tracking-tight uppercase">
@@ -505,7 +505,7 @@ export default function App() {
                       <div
                         key={area.id}
                         id={`area-${area.id}`}
-                        className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+                        className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden transition-shadow duration-100 ease-out hover:shadow-md"
                       >
                         <div
                           className="px-4 py-2.5 flex items-center justify-between border-b border-white/40"
@@ -645,7 +645,7 @@ export default function App() {
                             {area.planters.map((planter, pIdx) => (
                               <div
                                 key={planter.id}
-                                className="transition-transform hover:scale-[1.01] duration-300"
+                                className="transition-transform duration-100 ease-out hover:scale-[1.01]"
                               >
                                 <PlanterGrid
                                   areaId={area.id}
@@ -1809,20 +1809,22 @@ export default function App() {
         )}
       </button>
 
-      {/* Bottom toolbar - Floating style */}
-      <div className="px-4 pb-4 relative z-20">
-        <div className="max-w-5xl mx-auto drop-shadow-xl">
-          <ToolBar
-            plants={AVAILABLE_PLANTS}
-            selectedPlant={selectedPlant}
-            onSelectPlant={setSelectedPlant}
-            onAddArea={handleAddArea}
-            onAddPlant={() => setShowAddPlantModal(true)}
-            seedlingCount={seedlings.length}
-            onShowSeedlings={() => setActiveTab("seedlings")}
-          />
+      {/* Bottom toolbar - Floating style (hidden in view mode) */}
+      {isEditMode && (
+        <div className="px-4 pb-4 relative z-20">
+          <div className="max-w-5xl mx-auto drop-shadow-xl">
+            <ToolBar
+              plants={AVAILABLE_PLANTS}
+              selectedPlant={selectedPlant}
+              onSelectPlant={setSelectedPlant}
+              onAddArea={handleAddArea}
+              onAddPlant={() => setShowAddPlantModal(true)}
+              seedlingCount={seedlings.length}
+              onShowSeedlings={() => setActiveTab("seedlings")}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Planter Configuration Dialog */}
       <PlanterDialog

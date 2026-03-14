@@ -170,19 +170,31 @@ function findMetaplantGroup(
   return group;
 }
 
-function abbreviatePlantName(name: string): string {
-  if (name.length <= 9) return name;
+/**
+ * Abbreviate a plant name to fit constrained grid/pot cell space.
+ * @param name - Plant name to abbreviate
+ * @param maxLength - Maximum character length before abbreviating (default 10 for grid cells, 6-7 for pot cells)
+ */
+function abbreviatePlantName(name: string, maxLength: number = 10): string {
+  if (name.length <= maxLength) return name;
   const words = name.trim().split(/\s+/);
+  const threshold = maxLength - 1; // Leave room for optional period
+  
   if (words.length === 1) {
-    return name.slice(0, 8) + ".";
+    // Single word: truncate and add period
+    return name.slice(0, threshold) + ".";
   }
   if (words.length === 2) {
-    const first =
-      words[0].length > 6 ? words[0].slice(0, 5) + "." : words[0];
-    return first + " " + words[1][0].toUpperCase() + ".";
+    // Two words: try "FirstWord SecondInitial."
+    const firstMaxLen = Math.max(3, threshold - 3); // Reserve ~3 chars for " X."
+    const first = words[0].length > firstMaxLen 
+      ? words[0].slice(0, firstMaxLen - 1) + "." 
+      : words[0];
+    return (first + " " + words[1][0].toUpperCase() + ".").slice(0, threshold + 1);
   }
-  // 3+ words → all initials
-  return words.map((w) => w[0].toUpperCase() + ".").join("");
+  // 3+ words → all initials, fit within maxLength
+  const initials = words.map((w) => w[0].toUpperCase()).join("");
+  return initials.slice(0, threshold) + (initials.length > threshold ? "." : "");
 }
 
 export function PlanterGrid({
@@ -216,6 +228,12 @@ export function PlanterGrid({
 }: PlanterGridProps) {
   const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
+  const planterSummary = `${rows} × ${cols} ${
+    layout === "pot-container"
+      ? t("dialogs.planterDialog.layoutPotContainer")
+      : t("dialogs.planterDialog.layoutGrid")
+  }${cellDimensions ? ` • ${formatDimensions(cellDimensions)}` : ""}`;
+  const planterCardWidth = cols * 48 + Math.max(cols - 1, 0) * 6 + 56;
   const buildEmptyGrid = () =>
     Array(rows)
       .fill(null)
@@ -623,25 +641,30 @@ export function PlanterGrid({
 
   return (
     <>
-      <div className="inline-block bg-card rounded-2xl shadow-sm p-5 border border-border/20 transition-shadow hover:shadow-md animate-in fade-in zoom-in duration-500">
-        <div className="flex items-center justify-between mb-4 px-1">
-          <div className="flex flex-col">
-            <h3 className="text-xl font-bold text-foreground tracking-tight">
+      <div
+        className="inline-block bg-card rounded-2xl shadow-sm p-5 border border-border/20 transition-shadow duration-100 ease-out hover:shadow-md animate-in fade-in zoom-in"
+        style={{ width: `${planterCardWidth}px` }}
+      >
+        <div className="mb-4 px-1 flex flex-col gap-3 min-w-0">
+          <div className="flex flex-col min-w-0">
+            <h3
+              className="text-xl font-bold text-foreground tracking-tight truncate"
+              title={name}
+            >
               {name}
             </h3>
-            <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-0.5">
-              {rows} × {cols}{" "}
-              {layout === "pot-container"
-                ? t("dialogs.planterDialog.layoutPotContainer")
-                : t("dialogs.planterDialog.layoutGrid")}
-              {cellDimensions ? ` • ${formatDimensions(cellDimensions)}` : ""}
+            <span
+              className="w-full truncate text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-0.5"
+              title={planterSummary}
+            >
+              {planterSummary}
             </span>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap justify-end">
             {!viewOnly && onMoveUp && (
               <button
                 onClick={onMoveUp}
-                className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
+                className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-[background-color,transform] duration-100 shadow-sm active:scale-[0.96]"
                 title={t("planterGrid.movePlanterUpTitle")}
                 aria-label={t("planterGrid.movePlanterUpAriaLabel", { name })}
               >
@@ -651,7 +674,7 @@ export function PlanterGrid({
             {!viewOnly && onMoveDown && (
               <button
                 onClick={onMoveDown}
-                className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
+                className="p-2 bg-muted/40 hover:bg-muted/60 text-muted-foreground rounded-xl transition-[background-color,transform] duration-100 shadow-sm active:scale-[0.96]"
                 title={t("planterGrid.movePlanterDownTitle")}
                 aria-label={t("planterGrid.movePlanterDownAriaLabel", { name })}
               >
@@ -661,7 +684,7 @@ export function PlanterGrid({
             {!viewOnly && onEdit && (
               <button
                 onClick={onEdit}
-                className="p-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
+                className="p-2 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl transition-[background-color,transform] duration-100 shadow-sm active:scale-[0.96]"
                 title={t("planterGrid.editPlanterTitle")}
                 aria-label={t("planterGrid.editPlanterAriaLabel", { name })}
               >
@@ -672,7 +695,7 @@ export function PlanterGrid({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button
-                    className="p-2 bg-destructive/5 hover:bg-destructive/10 text-destructive rounded-xl transition-[background-color,transform] duration-150 shadow-sm active:scale-[0.96]"
+                    className="p-2 bg-destructive/5 hover:bg-destructive/10 text-destructive rounded-xl transition-[background-color,transform] duration-100 shadow-sm active:scale-[0.96]"
                     title={t("planterGrid.removePlanterTitle")}
                     aria-label={t("planterGrid.removePlanterAriaLabel", {
                       name,
@@ -861,7 +884,7 @@ export function PlanterGrid({
                                 })
                         }
                         className={cn(
-                          "w-12 h-12 relative transition-[transform,background-color,box-shadow,outline] duration-150 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2",
+                          "w-12 h-12 relative transition-[transform,background-color,box-shadow,outline] duration-100 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2",
                           // Round cells for pot-container layout, square for grid
                           layout === "pot-container" ? "rounded-full" : "rounded-lg",
                           square.plantInstance
@@ -895,7 +918,7 @@ export function PlanterGrid({
                             singleCellMode &&
                             "ring-2 ring-amber-400/80 ring-offset-1",
                         )}
-                        style={{
+                        style={layout === "pot-container" ? undefined : {
                           borderTop: hasThickTop
                             ? `3px solid ${vSection?.color || "#15803d"}`
                             : "1px solid rgba(0,0,0,0.05)",
@@ -925,6 +948,7 @@ export function PlanterGrid({
                                     square.plantInstance.plant,
                                     i18n.language,
                                   ),
+                                layout === "pot-container" ? 6 : 10,
                               )}
                             </span>
                             {square.plantInstance.healthState &&
@@ -958,7 +982,7 @@ export function PlanterGrid({
                             <>
                               {(getAvailableStock?.(selectedPlant.id) ?? 1) >
                               0 ? (
-                                <div className="opacity-0 group-hover/square:opacity-20 transition-opacity duration-200 flex items-center justify-center">
+                                <div className="opacity-0 group-hover/square:opacity-20 transition-opacity duration-100 flex items-center justify-center">
                                   <span className="text-xl grayscale select-none">
                                     {selectedPlant.icon}
                                   </span>
@@ -978,7 +1002,7 @@ export function PlanterGrid({
                             e.stopPropagation();
                             openMovePicker(rowIndex, colIndex, square.plantInstance!);
                           }}
-                          className="absolute -top-1 -left-1 bg-white border border-primary/20 text-primary rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 group-focus-within/square:opacity-100 hover:bg-primary/5 transition-[opacity,background-color,transform] duration-150 hover:scale-110 active:scale-95 z-10 hidden sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                          className="absolute -top-1 -left-1 bg-white border border-primary/20 text-primary rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 group-focus-within/square:opacity-100 hover:bg-primary/5 transition-[opacity,background-color,transform] duration-100 hover:scale-110 active:scale-95 z-10 hidden sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                           title={t("planterGrid.movePlantTitle")}
                           aria-label={t("planterGrid.movePlantAriaLabel", {
                             name: getPlantDisplayName(
@@ -997,7 +1021,7 @@ export function PlanterGrid({
                           onClick={(e) =>
                             handleRemovePlant(rowIndex, colIndex, e)
                           }
-                          className="absolute -top-1 -right-1 bg-white border border-red-100 text-red-500 rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 hover:bg-red-50 transition-[opacity,background-color,transform] duration-150 hover:scale-110 active:scale-95 z-10"
+                          className="absolute -top-1 -right-1 bg-white border border-red-100 text-red-500 rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 hover:bg-red-50 transition-[opacity,background-color,transform] duration-100 hover:scale-110 active:scale-95 z-10"
                           title={t("planterGrid.removePlantTitle")}
                           aria-label={t("planterGrid.removePlantAriaLabel", {
                             name: getPlantDisplayName(
