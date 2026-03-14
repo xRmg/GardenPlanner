@@ -126,6 +126,10 @@
     "editPlanterAriaLabel": "Planter bewerken",
     "removePlanterAriaLabel": "Planter verwijderen",
     "quickActionsLabel": "Loggen voor tuin:",
+    "quickActionsMenuButton": "Acties",
+    "quickActionsMenuLabel": "Gebiedsactie loggen",
+    "quickActionsMenuTitle": "Gebiedsacties openen",
+    "quickActionsMenuAriaLabel": "Gebiedsacties openen voor {{name}}",
     "quickActions": {
       "watered": "Gegoten",
       "fertilised": "Bemest",
@@ -154,6 +158,16 @@
     "movePlantAriaLabel": "Verplaats {{name}} vanaf rij {{row}}, kolom {{col}}",
     "removePlantTitle": "Plant verwijderen",
     "removePlantAriaLabel": "{{name}} verwijderen",
+    "quickActionsMenuLabel": "Planteractie loggen",
+    "quickActionsMenuTitle": "Rechtsklik voor planteracties",
+    "quickActionsMenuAriaLabel": "Planteracties voor {{name}}",
+    "observationDialog": {
+      "title": "Observatie loggen",
+      "description": "Wat heb je in {{name}} waargenomen?",
+      "placeholder": "Beschrijf wat je hebt waargenomen…",
+      "submit": "Observatie opslaan",
+      "charCount": "{{count}} / {{max}}"
+    },
     "dimensionLabel": "{{rows}} × {{cols}} Raster",
     "quickActions": {
       "watered": "Gegoten",

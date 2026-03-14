@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, Settings, Trash2, ArrowUp, ArrowDown, Move, Droplets, Package, Scissors, Eye } from "lucide-react";
+import {
+  X,
+  Settings,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Move,
+  Droplets,
+  Package,
+  Scissors,
+  Eye,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PlantDetailsDialog } from "./PlantDetailsDialog";
 import { MovePlantPicker } from "./MovePlantPicker";
@@ -28,6 +39,31 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "./ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Textarea } from "./ui/textarea";
+
+type PlanterQuickActionType =
+  | "watered"
+  | "composted"
+  | "weeded"
+  | "observation";
+
+const OBSERVATION_NOTE_MAX_LENGTH = 500;
 
 export interface Plant {
   id: string;
@@ -129,7 +165,7 @@ interface PlanterGridProps {
    * Called when the user logs a planter-level quick action (watered, weeded, etc.)
    * from the planter header. Only fired in view mode (viewOnly === true).
    */
-  onQuickAction?: (type: "watered" | "composted" | "weeded" | "observation", note?: string) => void;
+  onQuickAction?: (type: PlanterQuickActionType, note?: string) => void;
 }
 
 /**
@@ -245,6 +281,37 @@ export function PlanterGrid({
       ? t("dialogs.planterDialog.layoutPotContainer")
       : t("dialogs.planterDialog.layoutGrid")
   }${cellDimensions ? ` • ${formatDimensions(cellDimensions)}` : ""}`;
+  const planterQuickActions = [
+    {
+      type: "watered" as const,
+      icon: Droplets,
+      iconClassName: "text-blue-600",
+      label: t("planterGrid.quickActions.watered"),
+    },
+    {
+      type: "composted" as const,
+      icon: Package,
+      iconClassName: "text-amber-700",
+      label: t("planterGrid.quickActions.fertilised"),
+    },
+    {
+      type: "weeded" as const,
+      icon: Scissors,
+      iconClassName: "text-orange-600",
+      label: t("planterGrid.quickActions.weeded"),
+    },
+    {
+      type: "observation" as const,
+      icon: Eye,
+      iconClassName: "text-teal-600",
+      label: t("planterGrid.quickActions.observation"),
+    },
+  ] satisfies Array<{
+    type: PlanterQuickActionType;
+    icon: typeof Droplets;
+    iconClassName: string;
+    label: string;
+  }>;
   const planterCardWidth = cols * 48 + Math.max(cols - 1, 0) * 6 + 56;
   const buildEmptyGrid = () =>
     Array(rows)
@@ -268,6 +335,8 @@ export function PlanterGrid({
   const [selectedPlantInstance, setSelectedPlantInstance] =
     useState<PlantInstance | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [observationDialogOpen, setObservationDialogOpen] = useState(false);
+  const [observationNote, setObservationNote] = useState("");
   const [plantToRemove, setPlantToRemove] = useState<{
     plantInstance: PlantInstance;
     rowIndex: number;
@@ -652,6 +721,32 @@ export function PlanterGrid({
   const isDragSourceCell =
     activeDragSource?.areaId === areaId && activeDragSource?.planterId === id;
 
+  const handleObservationDialogChange = (open: boolean) => {
+    setObservationDialogOpen(open);
+    if (!open) {
+      setObservationNote("");
+    }
+  };
+
+  const handlePlanterQuickAction = (type: PlanterQuickActionType) => {
+    if (!onQuickAction) return;
+
+    if (type === "observation") {
+      setObservationDialogOpen(true);
+      return;
+    }
+
+    onQuickAction(type);
+  };
+
+  const handleObservationSubmit = () => {
+    const trimmedObservation = observationNote.trim();
+    if (!trimmedObservation || !onQuickAction) return;
+
+    onQuickAction("observation", trimmedObservation);
+    handleObservationDialogChange(false);
+  };
+
   return (
     <>
       <div
@@ -659,20 +754,67 @@ export function PlanterGrid({
         style={{ width: `${planterCardWidth}px` }}
       >
         <div className="mb-4 px-1 flex flex-col gap-3 min-w-0">
-          <div className="flex flex-col min-w-0">
-            <h3
-              className="text-xl font-bold text-foreground tracking-tight truncate"
-              title={name}
-            >
-              {name}
-            </h3>
-            <span
-              className="w-full truncate text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-0.5"
-              title={planterSummary}
-            >
-              {planterSummary}
-            </span>
-          </div>
+          {viewOnly && onQuickAction ? (
+            <ContextMenu>
+              <ContextMenuTrigger asChild>
+                <div
+                  tabIndex={0}
+                  role="button"
+                  aria-haspopup="menu"
+                  aria-label={t("planterGrid.quickActionsMenuAriaLabel", {
+                    name,
+                  })}
+                  title={t("planterGrid.quickActionsMenuTitle")}
+                  className="flex min-w-0 cursor-context-menu flex-col rounded-lg outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2"
+                >
+                  <h3
+                    className="text-xl font-bold text-foreground tracking-tight truncate"
+                    title={name}
+                  >
+                    {name}
+                  </h3>
+                  <span
+                    className="w-full truncate text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-0.5"
+                    title={planterSummary}
+                  >
+                    {planterSummary}
+                  </span>
+                </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent className="w-52">
+                <ContextMenuLabel>
+                  {t("planterGrid.quickActionsMenuLabel")}
+                </ContextMenuLabel>
+                <ContextMenuSeparator />
+                {planterQuickActions.map(
+                  ({ type, icon: Icon, iconClassName, label }) => (
+                    <ContextMenuItem
+                      key={type}
+                      onSelect={() => handlePlanterQuickAction(type)}
+                    >
+                      <Icon className={cn("h-4 w-4", iconClassName)} />
+                      {label}
+                    </ContextMenuItem>
+                  ),
+                )}
+              </ContextMenuContent>
+            </ContextMenu>
+          ) : (
+            <div className="flex flex-col min-w-0">
+              <h3
+                className="text-xl font-bold text-foreground tracking-tight truncate"
+                title={name}
+              >
+                {name}
+              </h3>
+              <span
+                className="w-full truncate text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mt-0.5"
+                title={planterSummary}
+              >
+                {planterSummary}
+              </span>
+            </div>
+          )}
           <div className="flex gap-1 flex-wrap justify-end">
             {!viewOnly && onMoveUp && (
               <button
@@ -742,44 +884,6 @@ export function PlanterGrid({
             )}
           </div>
         </div>
-
-        {/* Planter quick actions — shown in view mode when onQuickAction is provided */}
-        {viewOnly && onQuickAction && (
-          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-            <button
-              onClick={() => onQuickAction("watered")}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-100/60"
-              title={t("planterGrid.quickActions.watered")}
-            >
-              <Droplets className="w-3 h-3" />
-              {t("planterGrid.quickActions.watered")}
-            </button>
-            <button
-              onClick={() => onQuickAction("composted")}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition-colors border border-amber-100/60"
-              title={t("planterGrid.quickActions.fertilised")}
-            >
-              <Package className="w-3 h-3" />
-              {t("planterGrid.quickActions.fertilised")}
-            </button>
-            <button
-              onClick={() => onQuickAction("weeded")}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg transition-colors border border-orange-100/60"
-              title={t("planterGrid.quickActions.weeded")}
-            >
-              <Scissors className="w-3 h-3" />
-              {t("planterGrid.quickActions.weeded")}
-            </button>
-            <button
-              onClick={() => onQuickAction("observation")}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg transition-colors border border-teal-100/60"
-              title={t("planterGrid.quickActions.observation")}
-            >
-              <Eye className="w-3 h-3" />
-              {t("planterGrid.quickActions.observation")}
-            </button>
-          </div>
-        )}
 
         <div
           className="inline-block p-2 rounded-xl border border-black/10 shadow-inner"
@@ -1108,6 +1212,66 @@ export function PlanterGrid({
         mobile={isMobile}
         onConfirmMove={onMovePlant}
       />
+
+      <Dialog
+        open={observationDialogOpen}
+        onOpenChange={handleObservationDialogChange}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {t("planterGrid.observationDialog.title")}
+            </DialogTitle>
+            <DialogDescription>
+              {t("planterGrid.observationDialog.description", { name })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Textarea
+              autoFocus
+              value={observationNote}
+              onChange={(event) =>
+                setObservationNote(
+                  event.target.value.slice(0, OBSERVATION_NOTE_MAX_LENGTH),
+                )
+              }
+              onKeyDown={(event) => {
+                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                  event.preventDefault();
+                  handleObservationSubmit();
+                }
+              }}
+              rows={4}
+              placeholder={t("planterGrid.observationDialog.placeholder")}
+            />
+            <div className="text-xs text-muted-foreground">
+              {t("planterGrid.observationDialog.charCount", {
+                count: observationNote.trim().length,
+                max: OBSERVATION_NOTE_MAX_LENGTH,
+              })}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => handleObservationDialogChange(false)}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleObservationSubmit}
+              disabled={!observationNote.trim()}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {t("planterGrid.observationDialog.submit")}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

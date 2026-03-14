@@ -126,6 +126,10 @@
     "editPlanterAriaLabel": "Edit planter",
     "removePlanterAriaLabel": "Remove planter",
     "quickActionsLabel": "Log for area:",
+    "quickActionsMenuButton": "Actions",
+    "quickActionsMenuLabel": "Log area action",
+    "quickActionsMenuTitle": "Open area actions",
+    "quickActionsMenuAriaLabel": "Open area actions for {{name}}",
     "quickActions": {
       "watered": "Watered",
       "fertilised": "Fertilised",
@@ -154,6 +158,16 @@
     "movePlantAriaLabel": "Move {{name}} from row {{row}}, column {{col}}",
     "removePlantTitle": "Remove plant",
     "removePlantAriaLabel": "Remove {{name}}",
+    "quickActionsMenuLabel": "Log planter action",
+    "quickActionsMenuTitle": "Right-click for planter actions",
+    "quickActionsMenuAriaLabel": "Planter actions for {{name}}",
+    "observationDialog": {
+      "title": "Log observation",
+      "description": "What did you observe in {{name}}?",
+      "placeholder": "Describe what you observed…",
+      "submit": "Save observation",
+      "charCount": "{{count}} / {{max}}"
+    },
     "dimensionLabel": "{{rows}} × {{cols}} Grid",
     "quickActions": {
       "watered": "Watered",

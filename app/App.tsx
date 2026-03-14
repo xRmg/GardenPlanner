@@ -46,8 +46,17 @@ import {
   Droplets,
   Package,
   Scissors,
+  MoreHorizontal,
 } from "lucide-react";
 import { Sheet, SheetContent } from "./components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./components/ui/dropdown-menu";
 import { useGardenData } from "./hooks/useGardenData";
 import { useLocationSettings } from "./hooks/useLocationSettings";
 import { useOpenRouterSettings } from "./hooks/useOpenRouterSettings";
@@ -562,6 +571,69 @@ export default function App() {
                           </div>
 
                           <div className="flex items-center gap-1.5">
+                            {!isEditMode && area.planters.length > 0 && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 rounded-lg border border-primary/15 bg-primary/5 px-2.5 text-[10px] font-black uppercase tracking-[0.18em] text-primary hover:bg-primary/10"
+                                    title={t("areas.quickActionsMenuTitle")}
+                                    aria-label={t(
+                                      "areas.quickActionsMenuAriaLabel",
+                                      { name: area.name },
+                                    )}
+                                  >
+                                    <MoreHorizontal className="mr-1.5 h-4 w-4" />
+                                    {t("areas.quickActionsMenuButton")}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-52">
+                                  <DropdownMenuLabel>
+                                    {t("areas.quickActionsMenuLabel")}
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  {(
+                                    [
+                                      {
+                                        type: "watered",
+                                        icon: Droplets,
+                                        iconClassName: "text-blue-600",
+                                        label: t("areas.quickActions.watered"),
+                                      },
+                                      {
+                                        type: "composted",
+                                        icon: Package,
+                                        iconClassName: "text-amber-700",
+                                        label: t("areas.quickActions.fertilised"),
+                                      },
+                                      {
+                                        type: "weeded",
+                                        icon: Scissors,
+                                        iconClassName: "text-orange-600",
+                                        label: t("areas.quickActions.weeded"),
+                                      },
+                                    ] as const
+                                  ).map(({ type, icon: Icon, iconClassName, label }) => (
+                                    <DropdownMenuItem
+                                      key={type}
+                                      onClick={() =>
+                                        handleAreaAction({
+                                          type,
+                                          areaId: area.id,
+                                          areaName: area.name,
+                                          planterIds: area.planters.map((p) => p.id),
+                                          planterNames: area.planters.map((p) => p.name),
+                                        })
+                                      }
+                                    >
+                                      <Icon className={iconClassName + " h-4 w-4"} />
+                                      {label}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                             {isEditMode && (
                               <input
                                 type="color"
@@ -614,40 +686,6 @@ export default function App() {
                             )}
                           </div>
                         </div>
-
-                        {/* Area-level quick actions — visible in view mode when area has planters */}
-                        {!isEditMode && area.planters.length > 0 && (
-                          <div className="px-4 pb-2 flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 mr-0.5">
-                              {t("areas.quickActionsLabel")}
-                            </span>
-                            {(
-                              [
-                                { type: "watered", icon: Droplets, cls: "text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-100/60", label: t("areas.quickActions.watered") },
-                                { type: "composted", icon: Package, cls: "text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-100/60", label: t("areas.quickActions.fertilised") },
-                                { type: "weeded", icon: Scissors, cls: "text-orange-600 bg-orange-50 hover:bg-orange-100 border-orange-100/60", label: t("areas.quickActions.weeded") },
-                              ] as const
-                            ).map(({ type, icon: Icon, cls, label }) => (
-                              <button
-                                key={type}
-                                onClick={() =>
-                                  handleAreaAction({
-                                    type,
-                                    areaId: area.id,
-                                    areaName: area.name,
-                                    planterIds: area.planters.map((p) => p.id),
-                                    planterNames: area.planters.map((p) => p.name),
-                                  })
-                                }
-                                className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-lg transition-colors border ${cls}`}
-                                title={label}
-                              >
-                                <Icon className="w-3 h-3" />
-                                {label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
 
                         <div className="p-4">
                           <div className="flex flex-wrap gap-4 items-start">
