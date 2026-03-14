@@ -573,14 +573,20 @@ export function EventsBar({
                       </span>
                       {plantName && ` ${plantName}`}
                     </p>
-                    {/* Scope context — show planter or area name for non-plant events */}
-                    {(group.scope === "planter" || group.scope === "area") && (
-                      <p className="text-[10px] text-muted-foreground/60 font-semibold truncate mt-0.5">
-                        {group.scope === "area" && group.areaName
-                          ? group.areaName
-                          : group.planterName ?? group.areaName ?? ""}
-                      </p>
-                    )}
+                    {/* Scope context — show area name for area-scope events, planter name for planter-scope events */}
+                    {(group.scope === "planter" || group.scope === "area") && (() => {
+                      let locationLabel: string;
+                      if (group.scope === "area") {
+                        locationLabel = group.areaName ?? "";
+                      } else {
+                        locationLabel = group.planterName ?? group.areaName ?? "";
+                      }
+                      return locationLabel ? (
+                        <p className="text-[10px] text-muted-foreground/60 font-semibold truncate mt-0.5">
+                          {locationLabel}
+                        </p>
+                      ) : null;
+                    })()}
                     {group.note && (
                       <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">
                         {group.note}

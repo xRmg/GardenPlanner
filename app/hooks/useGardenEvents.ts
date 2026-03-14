@@ -217,7 +217,9 @@ export function useGardenEvents({
       ? "plant"
       : suggestion.planterId
         ? "planter"
-        : "plant";
+        : suggestion.areaId
+          ? "area"
+          : undefined;
 
     const completedEvent: GardenEvent = {
       id: `event-${Date.now()}-${Math.random()}`,

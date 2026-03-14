@@ -216,7 +216,6 @@ export function PlanterGrid({
 }: PlanterGridProps) {
   const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
-  const [quickActionNote, setQuickActionNote] = useState("");
   const buildEmptyGrid = () =>
     Array(rows)
       .fill(null)
@@ -736,11 +735,7 @@ export function PlanterGrid({
               {t("planterGrid.quickActions.weeded")}
             </button>
             <button
-              onClick={() => {
-                const note = quickActionNote.trim() || undefined;
-                onQuickAction("observation", note);
-                setQuickActionNote("");
-              }}
+              onClick={() => onQuickAction("observation")}
               className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg transition-colors border border-teal-100/60"
               title={t("planterGrid.quickActions.observation")}
             >
