@@ -7,7 +7,13 @@ import { RemovalConfirmDialog } from "./RemovalConfirmDialog";
 import { VirtualSection } from "./PlanterDialog";
 import { cn } from "./ui/utils";
 import { useIsMobile } from "./ui/use-mobile";
-import type { Area as MoveArea, CellDimensions, GrowthStage, HealthState, PlanterLayout } from "../data/schema";
+import type {
+  Area as MoveArea,
+  CellDimensions,
+  GrowthStage,
+  HealthState,
+  PlanterLayout,
+} from "../data/schema";
 import { formatDimensions } from "../i18n/utils/formatting";
 import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
 import type { PlantMoveLocation } from "../services/plantMovement";
@@ -174,7 +180,7 @@ function abbreviatePlantName(name: string, maxLength: number = 10): string {
   if (name.length <= maxLength) return name;
   const words = name.trim().split(/\s+/);
   const threshold = maxLength - 1; // Leave room for optional period
-  
+
   if (words.length === 1) {
     // Single word: truncate and add period
     return name.slice(0, threshold) + ".";
@@ -182,14 +188,20 @@ function abbreviatePlantName(name: string, maxLength: number = 10): string {
   if (words.length === 2) {
     // Two words: try "FirstWord SecondInitial."
     const firstMaxLen = Math.max(3, threshold - 3); // Reserve ~3 chars for " X."
-    const first = words[0].length > firstMaxLen 
-      ? words[0].slice(0, firstMaxLen - 1) + "." 
-      : words[0];
-    return (first + " " + words[1][0].toUpperCase() + ".").slice(0, threshold + 1);
+    const first =
+      words[0].length > firstMaxLen
+        ? words[0].slice(0, firstMaxLen - 1) + "."
+        : words[0];
+    return (first + " " + words[1][0].toUpperCase() + ".").slice(
+      0,
+      threshold + 1,
+    );
   }
   // 3+ words → all initials, fit within maxLength
   const initials = words.map((w) => w[0].toUpperCase()).join("");
-  return initials.slice(0, threshold) + (initials.length > threshold ? "." : "");
+  return (
+    initials.slice(0, threshold) + (initials.length > threshold ? "." : "")
+  );
 }
 
 export function PlanterGrid({
@@ -523,7 +535,8 @@ export function PlanterGrid({
     }
     if (
       onHealthStateChange &&
-      updatedInstance.healthState !== (previousPlantInstance?.healthState ?? null)
+      updatedInstance.healthState !==
+        (previousPlantInstance?.healthState ?? null)
     ) {
       onHealthStateChange(updatedInstance, id);
     }
@@ -538,7 +551,10 @@ export function PlanterGrid({
     const source = { areaId, planterId: id, row: rowIndex, col: colIndex };
     onDragSourceChange(source);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/gardenplanner-plant", JSON.stringify(source));
+    e.dataTransfer.setData(
+      "application/gardenplanner-plant",
+      JSON.stringify(source),
+    );
     e.dataTransfer.setData("text/plain", `${rowIndex},${colIndex}`);
   };
 
@@ -562,10 +578,7 @@ export function PlanterGrid({
   };
 
   const handleDragLeave = (rowIndex: number, colIndex: number) => {
-    if (
-      dragOverCell?.row === rowIndex &&
-      dragOverCell?.col === colIndex
-    ) {
+    if (dragOverCell?.row === rowIndex && dragOverCell?.col === colIndex) {
       setDragOverCell(null);
     }
   };
@@ -783,8 +796,14 @@ export function PlanterGrid({
                         }
                         onMouseEnter={() => {
                           if (square.plantInstance) {
-                            const group = findMetaplantGroup(squares, rowIndex, colIndex);
-                            setHoveredCells(new Set(group.map(([r, c]) => `${r},${c}`)));
+                            const group = findMetaplantGroup(
+                              squares,
+                              rowIndex,
+                              colIndex,
+                            );
+                            setHoveredCells(
+                              new Set(group.map(([r, c]) => `${r},${c}`)),
+                            );
                           }
                         }}
                         onMouseLeave={() => setHoveredCells(new Set())}
@@ -795,9 +814,7 @@ export function PlanterGrid({
                         onDragOver={(e) =>
                           handleDragOver(rowIndex, colIndex, e)
                         }
-                        onDragLeave={() =>
-                          handleDragLeave(rowIndex, colIndex)
-                        }
+                        onDragLeave={() => handleDragLeave(rowIndex, colIndex)}
                         onDrop={(e) => handleDrop(rowIndex, colIndex, e)}
                         onDragEnd={handleDragEnd}
                         onTouchStart={() =>
@@ -842,7 +859,9 @@ export function PlanterGrid({
                         className={cn(
                           "w-12 h-12 relative transition-[transform,background-color,box-shadow,outline] duration-100 cursor-pointer shadow-sm flex flex-col items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2",
                           // Round cells for pot-container layout, square for grid
-                          layout === "pot-container" ? "rounded-full" : "rounded-lg",
+                          layout === "pot-container"
+                            ? "rounded-full"
+                            : "rounded-lg",
                           square.plantInstance
                             ? "bg-white/90"
                             : "bg-white/40 hover:bg-white/80",
@@ -874,26 +893,33 @@ export function PlanterGrid({
                             singleCellMode &&
                             "ring-2 ring-amber-400/80 ring-offset-1",
                         )}
-                        style={layout === "pot-container" ? undefined : {
-                          borderTop: hasThickTop
-                            ? `3px solid ${vSection?.color || "#15803d"}`
-                            : "1px solid rgba(0,0,0,0.05)",
-                          borderBottom: hasThickBottom
-                            ? `3px solid ${vSection?.color || "#15803d"}`
-                            : "1px solid rgba(0,0,0,0.05)",
-                          borderLeft: hasThickLeft
-                            ? `3px solid ${vSection?.color || "#15803d"}`
-                            : "1px solid rgba(0,0,0,0.05)",
-                          borderRight: hasThickRight
-                            ? `3px solid ${vSection?.color || "#15803d"}`
-                            : "1px solid rgba(0,0,0,0.05)",
-                        }}
+                        style={
+                          layout === "pot-container"
+                            ? undefined
+                            : {
+                                borderTop: hasThickTop
+                                  ? `3px solid ${vSection?.color || "#15803d"}`
+                                  : "1px solid rgba(0,0,0,0.05)",
+                                borderBottom: hasThickBottom
+                                  ? `3px solid ${vSection?.color || "#15803d"}`
+                                  : "1px solid rgba(0,0,0,0.05)",
+                                borderLeft: hasThickLeft
+                                  ? `3px solid ${vSection?.color || "#15803d"}`
+                                  : "1px solid rgba(0,0,0,0.05)",
+                                borderRight: hasThickRight
+                                  ? `3px solid ${vSection?.color || "#15803d"}`
+                                  : "1px solid rgba(0,0,0,0.05)",
+                              }
+                        }
                       >
                         {square.plantInstance ? (
-                          <div className={cn(
-                            "flex flex-col items-center justify-center h-full relative animate-plant-place",
-                            square.plantInstance.healthState === "dead" && "grayscale opacity-50",
-                          )}>
+                          <div
+                            className={cn(
+                              "flex flex-col items-center justify-center h-full relative animate-plant-place",
+                              square.plantInstance.healthState === "dead" &&
+                                "grayscale opacity-50",
+                            )}
+                          >
                             <span className="text-xl drop-shadow-sm select-none">
                               {square.plantInstance.plant.icon}
                             </span>
@@ -908,14 +934,19 @@ export function PlanterGrid({
                               )}
                             </span>
                             {square.plantInstance.healthState &&
-                              square.plantInstance.healthState !== "healthy" && (
+                              square.plantInstance.healthState !==
+                                "healthy" && (
                                 <span
                                   className={cn(
                                     "absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full border border-white/80",
-                                    square.plantInstance.healthState === "stressed" && "bg-yellow-400",
-                                    square.plantInstance.healthState === "damaged" && "bg-orange-500",
-                                    square.plantInstance.healthState === "diseased" && "bg-red-500",
-                                    square.plantInstance.healthState === "dead" && "bg-gray-400",
+                                    square.plantInstance.healthState ===
+                                      "stressed" && "bg-yellow-400",
+                                    square.plantInstance.healthState ===
+                                      "damaged" && "bg-orange-500",
+                                    square.plantInstance.healthState ===
+                                      "diseased" && "bg-red-500",
+                                    square.plantInstance.healthState ===
+                                      "dead" && "bg-gray-400",
                                   )}
                                   title={t("planterGrid.healthTitle", {
                                     state: t(
@@ -925,7 +956,8 @@ export function PlanterGrid({
                                 />
                               )}
                             {/* Group membership indicator: shown before any click */}
-                            {(groupSizeMap.get(`${rowIndex},${colIndex}`) ?? 1) > 1 && (
+                            {(groupSizeMap.get(`${rowIndex},${colIndex}`) ??
+                              1) > 1 && (
                               <span
                                 className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-primary/40"
                                 title={t("planterGrid.metaplantGroupTitle")}
@@ -956,7 +988,11 @@ export function PlanterGrid({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            openMovePicker(rowIndex, colIndex, square.plantInstance!);
+                            openMovePicker(
+                              rowIndex,
+                              colIndex,
+                              square.plantInstance!,
+                            );
                           }}
                           className="absolute -top-1 -left-1 bg-white border border-primary/20 text-primary rounded-full p-1 shadow-lg opacity-0 group-hover/square:opacity-100 group-focus-within/square:opacity-100 hover:bg-primary/5 transition-[opacity,background-color,transform] duration-100 hover:scale-110 active:scale-95 z-10 hidden sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                           title={t("planterGrid.movePlantTitle")}
