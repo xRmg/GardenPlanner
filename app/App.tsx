@@ -620,6 +620,8 @@ export default function App() {
                                   initialSquares={planter.squares}
                                   virtualSections={planter.virtualSections}
                                   backgroundColor={planter.backgroundColor}
+                                  cellDimensions={planter.cellDimensions}
+                                  layout={planter.layout}
                                   viewOnly={!isEditMode}
                                   getAvailableStock={getAvailableStock}
                                   onPlantAdded={handlePlantAdded}
@@ -1661,6 +1663,34 @@ export default function App() {
                       </select>
                     </div>
                   </section>
+
+                  {/* ── Measurement Units ──────────────────────────────────────────── */}
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        {t("settings.unitSystem")}
+                      </h3>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="settings-unit-system" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                        {t("settings.unitSystem")}
+                      </label>
+                      <p className="text-[11px] text-muted-foreground/70 ml-1">{t("settings.unitSystemHint")}</p>
+                      <select
+                        id="settings-unit-system"
+                        className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
+                        value={settings.unitSystem ?? "metric"}
+                        onChange={(e) => {
+                          const unitSystem = e.target.value as "imperial" | "metric";
+                          setSettings((prev) => ({ ...prev, unitSystem }));
+                          repositoryRef.current?.saveSettings({ ...settings, unitSystem });
+                        }}
+                      >
+                        <option value="metric">{t("settings.unitSystemMetric")}</option>
+                        <option value="imperial">{t("settings.unitSystemImperial")}</option>
+                      </select>
+                    </div>
+                  </section>
                 </div>
               </div>
             </TabsContent>
@@ -1747,6 +1777,7 @@ export default function App() {
         open={planterDialogOpen}
         onOpenChange={setPlanterDialogOpen}
         onSave={handleSavePlanter}
+        unitSystem={settings.unitSystem}
         initialConfig={
           editingPlanter?.planter
             ? {
@@ -1757,6 +1788,8 @@ export default function App() {
                 rows: editingPlanter.planter.rows,
                 cols: editingPlanter.planter.cols,
                 virtualSections: editingPlanter.planter.virtualSections,
+                cellDimensions: editingPlanter.planter.cellDimensions,
+                layout: editingPlanter.planter.layout,
               }
             : undefined
         }

@@ -216,6 +216,63 @@ export class GardenPlannerDB extends Dexie {
             plant.antagonists = normalizePlantReferenceList(antagonists);
           });
       });
+    // v10: add unitSystem to settings; backfill cellDimensions + layout on planters
+    //   - settings.unitSystem defaults to 'imperial' for 'en-US' locale, 'metric' otherwise
+    //   - planters without cellDimensions get the default for the detected unit system
+    //   - planters without layout get 'grid'
+    this.version(10)
+      .stores({})
+      .upgrade(async (trans) => {
+        console.info(
+          "[DB] Running v10 migration: adding unitSystem and cellDimensions",
+        );
+
+        // Detect a sensible unit system from stored locale (if any)
+        let unitSystem: "imperial" | "metric" = "metric";
+        try {
+          const storedLocaleRaw = localStorage.getItem("gp_locale");
+          const locale = (storedLocaleRaw ?? "").toLowerCase();
+          if (locale === "en-us" || locale === "en_us" || locale.endsWith("-us")) {
+            unitSystem = "imperial";
+          }
+        } catch {
+          // localStorage may be unavailable; keep metric default
+        }
+
+        const defaultDims =
+          unitSystem === "imperial"
+            ? { width: 1, depth: 1, unit: "feet" }
+            : { width: 30, depth: 30, unit: "cm" };
+
+        // Backfill settings row
+        await trans
+          .table("settings")
+          .toCollection()
+          .modify((row: Record<string, unknown>) => {
+            const v = row.value as Record<string, unknown> | undefined;
+            if (v && v.unitSystem === undefined) {
+              v.unitSystem = unitSystem;
+            }
+          });
+
+        // Backfill planter cellDimensions and layout
+        await trans
+          .table("areas")
+          .toCollection()
+          .modify((area: Record<string, unknown>) => {
+            const planters = area.planters as
+              | Array<Record<string, unknown>>
+              | undefined;
+            for (const planter of planters ?? []) {
+              if (planter.cellDimensions === undefined) {
+                planter.cellDimensions = { ...defaultDims };
+              }
+              if (planter.layout === undefined) {
+                planter.layout = "grid";
+              }
+            }
+          });
+      });
   }
 }
 

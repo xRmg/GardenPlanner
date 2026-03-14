@@ -19,6 +19,27 @@ import { z } from "zod";
 // ---------------------------------------------------------------------------
 
 export const SunRequirementSchema = z.enum(["full", "partial", "shade"]);
+
+/** Measurement unit system chosen by the user. */
+export const UnitSystemSchema = z.enum(["imperial", "metric"]);
+
+/** Unit for cell dimension values. */
+export const CellDimensionUnitSchema = z.enum(["feet", "inches", "cm", "m"]);
+
+/**
+ * Physical dimensions of a single grid cell.
+ * Imperial default: 1 ft × 1 ft (square-foot gardening).
+ * Metric defaults: 30 cm × 30 cm or 25 cm × 25 cm.
+ */
+export const CellDimensionsSchema = z.object({
+  width: z.number().positive().finite(),
+  depth: z.number().positive().finite(),
+  unit: CellDimensionUnitSchema,
+});
+
+/** Layout style for a planter — standard grid or a pot/container view. */
+export const PlanterLayoutSchema = z.enum(["grid", "pot-container"]);
+
 export const SeedlingStatusSchema = z.enum([
   "germinating",
   "growing",
@@ -206,6 +227,22 @@ export const PlanterSchema = z.object({
   virtualSections: z.array(VirtualSectionSchema).default([]),
   backgroundColor: z.string().optional(),
   tagline: z.string().optional(),
+  /**
+   * Physical size of each grid cell.
+   * Imperial default: { width: 1, depth: 1, unit: 'feet' }.
+   * Metric default:   { width: 30, depth: 30, unit: 'cm' }.
+   * If absent on legacy planters, callers should derive the default from the
+   * user's unit system setting.
+   */
+  cellDimensions: CellDimensionsSchema.optional(),
+  /**
+   * Visual layout type for the planter.
+   * 'grid'          — standard rectangular grid cells (default).
+   * 'pot-container' — round pot/container cells; cellDimensions represents
+   *                   the pot diameter or footprint.
+   * Optional — defaults to 'grid' wherever missing (e.g. legacy records).
+   */
+  layout: PlanterLayoutSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -292,6 +329,13 @@ export const StoredSettingsSchema = z.object({
   lastSelectedAreaId: z.string().optional(),
   /** The planter last interacted with — restored on page reload. */
   lastSelectedPlanterId: z.string().optional(),
+  /**
+   * Preferred measurement unit system.
+   * Defaults to 'imperial' for US locales, 'metric' everywhere else.
+   * Determines default cell dimension presets in the planter dialog.
+   * Optional — filled in on first load by useGardenData if absent.
+   */
+  unitSystem: UnitSystemSchema.optional(),
 });
 
 export const SettingsSchema = z.object({
@@ -311,6 +355,8 @@ export const SettingsSchema = z.object({
   lastSelectedAreaId: z.string().optional(),
   /** The planter last interacted with — restored on page reload. */
   lastSelectedPlanterId: z.string().optional(),
+  /** Preferred measurement unit system. Optional — filled in on first load. */
+  unitSystem: UnitSystemSchema.optional(),
 });
 
 export const SettingsPatchSchema = z
@@ -345,6 +391,7 @@ export function toFrontendSettings(stored: StoredSettings): Settings {
     isEditMode: stored.isEditMode,
     lastSelectedAreaId: stored.lastSelectedAreaId,
     lastSelectedPlanterId: stored.lastSelectedPlanterId,
+    unitSystem: stored.unitSystem,
   };
 }
 
@@ -396,6 +443,10 @@ export const SuggestionSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export type SunRequirement = z.infer<typeof SunRequirementSchema>;
+export type UnitSystem = z.infer<typeof UnitSystemSchema>;
+export type CellDimensionUnit = z.infer<typeof CellDimensionUnitSchema>;
+export type CellDimensions = z.infer<typeof CellDimensionsSchema>;
+export type PlanterLayout = z.infer<typeof PlanterLayoutSchema>;
 export type SeedlingStatus = z.infer<typeof SeedlingStatusSchema>;
 export type GrowthStage = z.infer<typeof GrowthStageSchema>;
 export type HealthState = z.infer<typeof HealthStateSchema>;
