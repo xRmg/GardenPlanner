@@ -65,6 +65,7 @@
 
 ## Running Backlog
 
+- [x] **Grid/pot sizing UI polish** — Reorder planter header to lead with grid spec (not name width), shorten plant abbreviations for pot-container cells (6-7 chars vs 10 for grid)
 - [ ] PWA + service worker (offline-first, installable on mobile)
 - [ ] Image uploads + storage (Phase 3+)
 - [ ] Additional locales: de, fr (after Phase 2)
