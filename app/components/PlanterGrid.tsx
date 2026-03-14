@@ -223,6 +223,15 @@ export function PlanterGrid({
   const [singleCellMode, setSingleCellMode] = useState(false);
   // Set of "row,col" keys whose group is currently hovered (for group-wide zoom)
   const [hoveredCells, setHoveredCells] = useState<Set<string>>(new Set());
+  // Drag-and-drop state for moving plants between cells
+  const [dragSourceCell, setDragSourceCell] = useState<{
+    row: number;
+    col: number;
+  } | null>(null);
+  const [dragOverCell, setDragOverCell] = useState<{
+    row: number;
+    col: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!detailsOpen) {
@@ -453,6 +462,73 @@ export function PlanterGrid({
     }
   };
 
+  const handleDragStart = (
+    rowIndex: number,
+    colIndex: number,
+    e: React.DragEvent,
+  ) => {
+    if (!squares[rowIndex][colIndex].plantInstance) return;
+    setDragSourceCell({ row: rowIndex, col: colIndex });
+    e.dataTransfer.effectAllowed = "move";
+    // A non-empty setData call is required by some browsers to initiate a valid drag
+    e.dataTransfer.setData("text/plain", `${rowIndex},${colIndex}`);
+  };
+
+  const handleDragOver = (
+    rowIndex: number,
+    colIndex: number,
+    e: React.DragEvent,
+  ) => {
+    e.preventDefault();
+    if (!dragSourceCell) return;
+    if (dragSourceCell.row === rowIndex && dragSourceCell.col === colIndex)
+      return;
+    e.dataTransfer.dropEffect = "move";
+    setDragOverCell({ row: rowIndex, col: colIndex });
+  };
+
+  const handleDragLeave = (rowIndex: number, colIndex: number) => {
+    if (
+      dragOverCell?.row === rowIndex &&
+      dragOverCell?.col === colIndex
+    ) {
+      setDragOverCell(null);
+    }
+  };
+
+  const handleDrop = (
+    rowIndex: number,
+    colIndex: number,
+    e: React.DragEvent,
+  ) => {
+    e.preventDefault();
+    if (!dragSourceCell) return;
+    const { row: srcRow, col: srcCol } = dragSourceCell;
+    setDragSourceCell(null);
+    setDragOverCell(null);
+    if (srcRow === rowIndex && srcCol === colIndex) return;
+
+    const newSquares = squares.map((row) => [...row]);
+    const sourceInstance = newSquares[srcRow][srcCol].plantInstance;
+    const targetInstance = newSquares[rowIndex][colIndex].plantInstance;
+    newSquares[rowIndex][colIndex] = {
+      ...newSquares[rowIndex][colIndex],
+      plantInstance: sourceInstance,
+    };
+    newSquares[srcRow][srcCol] = {
+      ...newSquares[srcRow][srcCol],
+      plantInstance: targetInstance,
+    };
+
+    setSquares(newSquares);
+    onSquaresChange?.(newSquares, id);
+  };
+
+  const handleDragEnd = () => {
+    setDragSourceCell(null);
+    setDragOverCell(null);
+  };
+
   return (
     <>
       <div className="inline-block bg-card rounded-2xl shadow-sm p-5 border border-border/20 transition-shadow hover:shadow-md animate-in fade-in zoom-in duration-500">
@@ -594,6 +670,18 @@ export function PlanterGrid({
                           }
                         }}
                         onMouseLeave={() => setHoveredCells(new Set())}
+                        draggable={!viewOnly && !!square.plantInstance}
+                        onDragStart={(e) =>
+                          handleDragStart(rowIndex, colIndex, e)
+                        }
+                        onDragOver={(e) =>
+                          handleDragOver(rowIndex, colIndex, e)
+                        }
+                        onDragLeave={() =>
+                          handleDragLeave(rowIndex, colIndex)
+                        }
+                        onDrop={(e) => handleDrop(rowIndex, colIndex, e)}
+                        onDragEnd={handleDragEnd}
                         title={
                           square.plantInstance
                             ? `${getPlantDisplayName(square.plantInstance.plant, i18n.language)}${square.plantInstance.plant.spacingCm ? ` · ${square.plantInstance.plant.spacingCm}cm spacing` : ""}`
@@ -611,8 +699,24 @@ export function PlanterGrid({
                           square.plantInstance
                             ? "bg-white/90"
                             : "bg-white/40 hover:bg-white/80",
+                          // Drag source: dim the cell being dragged
+                          dragSourceCell?.row === rowIndex &&
+                            dragSourceCell?.col === colIndex &&
+                            "opacity-40 scale-95",
+                          // Drop target highlight (sky-blue ring)
+                          dragSourceCell &&
+                            dragOverCell?.row === rowIndex &&
+                            dragOverCell?.col === colIndex &&
+                            "ring-2 ring-sky-400/70 ring-offset-1 scale-105",
+                          // Grab cursor on draggable cells
+                          !viewOnly &&
+                            !!square.plantInstance &&
+                            !dragSourceCell &&
+                            "cursor-grab",
                           // Group hover zoom (applied to all cells in the hovered group)
-                          hoveredCells.has(`${rowIndex},${colIndex}`) && "scale-105",
+                          !dragSourceCell &&
+                            hoveredCells.has(`${rowIndex},${colIndex}`) &&
+                            "scale-105",
                           // Group highlight (green ring)
                           highlightedCells.has(`${rowIndex},${colIndex}`) &&
                             !singleCellMode &&
