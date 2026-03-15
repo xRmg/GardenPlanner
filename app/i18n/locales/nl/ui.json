@@ -73,6 +73,9 @@
     "gardenJournal": "Tuindagboek",
     "noLogsYet": "Nog geen notities",
     "noLogsHint": "Water geven, oogsten of een plant behandelen om vermeldingen te zien.",
+    "journalNotes": {
+      "healthStateChanged": "Gezondheidsstatus gewijzigd naar: {{state}}"
+    },
     "markDone": "Als gedaan markeren",
     "markSuggestionDone": "Suggestie als gedaan markeren",
     "markSuggestionDoneTooltip": "Verwijder dit uit Volgende Stappen en registreer het als voltooid.",
@@ -146,6 +149,7 @@
     "doneEditing": "Klaar met bewerken",
     "editLayout": "Indeling Bewerken",
     "newArea": "Nieuw Gebied",
+    "newAreaTagline": "Locatiebeschrijving",
     "emptyTitle": "Je tuinkaart is leeg",
     "emptyHint": "Voeg je eerste gebied toe — zoals \"Achtertuin\" of \"Voortuin\" — en richt daarna planters in.",
     "newPlanter": "Nieuwe Planter",

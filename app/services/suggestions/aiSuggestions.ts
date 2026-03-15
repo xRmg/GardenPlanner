@@ -15,6 +15,7 @@ import { OpenRouterClient } from "../ai/openrouter";
 import { getAIResponseLanguage } from "../ai/locale";
 import { truncate } from "../ai/prompts";
 import { RateLimiter } from "../ai/rateLimiter";
+import { normalizePlantReference } from "../../lib/plantReferences";
 import { getPlantName } from "../../i18n/utils/plantTranslation";
 import type {
   RuleContext,
@@ -81,6 +82,9 @@ SUGGESTION PRINCIPLES
 - Each suggestion must be directly supported by at least one piece of data in
   the input context (plant name, planting date, weather reading, seedling status).
   Never invent plants or events not present in the context.
+- For companion_conflict, only consider plants in the same planterName.
+  Never infer a proximity conflict from plants in different planters.
+  Treat adjacentPlants as same-planter neighbors only.
 - The input includes responseLocale and responseLanguage.
 - CRITICAL: Write ALL text fields (description, rationale) entirely in responseLanguage.
   Never mix languages. If responseLanguage is Dutch, respond in Dutch. If English, respond in English.
@@ -278,6 +282,79 @@ export function buildAISuggestionContext(
   };
 }
 
+function namesMatch(left: string | null | undefined, right: string): boolean {
+  if (!left) return false;
+  return normalizePlantReference(left) === normalizePlantReference(right);
+}
+
+function planterNamesMatch(
+  left: string | null | undefined,
+  right: string,
+): boolean {
+  return left?.trim().toLowerCase() === right.trim().toLowerCase();
+}
+
+function plantsConflict(
+  left: AISuggestionContext["plants"][number],
+  right: AISuggestionContext["plants"][number],
+): boolean {
+  const leftName = normalizePlantReference(left.name);
+  const rightName = normalizePlantReference(right.name);
+  const leftAntagonists = new Set(left.antagonists.map(normalizePlantReference));
+  const rightAntagonists = new Set(
+    right.antagonists.map(normalizePlantReference),
+  );
+
+  return (
+    leftAntagonists.has(rightName) || rightAntagonists.has(leftName)
+  );
+}
+
+export function hasSamePlanterCompanionConflict(
+  ctx: AISuggestionContext,
+  suggestion: Pick<RawAISuggestion, "plantName" | "planterName">,
+): boolean {
+  if (suggestion.planterName) {
+    const planterPlants = ctx.plants.filter((plant) =>
+      planterNamesMatch(suggestion.planterName, plant.planterName),
+    );
+    if (planterPlants.length < 2) return false;
+
+    if (suggestion.plantName) {
+      return planterPlants
+        .filter((plant) => namesMatch(suggestion.plantName, plant.name))
+        .some((plant) =>
+          planterPlants.some(
+            (candidate) =>
+              candidate !== plant && plantsConflict(plant, candidate),
+          ),
+        );
+    }
+
+    return planterPlants.some((plant, plantIndex) =>
+      planterPlants.some(
+        (candidate, candidateIndex) =>
+          candidateIndex > plantIndex && plantsConflict(plant, candidate),
+      ),
+    );
+  }
+
+  if (!suggestion.plantName) return false;
+
+  const matchingPlants = ctx.plants.filter((plant) =>
+    namesMatch(suggestion.plantName, plant.name),
+  );
+
+  return matchingPlants.some((plant) =>
+    ctx.plants.some(
+      (candidate) =>
+        planterNamesMatch(candidate.planterName, plant.planterName) &&
+        candidate !== plant &&
+        plantsConflict(plant, candidate),
+    ),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Response parser
 // ---------------------------------------------------------------------------
@@ -305,6 +382,12 @@ function parseAIResponse(
     // Type validation
     const type = item.type as SuggestionType;
     if (!AI_ALLOWED_TYPES.includes(type)) continue;
+    if (
+      type === "companion_conflict" &&
+      !hasSamePlanterCompanionConflict(ctx, item)
+    ) {
+      continue;
+    }
 
     // Priority validation
     const priority = item.priority as AISuggestionResult["priority"];

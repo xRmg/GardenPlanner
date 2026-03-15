@@ -13,11 +13,20 @@ import type { GardenRepository } from "../data/repository";
 import type { GardenEvent as SchemaGardenEvent } from "../data/schema";
 import type { PlantInstance } from "../components/PlanterGrid";
 import type { GardenEvent, Suggestion } from "../components/EventsBar";
+import i18n from "../i18n/config";
 import {
   dismissErrorToast,
   ERROR_TOAST_IDS,
   notifyErrorToast,
 } from "../lib/asyncErrors";
+
+function getHealthStateLabel(
+  healthState: NonNullable<PlantInstance["healthState"]>,
+): string {
+  return String(
+    i18n.t(`dialogs.plantDetailsDialog.healthStates.${healthState}`),
+  );
+}
 
 export interface GardenEventsState {
   handlePlantAdded: (plantInstance: PlantInstance, planterId: string) => void;
@@ -201,6 +210,7 @@ export function useGardenEvents({
       plantInstance.healthState !== (previousPlantInstance?.healthState ?? null) &&
       plantInstance.healthState != null
     ) {
+      const healthStateLabel = getHealthStateLabel(plantInstance.healthState);
       journalEntries.push({
         id: `observation-health-${Date.now()}-${Math.random()}`,
         type: "observation",
@@ -208,7 +218,11 @@ export function useGardenEvents({
         date: new Date().toISOString(),
         gardenId: planterId,
         instanceId: plantInstance.instanceId,
-        note: `Health state changed to: ${plantInstance.healthState}`,
+        note: String(
+          i18n.t("eventsBar.journalNotes.healthStateChanged", {
+            state: healthStateLabel,
+          }),
+        ),
       });
     }
 

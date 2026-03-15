@@ -22,7 +22,10 @@ import {
   parseTreatmentOptionsResponse,
   sanitizeTreatmentObservation,
 } from "../../services/ai/treatmentOptions";
-import { buildAISuggestionContext } from "../../services/suggestions/aiSuggestions";
+import {
+  buildAISuggestionContext,
+  hasSamePlanterCompanionConflict,
+} from "../../services/suggestions/aiSuggestions";
 import type { RuleContext, PlacedPlant } from "../../services/suggestions/types";
 import type { Plant } from "../schema";
 import { filterLowConfidenceFields } from "../../hooks/usePlantAILookup";
@@ -464,5 +467,97 @@ describe("buildAISuggestionContext", () => {
       adjacentPlants: ["Broccoli"],
       adjacentPlantDisplayNames: ["Broccoli"],
     });
+  });
+
+  it("only treats companion conflicts as valid within the same planter", () => {
+    const placedPlants: PlacedPlant[] = [
+      {
+        instanceId: "inst-1",
+        plant: {
+          id: "tomato",
+          name: "Tomato",
+          color: "#ef4444",
+          icon: "🍅",
+          companions: [],
+          antagonists: ["fennel"],
+          sowIndoorMonths: [],
+          sowDirectMonths: [],
+          harvestMonths: [],
+          isSeed: false,
+          source: "bundled",
+        },
+        pestEvents: [],
+        planterId: "planter-1",
+        planterName: "Bed A",
+        areaId: "area-1",
+        areaName: "Garden",
+        adjacentPlantNames: [],
+        growthStage: null,
+        healthState: null,
+      },
+      {
+        instanceId: "inst-2",
+        plant: {
+          id: "fennel",
+          name: "Fennel",
+          color: "#84cc16",
+          icon: "🌿",
+          companions: [],
+          antagonists: ["tomato"],
+          sowIndoorMonths: [],
+          sowDirectMonths: [],
+          harvestMonths: [],
+          isSeed: false,
+          source: "bundled",
+        },
+        pestEvents: [],
+        planterId: "planter-2",
+        planterName: "Bed B",
+        areaId: "area-1",
+        areaName: "Garden",
+        adjacentPlantNames: [],
+        growthStage: null,
+        healthState: null,
+      },
+    ];
+
+    const ctx: RuleContext = {
+      currentMonth: 5,
+      today: new Date("2026-05-15T00:00:00.000Z"),
+      koeppenZone: "Cfb",
+      lat: 52,
+      lng: 4,
+      placedPlants,
+      seedlings: [],
+      lastEvents: new Map(),
+      weather: null,
+    };
+
+    const aiContext = buildAISuggestionContext(ctx, [], "en");
+
+    expect(
+      hasSamePlanterCompanionConflict(aiContext, {
+        plantName: "Tomato",
+        planterName: "Bed A",
+      }),
+    ).toBe(false);
+
+    const samePlanterContext = {
+      ...aiContext,
+      plants: [
+        ...aiContext.plants,
+        {
+          ...aiContext.plants[1],
+          planterName: "Bed A",
+        },
+      ],
+    };
+
+    expect(
+      hasSamePlanterCompanionConflict(samePlanterContext, {
+        plantName: "Tomato",
+        planterName: "Bed A",
+      }),
+    ).toBe(true);
   });
 });

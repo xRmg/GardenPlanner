@@ -12,6 +12,7 @@ import { useState } from "react";
 import type { GardenRepository } from "../data/repository";
 import type { GardenEvent } from "../components/EventsBar";
 import type { PlanterConfig } from "../components/PlanterDialog";
+import i18n from "../i18n/config";
 import {
   dismissErrorToast,
   ERROR_TOAST_IDS,
@@ -60,8 +61,8 @@ export function useAreaManager({
   const handleAddArea = () => {
     const newArea: Area = {
       id: `area-${Date.now()}`,
-      name: "New Area",
-      tagline: "Location description",
+      name: String(i18n.t("areas.newArea")),
+      tagline: String(i18n.t("areas.newAreaTagline")),
       backgroundColor: "#f0fdf4",
       planters: [],
     };

@@ -73,6 +73,9 @@
     "gardenJournal": "Garden Journal",
     "noLogsYet": "No logs yet",
     "noLogsHint": "Water, harvest, or treat a plant to see entries here.",
+    "journalNotes": {
+      "healthStateChanged": "Health state changed to: {{state}}"
+    },
     "markDone": "Mark done",
     "markSuggestionDone": "Mark suggestion as done",
     "markSuggestionDoneTooltip": "Remove this from Next Steps and log it as completed.",
@@ -146,6 +149,7 @@
     "doneEditing": "Done Editing",
     "editLayout": "Edit Layout",
     "newArea": "New Area",
+    "newAreaTagline": "Location description",
     "emptyTitle": "Your garden map is empty",
     "emptyHint": "Add your first area — like \"Backyard\" or \"Front Porch\" — then lay out planters inside it.",
     "newPlanter": "New Planter",
