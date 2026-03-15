@@ -6,7 +6,7 @@
  *   2. Dexie/IndexedDB (persistent, 30-day TTL)
  *
  * Key format: "name|latinName|koeppenZone|locale" (lowercase, trimmed).
- * Pre-seed with built-in plants to avoid AI calls for well-known plants.
+ * Pre-seed from the saved plant catalogue to avoid repeated AI calls.
  */
 
 import { getGardenPlannerDB } from "../../data/dexieRepository";

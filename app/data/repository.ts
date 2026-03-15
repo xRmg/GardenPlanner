@@ -41,8 +41,8 @@ export interface GardenRepository {
 
   // ── Custom plants ────────────────────────────────────────────────────────
   /**
-   * Return all user-defined plants (source: 'custom').
-   * Does NOT include built-in plants — those are seeded into Dexie on first launch.
+    * Return all plants persisted for the current garden.
+    * The app no longer auto-seeds bundled plants into storage on first launch.
    */
   getCustomPlants(): Promise<Plant[]>;
   /** Insert or update a custom plant. Matched by `plant.id`. */

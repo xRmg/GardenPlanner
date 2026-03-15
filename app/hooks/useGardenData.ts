@@ -12,7 +12,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createServerRepository } from "../data/serverRepository";
 import { migrateLocalStorageToDexie } from "../data/migration";
-import { BUNDLED_PLANTS } from "../data/bundledPlants";
 import {
   dismissErrorToast,
   ERROR_TOAST_IDS,
@@ -107,24 +106,13 @@ export function useGardenData(): GardenDataState {
           repo.getEvents(),
         ]);
 
-        let nextPlants = loadedPlants;
-        if (loadedPlants.length === 0) {
-          console.info(
-            `[DB] Plant catalogue empty; seeding ${BUNDLED_PLANTS.length} bundled plants`,
-          );
-          await Promise.all(
-            BUNDLED_PLANTS.map((plant) => repo.savePlant(plant)),
-          );
-          nextPlants = BUNDLED_PLANTS;
-        }
-
-        getPlantCache().seedFromPlants(nextPlants);
+        getPlantCache().seedFromPlants(loadedPlants);
 
         console.info(
-          `[DB] Loaded: ${loadedAreas.length} areas, ${nextPlants.length} plants, ${loadedSeedlings.length} seedlings, ${loadedEvents.length} events`,
+          `[DB] Loaded: ${loadedAreas.length} areas, ${loadedPlants.length} plants, ${loadedSeedlings.length} seedlings, ${loadedEvents.length} events`,
         );
         setAreas(loadedAreas as unknown as Area[]);
-        setCustomPlants(nextPlants as unknown as Plant[]);
+        setCustomPlants(loadedPlants as unknown as Plant[]);
         setSeedlings(loadedSeedlings as unknown as Seedling[]);
 
         // ── Locale bootstrap ────────────────────────────────────────────────
