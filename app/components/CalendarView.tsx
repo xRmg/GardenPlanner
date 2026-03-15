@@ -2,6 +2,16 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n/config";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
+import {
   Calendar as CalendarIcon,
   CalendarDays,
   ChevronLeft,
@@ -11,6 +21,7 @@ import {
   MapPin,
   Plus,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import type {
@@ -235,7 +246,23 @@ interface CalendarViewProps {
   suggestionsMode?: SuggestionMode;
   suggestionsLoading?: boolean;
   onAddEvent?: (event: Omit<GardenEvent, "id">) => void;
+  onRemoveEvent?: (eventId: string) => Promise<void>;
 }
+
+type QuickAddComposerType = "observation" | "pest" | "treatment";
+
+const PEST_CATEGORY_KEYS = [
+  "aphids",
+  "spiderMites",
+  "whiteflies",
+  "slugsSnails",
+  "caterpillars",
+  "beetles",
+  "scaleMealybugs",
+  "thrips",
+  "powderyMildew",
+  "other",
+] as const;
 
 function parseDateKey(dateKey: string): Date {
   const [year, month, day] = dateKey.split("-").map(Number);
@@ -273,15 +300,17 @@ function getSuggestionModeLabel(
   t: ReturnType<typeof useTranslation>["t"],
   mode: SuggestionMode,
 ): string {
+  const translate = t as (key: string) => string;
+
   switch (mode) {
     case "ai+weather":
-      return t("eventsBar.modeBadges.aiWeather");
+      return translate("eventsBar.modeBadges.aiWeather");
     case "rules+weather":
-      return t("eventsBar.modeBadges.rulesWeather");
+      return translate("eventsBar.modeBadges.rulesWeather");
     case "rules":
-      return t("eventsBar.modeBadges.rules");
+      return translate("eventsBar.modeBadges.rules");
     case "static":
-      return t("eventsBar.modeBadges.static");
+      return translate("eventsBar.modeBadges.static");
   }
 }
 
@@ -289,13 +318,15 @@ function getPriorityLabel(
   t: ReturnType<typeof useTranslation>["t"],
   priority: CalendarSuggestionItem["priority"],
 ): string {
+  const translate = t as (key: string) => string;
+
   switch (priority) {
     case "high":
-      return t("common.priorities.high");
+      return translate("common.priorities.high");
     case "medium":
-      return t("common.priorities.medium");
+      return translate("common.priorities.medium");
     case "low":
-      return t("common.priorities.low");
+      return translate("common.priorities.low");
   }
 }
 
@@ -303,15 +334,17 @@ function getHarvestStateLabel(
   t: ReturnType<typeof useTranslation>["t"],
   state: CalendarHarvestItem["state"],
 ): string {
+  const translate = t as (key: string) => string;
+
   switch (state) {
     case "upcoming":
-      return t("calendarView.harvestStates.upcoming");
+      return translate("calendarView.harvestStates.upcoming");
     case "ready":
-      return t("calendarView.harvestStates.ready");
+      return translate("calendarView.harvestStates.ready");
     case "overdue":
-      return t("calendarView.harvestStates.overdue");
+      return translate("calendarView.harvestStates.overdue");
     case "seasonal":
-      return t("calendarView.harvestStates.seasonal");
+      return translate("calendarView.harvestStates.seasonal");
   }
 }
 
@@ -461,13 +494,14 @@ export function CalendarView({
   suggestionsMode,
   suggestionsLoading = false,
   onAddEvent,
+  onRemoveEvent,
 }: CalendarViewProps) {
   const { t } = useTranslation();
   const locale = settings.locale || "en-US";
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfCalendarMonth(new Date()),
   );
-  const [selectedDay, setSelectedDay] = useState<CalendarDayCell | null>(null);
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
 
   const model = buildCalendarMonth({
     month: visibleMonth,
@@ -475,6 +509,9 @@ export function CalendarView({
     events,
     suggestions,
   });
+  const selectedDay = selectedDateKey
+    ? model.days.find((day) => day.dateKey === selectedDateKey) ?? null
+    : null;
 
   const monthLabel = new Intl.DateTimeFormat(locale, {
     month: "long",
@@ -608,7 +645,11 @@ export function CalendarView({
                 ))}
 
                 {model.days.map((day) => (
-                  <DayCell key={day.dateKey} day={day} onSelect={setSelectedDay} />
+                  <DayCell
+                    key={day.dateKey}
+                    day={day}
+                    onSelect={(nextDay) => setSelectedDateKey(nextDay.dateKey)}
+                  />
                 ))}
               </div>
             </div>
@@ -733,8 +774,9 @@ export function CalendarView({
       <DayDetailPanel
         day={selectedDay}
         locale={locale}
-        onClose={() => setSelectedDay(null)}
+        onClose={() => setSelectedDateKey(null)}
         onAddEvent={onAddEvent}
+        onRemoveEvent={onRemoveEvent}
       />
     </div>
   );
@@ -777,11 +819,13 @@ function DayDetailPanel({
   locale,
   onClose,
   onAddEvent,
+  onRemoveEvent,
 }: {
   day: CalendarDayCell | null;
   locale: string;
   onClose: () => void;
   onAddEvent?: (event: Omit<GardenEvent, "id">) => void;
+  onRemoveEvent?: (eventId: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const isEmpty =
@@ -795,21 +839,37 @@ function DayDetailPanel({
       type: "watered" as const,
       icon: "💧",
       label: t("calendarView.dayDetail.quickAddActions.watered"),
+      composer: null,
     },
     {
       type: "harvested" as const,
       icon: "🌾",
       label: t("calendarView.dayDetail.quickAddActions.harvested"),
+      composer: null,
+    },
+    {
+      type: "weeded" as const,
+      icon: "🧤",
+      label: t("calendarView.dayDetail.quickAddActions.weeded"),
+      composer: null,
     },
     {
       type: "pest" as const,
       icon: "🪲",
       label: t("calendarView.dayDetail.quickAddActions.pest"),
+      composer: "pest" as const,
+    },
+    {
+      type: "treatment" as const,
+      icon: "💊",
+      label: t("calendarView.dayDetail.quickAddActions.treatment"),
+      composer: "treatment" as const,
     },
     {
       type: "observation" as const,
       icon: "✏️",
       label: t("calendarView.dayDetail.quickAddActions.observation"),
+      composer: "observation" as const,
     },
   ];
 
@@ -821,8 +881,23 @@ function DayDetailPanel({
       }).format(parseDateKey(day.dateKey))
     : "";
 
-  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [activeComposer, setActiveComposer] = useState<QuickAddComposerType | null>(null);
   const [noteText, setNoteText] = useState("");
+  const [pestCategory, setPestCategory] = useState<(typeof PEST_CATEGORY_KEYS)[number] | "">("");
+  const [treatmentName, setTreatmentName] = useState("");
+  const [eventToRemove, setEventToRemove] = useState<CalendarEventItem | null>(null);
+  const [removingEventId, setRemovingEventId] = useState<string | null>(null);
+
+  const resetComposer = () => {
+    setActiveComposer(null);
+    setNoteText("");
+    setPestCategory("");
+    setTreatmentName("");
+  };
+
+  const getPestCategoryLabel = (
+    category: (typeof PEST_CATEGORY_KEYS)[number],
+  ) => t(`calendarView.dayDetail.pestCategories.${category}`);
 
   const handleQuickAdd = (type: GardenEvent["type"], note?: string) => {
     if (!day || !onAddEvent) return;
@@ -834,12 +909,53 @@ function DayDetailPanel({
     });
   };
 
-  const handleAddNote = () => {
-    const trimmed = noteText.trim();
-    if (!trimmed) return;
-    handleQuickAdd("observation", trimmed);
-    setNoteText("");
-    setShowNoteInput(false);
+  const handleQuickActionClick = (action: (typeof quickAddActions)[number]) => {
+    if (action.composer) {
+      setActiveComposer(action.composer);
+      setNoteText("");
+      setPestCategory("");
+      setTreatmentName("");
+      return;
+    }
+
+    handleQuickAdd(action.type);
+  };
+
+  const handleSubmitComposer = () => {
+    if (activeComposer === "observation") {
+      const trimmed = noteText.trim();
+      if (!trimmed) return;
+      handleQuickAdd("observation", trimmed);
+      resetComposer();
+      return;
+    }
+
+    if (activeComposer === "pest") {
+      const trimmed = noteText.trim();
+      if (!pestCategory || !trimmed) return;
+      handleQuickAdd("pest", `${getPestCategoryLabel(pestCategory)}: ${trimmed}`);
+      resetComposer();
+      return;
+    }
+
+    if (activeComposer === "treatment") {
+      const trimmedTreatment = treatmentName.trim();
+      const trimmedNote = noteText.trim();
+      if (!trimmedTreatment) return;
+      handleQuickAdd(
+        "treatment",
+        trimmedNote ? `${trimmedTreatment}: ${trimmedNote}` : trimmedTreatment,
+      );
+      resetComposer();
+    }
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!eventToRemove || !onRemoveEvent) return;
+    setRemovingEventId(eventToRemove.id);
+    await onRemoveEvent(eventToRemove.id);
+    setRemovingEventId(null);
+    setEventToRemove(null);
   };
 
   return (
@@ -893,6 +1009,20 @@ function DayDetailPanel({
                             </p>
                           )}
                         </div>
+                        {onRemoveEvent && (
+                          <button
+                            type="button"
+                            onClick={() => setEventToRemove(event)}
+                            disabled={removingEventId === event.id}
+                            className="shrink-0 rounded-full border border-white/60 bg-white/70 p-1 text-muted-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                            aria-label={t("calendarView.dayDetail.removeEventAriaLabel", {
+                              label: event.label,
+                            })}
+                            title={t("calendarView.dayDetail.removeEvent")}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -996,55 +1126,110 @@ function DayDetailPanel({
                   {t("calendarView.dayDetail.quickAdd")}
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {quickAddActions.filter((a) => a.type !== "observation").map((action) => (
+                  {quickAddActions.map((action) => (
                     <button
                       key={action.type}
                       type="button"
-                      onClick={() => handleQuickAdd(action.type)}
-                      className="rounded-full border border-border/30 bg-muted/30 px-3 py-1.5 text-xs font-bold transition-colors hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
+                      onClick={() => handleQuickActionClick(action)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
+                        activeComposer === action.composer && action.composer
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border/30 bg-muted/30 hover:bg-primary/10 hover:border-primary/30 hover:text-primary",
+                      )}
                     >
                       {`${action.icon} ${action.label}`}
                     </button>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => { setShowNoteInput((v) => !v); setNoteText(""); }}
-                    className={cn(
-                      "rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
-                      showNoteInput
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border/30 bg-muted/30 hover:bg-primary/10 hover:border-primary/30 hover:text-primary",
-                    )}
-                  >
-                    {`✏️ ${t("calendarView.dayDetail.quickAddActions.observation")}`}
-                  </button>
                 </div>
-                {showNoteInput && (
+                {activeComposer && (
                   <div className="mt-2.5 flex flex-col gap-2">
+                    {activeComposer === "pest" && (
+                      <>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">
+                          {t("calendarView.dayDetail.pestType")}
+                        </label>
+                        <select
+                          autoFocus
+                          value={pestCategory}
+                          onChange={(e) =>
+                            setPestCategory(
+                              e.target.value as (typeof PEST_CATEGORY_KEYS)[number] | "",
+                            )
+                          }
+                          className="w-full rounded-xl border border-border/40 bg-white/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        >
+                          <option value="">
+                            {t("calendarView.dayDetail.pestTypePlaceholder")}
+                          </option>
+                          {PEST_CATEGORY_KEYS.map((category) => (
+                            <option key={category} value={category}>
+                              {getPestCategoryLabel(category)}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                    {activeComposer === "treatment" && (
+                      <>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/60">
+                          {t("calendarView.dayDetail.treatmentType")}
+                        </label>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={treatmentName}
+                          onChange={(e) => setTreatmentName(e.target.value)}
+                          placeholder={t("calendarView.dayDetail.treatmentTypePlaceholder")}
+                          className="w-full rounded-xl border border-border/40 bg-white/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground/50"
+                        />
+                      </>
+                    )}
                     <textarea
-                      autoFocus
+                      autoFocus={activeComposer !== "pest" && activeComposer !== "treatment"}
                       value={noteText}
                       onChange={(e) => setNoteText(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddNote(); }
-                        if (e.key === "Escape") { setShowNoteInput(false); setNoteText(""); }
+                        if (e.key === "Escape") {
+                          resetComposer();
+                        }
+                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                          e.preventDefault();
+                          handleSubmitComposer();
+                        }
                       }}
-                      placeholder={t("calendarView.dayDetail.notePlaceholder")}
-                      rows={2}
+                      placeholder={
+                        activeComposer === "pest"
+                          ? t("calendarView.dayDetail.pestNotePlaceholder")
+                          : activeComposer === "treatment"
+                            ? t("calendarView.dayDetail.treatmentNotePlaceholder")
+                            : t("calendarView.dayDetail.notePlaceholder")
+                      }
+                      rows={activeComposer === "observation" ? 2 : 3}
                       className="w-full resize-none rounded-xl border border-border/40 bg-white/60 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground/50"
                     />
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={handleAddNote}
-                        disabled={!noteText.trim()}
+                        onClick={handleSubmitComposer}
+                        disabled={
+                          activeComposer === "observation"
+                            ? !noteText.trim()
+                            : activeComposer === "pest"
+                              ? !pestCategory || !noteText.trim()
+                              : !treatmentName.trim()
+                        }
                         className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/20 disabled:opacity-40"
                       >
-                        {t("calendarView.dayDetail.addNote")}
+                        {activeComposer === "pest"
+                          ? t("calendarView.dayDetail.savePest")
+                          : activeComposer === "treatment"
+                            ? t("calendarView.dayDetail.saveTreatment")
+                            : t("calendarView.dayDetail.addNote")}
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setShowNoteInput(false); setNoteText(""); }}
+                        onClick={resetComposer}
                         className="rounded-full border border-border/30 bg-muted/30 px-3 py-1.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted/50"
                       >
                         {t("common.cancel")}
@@ -1057,6 +1242,42 @@ function DayDetailPanel({
           </div>
         )}
       </SheetContent>
+
+      <AlertDialog
+        open={eventToRemove !== null}
+        onOpenChange={(open) => {
+          if (!open && removingEventId === null) {
+            setEventToRemove(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("calendarView.dayDetail.removeEventConfirmTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("calendarView.dayDetail.removeEventConfirmDescription", {
+                label: eventToRemove?.label ?? "",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removingEventId !== null}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleConfirmRemove();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("calendarView.dayDetail.removeEvent")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

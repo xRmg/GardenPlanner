@@ -261,6 +261,9 @@
     "aiModelHint": "Elk model beschikbaar op je OpenRouter-account. Standaard: google/gemini-2.0-flash",
     "language": "Taal",
     "languageHint": "Kies je gewenste weergavetaal.",
+    "version": "Versie",
+    "releaseVersion": "Releaseversie",
+    "versionHint": "Gegenereerd uit de releaseversie van de repository en gesynchroniseerd met git-tags.",
     "climateZones": {
       "groupTropical": "A — Tropisch",
       "Af": "Af — Tropisch Regenwoud",
@@ -694,11 +697,37 @@
       "quickAddActions": {
         "watered": "Water gegeven",
         "harvested": "Geoogst",
+        "weeded": "Gewied",
         "pest": "Plaag gespot",
-        "observation": "Notitie"
+        "treatment": "Behandeling toegepast",
+        "observation": "Waarneming"
       },
-      "notePlaceholder": "Schrijf je observatie…",
-      "addNote": "Notitie Toevoegen"
+      "notePlaceholder": "Schrijf op wat je hebt gezien…",
+      "addNote": "Notitie Opslaan",
+      "pestType": "Type plaag",
+      "pestTypePlaceholder": "Kies de plaag of aantasting",
+      "pestNotePlaceholder": "Waar zag je het en hoe ernstig is het?",
+      "treatmentType": "Gebruikte behandeling",
+      "treatmentTypePlaceholder": "bijv. Neemoliespray",
+      "treatmentNotePlaceholder": "Optionele notities over dosering, timing of vervolg",
+      "savePest": "Plaag Opslaan",
+      "saveTreatment": "Behandeling Opslaan",
+      "removeEvent": "Verwijderen",
+      "removeEventAriaLabel": "{{label}} verwijderen",
+      "removeEventConfirmTitle": "Deze dagboeknotitie verwijderen?",
+      "removeEventConfirmDescription": "Hiermee verwijder je \"{{label}}\" definitief van deze dag.",
+      "pestCategories": {
+        "aphids": "Bladluizen",
+        "spiderMites": "Spintmijten",
+        "whiteflies": "Witte vliegen",
+        "slugsSnails": "Slakken",
+        "caterpillars": "Rupsen",
+        "beetles": "Kevers",
+        "scaleMealybugs": "Schildluis / wolluis",
+        "thrips": "Trips",
+        "powderyMildew": "Echte meeldauw",
+        "other": "Anders / onbekend"
+      }
     },
     "taskCount_one": "{{count}} taak",
     "taskCount_other": "{{count}} taken",

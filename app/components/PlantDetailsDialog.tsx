@@ -58,17 +58,19 @@ function getGrowthStageLabel(
   t: ReturnType<typeof useTranslation>["t"],
   stage: GrowthStage,
 ): string {
+  const translate = t as (key: string) => string;
+
   switch (stage) {
     case "sprouting":
-      return t("dialogs.plantDetailsDialog.growthStages.sprouting");
+      return translate("dialogs.plantDetailsDialog.growthStages.sprouting");
     case "vegetative":
-      return t("dialogs.plantDetailsDialog.growthStages.vegetative");
+      return translate("dialogs.plantDetailsDialog.growthStages.vegetative");
     case "flowering":
-      return t("dialogs.plantDetailsDialog.growthStages.flowering");
+      return translate("dialogs.plantDetailsDialog.growthStages.flowering");
     case "fruiting":
-      return t("dialogs.plantDetailsDialog.growthStages.fruiting");
+      return translate("dialogs.plantDetailsDialog.growthStages.fruiting");
     case "dormant":
-      return t("dialogs.plantDetailsDialog.growthStages.dormant");
+      return translate("dialogs.plantDetailsDialog.growthStages.dormant");
   }
 }
 
@@ -76,17 +78,19 @@ function getHealthStateLabel(
   t: ReturnType<typeof useTranslation>["t"],
   state: HealthState,
 ): string {
+  const translate = t as (key: string) => string;
+
   switch (state) {
     case "healthy":
-      return t("dialogs.plantDetailsDialog.healthStates.healthy");
+      return translate("dialogs.plantDetailsDialog.healthStates.healthy");
     case "stressed":
-      return t("dialogs.plantDetailsDialog.healthStates.stressed");
+      return translate("dialogs.plantDetailsDialog.healthStates.stressed");
     case "damaged":
-      return t("dialogs.plantDetailsDialog.healthStates.damaged");
+      return translate("dialogs.plantDetailsDialog.healthStates.damaged");
     case "diseased":
-      return t("dialogs.plantDetailsDialog.healthStates.diseased");
+      return translate("dialogs.plantDetailsDialog.healthStates.diseased");
     case "dead":
-      return t("dialogs.plantDetailsDialog.healthStates.dead");
+      return translate("dialogs.plantDetailsDialog.healthStates.dead");
   }
 }
 

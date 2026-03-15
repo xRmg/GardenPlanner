@@ -223,29 +223,31 @@ function getEventTypeLabel(
   t: ReturnType<typeof useTranslation>["t"],
   type: GardenEvent["type"],
 ): string {
+  const translate = t as (key: string) => string;
+
   switch (type) {
     case "planted":
-      return t("common.eventTypes.planted");
+      return translate("common.eventTypes.planted");
     case "watered":
-      return t("common.eventTypes.watered");
+      return translate("common.eventTypes.watered");
     case "composted":
-      return t("common.eventTypes.composted");
+      return translate("common.eventTypes.composted");
     case "weeded":
-      return t("common.eventTypes.weeded");
+      return translate("common.eventTypes.weeded");
     case "harvested":
-      return t("common.eventTypes.harvested");
+      return translate("common.eventTypes.harvested");
     case "sown":
-      return t("common.eventTypes.sown");
+      return translate("common.eventTypes.sown");
     case "sprouted":
-      return t("common.eventTypes.sprouted");
+      return translate("common.eventTypes.sprouted");
     case "removed":
-      return t("common.eventTypes.removed");
+      return translate("common.eventTypes.removed");
     case "pest":
-      return t("common.eventTypes.pest");
+      return translate("common.eventTypes.pest");
     case "treatment":
-      return t("common.eventTypes.treatment");
+      return translate("common.eventTypes.treatment");
     case "observation":
-      return t("common.eventTypes.observation");
+      return translate("common.eventTypes.observation");
   }
 }
 
@@ -253,13 +255,15 @@ function getPriorityLabel(
   t: ReturnType<typeof useTranslation>["t"],
   priority: Priority,
 ): string {
+  const translate = t as (key: string) => string;
+
   switch (priority) {
     case "high":
-      return t("common.priorities.high");
+      return translate("common.priorities.high");
     case "medium":
-      return t("common.priorities.medium");
+      return translate("common.priorities.medium");
     case "low":
-      return t("common.priorities.low");
+      return translate("common.priorities.low");
   }
 }
 

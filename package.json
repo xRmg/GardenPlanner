@@ -1,18 +1,29 @@
 {
   "name": "garden-planner",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0-hotfix",
   "type": "module",
   "scripts": {
+    "prepare": "node scripts/setup-git-hooks.mjs",
+    "predev": "npm run version:sync",
     "dev": "npm run build:backend && concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "vite --host 0.0.0.0",
     "dev:backend": "cd backend && npm run dev",
+    "prebuild": "npm run version:sync",
     "build:backend": "cd backend && npm run build",
     "build": "tsc -b && vite build && cd backend && npm run build",
     "build:frontend": "tsc -b && vite build",
     "preview": "vite preview",
+    "pretest": "npm run version:sync",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "version": "npm run version:sync && git add package.json package-lock.json backend/package.json backend/package-lock.json app/lib/version.ts",
+    "version:sync": "node scripts/version-sync.mjs",
+    "release:major": "node scripts/version-bump.mjs major",
+    "release:minor": "node scripts/version-bump.mjs minor",
+    "release:patch": "node scripts/version-bump.mjs patch",
+    "release:hotfix": "node scripts/version-bump.mjs hotfix",
+    "release:set": "node scripts/version-bump.mjs set"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

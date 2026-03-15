@@ -66,9 +66,15 @@ import { useSeedlingManager } from "./hooks/useSeedlingManager";
 import { useGardenEvents } from "./hooks/useGardenEvents";
 import { useSuggestions } from "./hooks/useSuggestions";
 import { useGlobalAsyncErrorToasts } from "./hooks/useGlobalAsyncErrorToasts";
+import { APP_VERSION } from "./lib/version";
 import type { PestEvent } from "./data/schema";
 import type { PlantMoveLocation } from "./services/plantMovement";
 import { movePlantBetweenLocations } from "./services/plantMovement";
+import {
+  dismissErrorToast,
+  ERROR_TOAST_IDS,
+  notifyErrorToast,
+} from "./lib/asyncErrors";
 
 export default function App() {
   useGlobalAsyncErrorToasts();
@@ -834,6 +840,22 @@ export default function App() {
                   void repositoryRef.current.saveEvent(
                     newEvent as unknown as import("./data/schema").GardenEvent,
                   );
+                }}
+                onRemoveEvent={async (eventId) => {
+                  try {
+                    await repositoryRef.current.deleteEvent(eventId);
+                    setEvents((prev) =>
+                      prev.filter((event) => event.id !== eventId),
+                    );
+                    dismissErrorToast(ERROR_TOAST_IDS.eventsSync);
+                  } catch (error) {
+                    notifyErrorToast({
+                      id: ERROR_TOAST_IDS.eventsSync,
+                      title: "Could not remove garden event",
+                      error,
+                      fallback: "The journal entry could not be deleted.",
+                    });
+                  }
                 }}
               />
             </TabsContent>
@@ -1941,6 +1963,26 @@ export default function App() {
                           {t("settings.unitSystemImperial")}
                         </option>
                       </select>
+                    </div>
+                  </section>
+
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package className="w-4 h-4 text-primary" />
+                      <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
+                        {t("settings.version")}
+                      </h3>
+                    </div>
+                    <div className="rounded-2xl border border-border/60 bg-white/60 px-4 py-3 shadow-sm">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                        {t("settings.releaseVersion")}
+                      </p>
+                      <p className="mt-1 text-sm font-black tracking-wide text-foreground font-mono">
+                        {APP_VERSION}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {t("settings.versionHint")}
+                      </p>
                     </div>
                   </section>
                 </div>

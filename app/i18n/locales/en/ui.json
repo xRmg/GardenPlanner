@@ -261,6 +261,9 @@
     "aiModelHint": "Any model available on your OpenRouter account. Default: google/gemini-2.0-flash",
     "language": "Language",
     "languageHint": "Choose your preferred display language.",
+    "version": "Version",
+    "releaseVersion": "Release Version",
+    "versionHint": "Generated from the repository release version and kept in sync with git tags.",
     "climateZones": {
       "groupTropical": "A — Tropical",
       "Af": "Af — Tropical Rainforest",
@@ -694,11 +697,37 @@
       "quickAddActions": {
         "watered": "Watered",
         "harvested": "Harvested",
+        "weeded": "Weeded",
         "pest": "Pest Spotted",
-        "observation": "Note"
+        "treatment": "Applied Treatment",
+        "observation": "Observed"
       },
-      "notePlaceholder": "Write your observation…",
-      "addNote": "Add Note"
+      "notePlaceholder": "Write what you noticed…",
+      "addNote": "Save Note",
+      "pestType": "Pest Type",
+      "pestTypePlaceholder": "Choose the pest or disease",
+      "pestNotePlaceholder": "Where did you see it and how bad is it?",
+      "treatmentType": "Treatment Used",
+      "treatmentTypePlaceholder": "e.g. Neem oil spray",
+      "treatmentNotePlaceholder": "Optional notes about dose, timing, or follow-up",
+      "savePest": "Save Pest Log",
+      "saveTreatment": "Save Treatment",
+      "removeEvent": "Remove",
+      "removeEventAriaLabel": "Remove {{label}}",
+      "removeEventConfirmTitle": "Remove this journal entry?",
+      "removeEventConfirmDescription": "This will permanently remove \"{{label}}\" from this day.",
+      "pestCategories": {
+        "aphids": "Aphids",
+        "spiderMites": "Spider mites",
+        "whiteflies": "Whiteflies",
+        "slugsSnails": "Slugs / snails",
+        "caterpillars": "Caterpillars",
+        "beetles": "Beetles",
+        "scaleMealybugs": "Scale / mealybugs",
+        "thrips": "Thrips",
+        "powderyMildew": "Powdery mildew",
+        "other": "Other / unknown"
+      }
     },
     "taskCount_one": "{{count}} task",
     "taskCount_other": "{{count}} tasks",

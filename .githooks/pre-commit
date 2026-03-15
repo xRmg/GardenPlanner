@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+
+npm run version:sync >/dev/null
+git add package.json package-lock.json backend/package.json backend/package-lock.json app/lib/version.ts
