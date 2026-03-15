@@ -49,6 +49,12 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Sheet, SheetContent } from "./components/ui/sheet";
+import { InfoTooltip } from "./components/ui/info-tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "./components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1075,18 +1081,27 @@ export default function App() {
                                   </div>
                                   <div className="flex flex-col gap-1.5 shrink-0">
                                     {plant.isSeed && !isDepleted && (
-                                      <button
-                                        onClick={() =>
-                                          handleOpenSowModal(plant)
-                                        }
-                                        className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
-                                        aria-label={t(
-                                          "plants.sowSeedsAriaLabel",
-                                          { name: displayName },
-                                        )}
-                                      >
-                                        <Sprout className="w-3.5 h-3.5" />
-                                      </button>
+                                      <Tooltip delayDuration={250}>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            onClick={() =>
+                                              handleOpenSowModal(plant)
+                                            }
+                                            className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+                                            aria-label={t(
+                                              "plants.sowSeedsAriaLabel",
+                                              { name: displayName },
+                                            )}
+                                          >
+                                            <Sprout className="w-3.5 h-3.5" />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="left" className="max-w-64 leading-relaxed">
+                                          {t("plants.sowSeedsTooltip", {
+                                            name: displayName,
+                                          })}
+                                        </TooltipContent>
+                                      </Tooltip>
                                     )}
                                     {isCustom ? (
                                       <>
@@ -1214,18 +1229,27 @@ export default function App() {
                                   </div>
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
                                     {plant.isSeed && !isDepleted && (
-                                      <button
-                                        onClick={() =>
-                                          handleOpenSowModal(plant)
-                                        }
-                                        className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
-                                        aria-label={t(
-                                          "plants.sowSeedsAriaLabel",
-                                          { name: displayName },
-                                        )}
-                                      >
-                                        <Sprout className="w-3 h-3" />
-                                      </button>
+                                      <Tooltip delayDuration={250}>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            onClick={() =>
+                                              handleOpenSowModal(plant)
+                                            }
+                                            className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
+                                            aria-label={t(
+                                              "plants.sowSeedsAriaLabel",
+                                              { name: displayName },
+                                            )}
+                                          >
+                                            <Sprout className="w-3 h-3" />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="left" className="max-w-64 leading-relaxed">
+                                          {t("plants.sowSeedsTooltip", {
+                                            name: displayName,
+                                          })}
+                                        </TooltipContent>
+                                      </Tooltip>
                                     )}
                                     {isCustom ? (
                                       <>
@@ -1624,9 +1648,16 @@ export default function App() {
                         htmlFor="settings-growth-zone"
                         className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
                       >
-                        {t("settings.koppenZone")}
-                        <span className="ml-2 normal-case font-medium text-muted-foreground/70">
-                          {t("settings.koppenZoneNote")}
+                        <span className="flex items-center gap-1.5">
+                          <span>{t("settings.koppenZone")}</span>
+                          <InfoTooltip
+                            content={t("settings.koppenZoneTooltip")}
+                            ariaLabel={t("settings.koppenZone")}
+                            className="h-3.5 w-3.5"
+                          />
+                          <span className="normal-case font-medium text-muted-foreground/70">
+                            {t("settings.koppenZoneNote")}
+                          </span>
                         </span>
                       </label>
                       <select

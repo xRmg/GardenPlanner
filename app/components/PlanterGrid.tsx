@@ -28,6 +28,7 @@ import type {
 import { formatDimensions } from "../i18n/utils/formatting";
 import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
 import type { PlantMoveLocation } from "../services/plantMovement";
+import { deriveGrowthStage } from "../services/plantGrowthStage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -245,6 +246,46 @@ function abbreviatePlantName(name: string, maxLength: number = 10): string {
   );
 }
 
+function getGrowthStageLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  stage: GrowthStage,
+): string {
+  const translate = t as (key: string) => string;
+
+  switch (stage) {
+    case "sprouting":
+      return translate("dialogs.plantDetailsDialog.growthStages.sprouting");
+    case "vegetative":
+      return translate("dialogs.plantDetailsDialog.growthStages.vegetative");
+    case "flowering":
+      return translate("dialogs.plantDetailsDialog.growthStages.flowering");
+    case "fruiting":
+      return translate("dialogs.plantDetailsDialog.growthStages.fruiting");
+    case "dormant":
+      return translate("dialogs.plantDetailsDialog.growthStages.dormant");
+  }
+}
+
+function getHealthStateLabel(
+  t: ReturnType<typeof useTranslation>["t"],
+  state: HealthState,
+): string {
+  const translate = t as (key: string) => string;
+
+  switch (state) {
+    case "healthy":
+      return translate("dialogs.plantDetailsDialog.healthStates.healthy");
+    case "stressed":
+      return translate("dialogs.plantDetailsDialog.healthStates.stressed");
+    case "damaged":
+      return translate("dialogs.plantDetailsDialog.healthStates.damaged");
+    case "diseased":
+      return translate("dialogs.plantDetailsDialog.healthStates.diseased");
+    case "dead":
+      return translate("dialogs.plantDetailsDialog.healthStates.dead");
+  }
+}
+
 export function PlanterGrid({
   areaId,
   id,
@@ -405,6 +446,71 @@ export function PlanterGrid({
     });
     return map;
   }, [squares]);
+  const getResolvedGrowthStage = (
+    plantInstance: PlantInstance,
+  ): GrowthStage | null => {
+    if (plantInstance.growthStageOverride) {
+      return plantInstance.growthStage ?? null;
+    }
+
+    return deriveGrowthStage({
+      plantingDate: plantInstance.plantingDate,
+      plant: {
+        daysToHarvest: plantInstance.plant.daysToHarvest,
+        daysToFlower: plantInstance.plant.daysToFlower,
+        daysToFruit: plantInstance.plant.daysToFruit,
+      },
+    });
+  };
+  const getPlantHoverText = (
+    plantInstance: PlantInstance,
+    rowIndex: number,
+    colIndex: number,
+  ) => {
+    const displayName = getPlantDisplayName(plantInstance.plant, i18n.language);
+    const tooltipParts = [
+      plantInstance.variety && plantInstance.variety !== displayName
+        ? `${displayName} (${plantInstance.variety})`
+        : displayName,
+      `${t("planterGrid.cellTooltipGrowthLabel")}: ${(() => {
+        const resolvedGrowthStage = getResolvedGrowthStage(plantInstance);
+        return resolvedGrowthStage
+          ? getGrowthStageLabel(t, resolvedGrowthStage)
+          : t("planterGrid.cellTooltipGrowthUnknown");
+      })()}`,
+      `${t("planterGrid.cellTooltipHealthLabel")}: ${plantInstance.healthState ? getHealthStateLabel(t, plantInstance.healthState) : t("planterGrid.cellTooltipHealthUnknown")}`,
+    ];
+    const groupSize = groupSizeMap.get(`${rowIndex},${colIndex}`) ?? 1;
+
+    if (groupSize > 1) {
+      tooltipParts.push(t("planterGrid.cellTooltipGroup", { count: groupSize }));
+    }
+    if (plantInstance.plant.spacingCm) {
+      tooltipParts.push(
+        t("common.spacingCm", { count: plantInstance.plant.spacingCm }),
+      );
+    }
+
+    return tooltipParts.join(" · ");
+  };
+  const getPlantCellAriaLabel = (
+    plantInstance: PlantInstance,
+    rowIndex: number,
+    colIndex: number,
+  ) => {
+    const displayName = getPlantDisplayName(plantInstance.plant, i18n.language);
+    const resolvedGrowthStage = getResolvedGrowthStage(plantInstance);
+
+    return [
+      t("planterGrid.cellPlantAriaLabel", {
+        name: displayName,
+        row: rowIndex + 1,
+        col: colIndex + 1,
+      }),
+      `${t("planterGrid.cellTooltipGrowthLabel")}: ${resolvedGrowthStage ? getGrowthStageLabel(t, resolvedGrowthStage) : t("planterGrid.cellTooltipGrowthUnknown")}`,
+      `${t("planterGrid.cellTooltipHealthLabel")}: ${plantInstance.healthState ? getHealthStateLabel(t, plantInstance.healthState) : t("planterGrid.cellTooltipHealthUnknown")}`,
+    ].join(". ");
+  };
   const getVirtualSection = (
     rowIndex: number,
     colIndex: number,
@@ -977,19 +1083,20 @@ export function PlanterGrid({
                         onTouchMove={clearLongPressTimer}
                         title={
                           square.plantInstance
-                            ? `${getPlantDisplayName(square.plantInstance.plant, i18n.language)}${square.plantInstance.plant.spacingCm ? ` · ${t("common.spacingCm", { count: square.plantInstance.plant.spacingCm })}` : ""}`
+                            ? getPlantHoverText(
+                                square.plantInstance,
+                                rowIndex,
+                                colIndex,
+                              )
                             : undefined
                         }
                         aria-label={
                           square.plantInstance
-                            ? t("planterGrid.cellPlantAriaLabel", {
-                                name: getPlantDisplayName(
-                                  square.plantInstance.plant,
-                                  i18n.language,
-                                ),
-                                row: rowIndex + 1,
-                                col: colIndex + 1,
-                              })
+                            ? getPlantCellAriaLabel(
+                                square.plantInstance,
+                                rowIndex,
+                                colIndex,
+                              )
                             : selectedPlant
                               ? t("planterGrid.cellPlacePlantAriaLabel", {
                                   name: getPlantDisplayName(
@@ -1096,11 +1203,6 @@ export function PlanterGrid({
                                     square.plantInstance.healthState ===
                                       "dead" && "bg-gray-400",
                                   )}
-                                  title={t("planterGrid.healthTitle", {
-                                    state: t(
-                                      `dialogs.plantDetailsDialog.healthStates.${square.plantInstance.healthState}`,
-                                    ),
-                                  })}
                                 />
                               )}
                             {/* Group membership indicator: shown before any click */}
@@ -1108,7 +1210,6 @@ export function PlanterGrid({
                               1) > 1 && (
                               <span
                                 className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-primary/40"
-                                title={t("planterGrid.metaplantGroupTitle")}
                               />
                             )}
                           </div>

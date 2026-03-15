@@ -20,6 +20,8 @@ import { Plant } from "./PlanterGrid";
 import type { Priority, SuggestionMode } from "../data/schema";
 import { Button } from "./ui/button";
 import { getPlantName } from "../i18n/utils/plantTranslation";
+import { InfoTooltip } from "./ui/info-tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export interface GardenEvent {
   id: string;
@@ -217,6 +219,13 @@ const MODE_BADGE_I18N_KEYS = {
   "rules+weather": "eventsBar.modeBadges.rulesWeather",
   rules: "eventsBar.modeBadges.rules",
   static: "eventsBar.modeBadges.static",
+} as const satisfies Record<SuggestionMode, string>;
+
+const MODE_BADGE_TOOLTIP_I18N_KEYS = {
+  "ai+weather": "eventsBar.modeBadgeTooltips.aiWeather",
+  "rules+weather": "eventsBar.modeBadgeTooltips.rulesWeather",
+  rules: "eventsBar.modeBadgeTooltips.rules",
+  static: "eventsBar.modeBadgeTooltips.static",
 } as const satisfies Record<SuggestionMode, string>;
 
 function getEventTypeLabel(
@@ -424,11 +433,19 @@ export function EventsBar({
                 <Loader2 className="w-2.5 h-2.5 text-muted-foreground/40 animate-spin" />
               )}
               {suggestionsMode && !suggestionsLoading && (
-                <span
-                  className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${MODE_BADGE_CLASSES[suggestionsMode]}`}
-                >
-                  {t(MODE_BADGE_I18N_KEYS[suggestionsMode])}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span
+                    className={`text-[7px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${MODE_BADGE_CLASSES[suggestionsMode]}`}
+                  >
+                    {t(MODE_BADGE_I18N_KEYS[suggestionsMode])}
+                  </span>
+                  <InfoTooltip
+                    content={t(MODE_BADGE_TOOLTIP_I18N_KEYS[suggestionsMode])}
+                    ariaLabel={t(MODE_BADGE_I18N_KEYS[suggestionsMode])}
+                    side="left"
+                    className="h-3.5 w-3.5"
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -491,9 +508,16 @@ export function EventsBar({
                             </span>
                             <div className="flex items-center gap-1">
                               {suggestion.source === "ai" && (
-                                <span className="text-[6px] font-black text-violet-400/60 uppercase tracking-wider">
-                                  AI
-                                </span>
+                                <Tooltip delayDuration={250}>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-[6px] font-black text-violet-400/60 uppercase tracking-wider cursor-help">
+                                      AI
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-64 leading-relaxed">
+                                    {t("eventsBar.aiBadgeTooltip")}
+                                  </TooltipContent>
+                                </Tooltip>
                               )}
                               {suggestion.dueDate && (
                                 <span className="text-xs font-medium text-muted-foreground/40">
@@ -540,14 +564,20 @@ export function EventsBar({
                             {t("eventsBar.options")}
                           </Button>
                         ) : (
-                          <button
-                            onClick={() => onCompleteSuggestion?.(suggestion)}
-                            className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 hover:scale-110 active:scale-95 transition-[color,background-color,transform] duration-150 mt-0.5"
-                            title={t("eventsBar.markDone")}
-                            aria-label={t("eventsBar.markSuggestionDone")}
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                          </button>
+                          <Tooltip delayDuration={250}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => onCompleteSuggestion?.(suggestion)}
+                                className="shrink-0 p-1 rounded-lg text-muted-foreground/30 hover:text-emerald-500 hover:bg-emerald-50 hover:scale-110 active:scale-95 transition-[color,background-color,transform] duration-150 mt-0.5"
+                                aria-label={t("eventsBar.markSuggestionDone")}
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-64 leading-relaxed">
+                              {t("eventsBar.markSuggestionDoneTooltip")}
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     </div>

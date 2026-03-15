@@ -10,6 +10,7 @@ import {
 import { Button } from "./ui/button";
 import { Plant } from "./PlanterGrid";
 import { Sprout, Search } from "lucide-react";
+import { InfoTooltip } from "./ui/info-tooltip";
 import { useTranslation } from "react-i18next";
 import {
   getPlantDisplayName,
@@ -225,9 +226,16 @@ export function AddSeedlingDialog({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 block mb-1.5">
-                    {t("dialogs.addSeedlingDialog.location")}
-                  </label>
+                  <div className="mb-1.5 ml-1 flex items-center gap-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">
+                      {t("dialogs.addSeedlingDialog.location")}
+                    </label>
+                    <InfoTooltip
+                      content={t("dialogs.addSeedlingDialog.locationTooltip")}
+                      ariaLabel={t("dialogs.addSeedlingDialog.location")}
+                      className="h-3.5 w-3.5"
+                    />
+                  </div>
                   <input
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
@@ -239,9 +247,16 @@ export function AddSeedlingDialog({
 
               {/* Start Date */}
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 block mb-1.5">
-                  {t("dialogs.addSeedlingDialog.startDate")}
-                </label>
+                <div className="mb-1.5 ml-1 flex items-center gap-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">
+                    {t("dialogs.addSeedlingDialog.startDate")}
+                  </label>
+                  <InfoTooltip
+                    content={t("dialogs.addSeedlingDialog.startDateTooltip")}
+                    ariaLabel={t("dialogs.addSeedlingDialog.startDate")}
+                    className="h-3.5 w-3.5"
+                  />
+                </div>
                 <input
                   type="date"
                   value={plantedDate}

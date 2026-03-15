@@ -13,6 +13,8 @@ import { Plant } from "./PlanterGrid";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { Loader2, Sparkles } from "lucide-react";
+import { InfoTooltip } from "./ui/info-tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import type { Settings } from "../data/schema";
 import { usePlantAILookup } from "../hooks/usePlantAILookup";
 import { CONFIDENCE } from "../services/ai/prompts";
@@ -165,18 +167,29 @@ function ConfidenceBadge({
   if (confidence === undefined || confidence >= CONFIDENCE.HIGH) return null;
   if (confidence >= CONFIDENCE.MEDIUM) {
     return (
-      <span
-        className="text-amber-500 text-[10px] font-bold ml-1"
-        title={mediumTitle}
-      >
-        ⚠
-      </span>
+      <Tooltip delayDuration={250}>
+        <TooltipTrigger asChild>
+          <span className="text-amber-500 text-[10px] font-bold ml-1 cursor-help">
+            ⚠
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-64 leading-relaxed">
+          {mediumTitle}
+        </TooltipContent>
+      </Tooltip>
     );
   }
   return (
-    <span className="text-red-500 text-[10px] font-bold ml-1" title={lowTitle}>
-      ⚠⚠
-    </span>
+    <Tooltip delayDuration={250}>
+      <TooltipTrigger asChild>
+        <span className="text-red-500 text-[10px] font-bold ml-1 cursor-help">
+          ⚠⚠
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64 leading-relaxed">
+        {lowTitle}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -811,16 +824,22 @@ export function PlantDialog({
           {/* Days to Harvest, Spacing */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label
-                htmlFor="plant-days-to-harvest"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                {t("dialogs.plantDefinitionDialog.daysToHarvest")}
-                <ConfidenceBadge
-                  confidence={confidence?.daysToHarvest}
-                  {...confidenceBadgeTitles}
+              <div className="mb-2 flex items-center gap-1.5">
+                <label
+                  htmlFor="plant-days-to-harvest"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest"
+                >
+                  {t("dialogs.plantDefinitionDialog.daysToHarvest")}
+                  <ConfidenceBadge
+                    confidence={confidence?.daysToHarvest}
+                    {...confidenceBadgeTitles}
+                  />
+                </label>
+                <InfoTooltip
+                  content={t("dialogs.plantDefinitionDialog.daysToHarvestTooltip")}
+                  ariaLabel={t("dialogs.plantDefinitionDialog.daysToHarvest")}
                 />
-              </label>
+              </div>
               <input
                 id="plant-days-to-harvest"
                 type="number"
@@ -833,16 +852,22 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label
-                htmlFor="plant-spacing"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                {t("dialogs.plantDefinitionDialog.spacingCm")}
-                <ConfidenceBadge
-                  confidence={confidence?.spacingCm}
-                  {...confidenceBadgeTitles}
+              <div className="mb-2 flex items-center gap-1.5">
+                <label
+                  htmlFor="plant-spacing"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest"
+                >
+                  {t("dialogs.plantDefinitionDialog.spacingCm")}
+                  <ConfidenceBadge
+                    confidence={confidence?.spacingCm}
+                    {...confidenceBadgeTitles}
+                  />
+                </label>
+                <InfoTooltip
+                  content={t("dialogs.plantDefinitionDialog.spacingTooltip")}
+                  ariaLabel={t("dialogs.plantDefinitionDialog.spacingCm")}
                 />
-              </label>
+              </div>
               <input
                 id="plant-spacing"
                 type="number"
@@ -880,13 +905,19 @@ export function PlantDialog({
 
           {/* Sun Requirement */}
           <div>
-            <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2">
-              {t("dialogs.plantDefinitionDialog.sunlight")}
-              <ConfidenceBadge
-                confidence={confidence?.sunRequirement}
-                {...confidenceBadgeTitles}
+            <div className="mb-2 flex items-center gap-1.5">
+              <label className="text-sm font-black text-muted-foreground uppercase tracking-widest">
+                {t("dialogs.plantDefinitionDialog.sunlight")}
+                <ConfidenceBadge
+                  confidence={confidence?.sunRequirement}
+                  {...confidenceBadgeTitles}
+                />
+              </label>
+              <InfoTooltip
+                content={t("dialogs.plantDefinitionDialog.sunlightTooltip")}
+                ariaLabel={t("dialogs.plantDefinitionDialog.sunlight")}
               />
-            </label>
+            </div>
             <div className="flex gap-2">
               {(["full", "partial", "shade"] as const).map((opt) => (
                 <button
@@ -1069,16 +1100,22 @@ export function PlantDialog({
           {/* Companions / Antagonists */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label
-                htmlFor="plant-companions"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                {t("dialogs.plantDefinitionDialog.goodWith")}
-                <ConfidenceBadge
-                  confidence={confidence?.companions}
-                  {...confidenceBadgeTitles}
+              <div className="mb-2 flex items-center gap-1.5">
+                <label
+                  htmlFor="plant-companions"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest"
+                >
+                  {t("dialogs.plantDefinitionDialog.goodWith")}
+                  <ConfidenceBadge
+                    confidence={confidence?.companions}
+                    {...confidenceBadgeTitles}
+                  />
+                </label>
+                <InfoTooltip
+                  content={t("dialogs.plantDefinitionDialog.goodWithTooltip")}
+                  ariaLabel={t("dialogs.plantDefinitionDialog.goodWith")}
                 />
-              </label>
+              </div>
               <input
                 id="plant-companions"
                 type="text"
@@ -1094,16 +1131,22 @@ export function PlantDialog({
               />
             </div>
             <div>
-              <label
-                htmlFor="plant-antagonists"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                {t("dialogs.plantDefinitionDialog.avoidNear")}
-                <ConfidenceBadge
-                  confidence={confidence?.antagonists}
-                  {...confidenceBadgeTitles}
+              <div className="mb-2 flex items-center gap-1.5">
+                <label
+                  htmlFor="plant-antagonists"
+                  className="text-sm font-black text-muted-foreground uppercase tracking-widest"
+                >
+                  {t("dialogs.plantDefinitionDialog.avoidNear")}
+                  <ConfidenceBadge
+                    confidence={confidence?.antagonists}
+                    {...confidenceBadgeTitles}
+                  />
+                </label>
+                <InfoTooltip
+                  content={t("dialogs.plantDefinitionDialog.avoidNearTooltip")}
+                  ariaLabel={t("dialogs.plantDefinitionDialog.avoidNear")}
                 />
-              </label>
+              </div>
               <input
                 id="plant-antagonists"
                 type="text"

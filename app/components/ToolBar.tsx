@@ -3,6 +3,7 @@ import { Plus, Map as MapIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Plant } from "./PlanterGrid";
 import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 interface ToolBarProps {
   plants: Plant[];
@@ -90,21 +91,29 @@ export function ToolBar({
             <span className="font-medium whitespace-nowrap">{t("toolbar.newArea")}</span>
           </button>
           {onShowSeedlings && (
-            <button
-              onClick={onShowSeedlings}
-              className={`h-8 px-3 rounded-lg border transition-[color,background-color,border-color] shrink-0 flex items-center gap-1.5 text-xs font-bold ${
-                seedlingCount > 0
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                  : "border-border/30 bg-white/40 text-muted-foreground hover:bg-white/70"
-              }`}
-            >
-              🌱
-              {seedlingCount > 0 && (
-                <span className="bg-emerald-600 text-white text-xs font-black px-1.5 py-0.5 rounded-full leading-none">
-                  {seedlingCount}
-                </span>
-              )}
-            </button>
+            <Tooltip delayDuration={250}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onShowSeedlings}
+                  aria-label={t("toolbar.seedlingsAriaLabel")}
+                  className={`h-8 px-3 rounded-lg border transition-[color,background-color,border-color] shrink-0 flex items-center gap-1.5 text-xs font-bold ${
+                    seedlingCount > 0
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      : "border-border/30 bg-white/40 text-muted-foreground hover:bg-white/70"
+                  }`}
+                >
+                  🌱
+                  {seedlingCount > 0 && (
+                    <span className="bg-emerald-600 text-white text-xs font-black px-1.5 py-0.5 rounded-full leading-none">
+                      {seedlingCount}
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-64 leading-relaxed">
+                {t("toolbar.seedlingsTooltip")}
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>
