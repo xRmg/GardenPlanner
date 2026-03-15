@@ -55,32 +55,99 @@ const COLORS = [
   "#ec4899", // Pink
 ];
 
-const EMOJIS = [
-  "🌱",
-  "🍅",
-  "🥕",
-  "🥬",
-  "🌶️",
-  "🥦",
-  "🥒",
-  "🌽",
-  "🎃",
-  "🍆",
-  "🍓",
-  "🍇",
-  "🍉",
-  "🍋",
-  "🍌",
-  "🍍",
-  "🥭",
-  "🍎",
-  "🍐",
-  "🍑",
-  "🍒",
-  "🌻",
-  "🌼",
-  "🌿",
-];
+const DEFAULT_ICON = "🌱";
+
+const EMOJI_CATEGORIES = [
+  {
+    key: "veggies",
+    items: [
+      { icon: "🍅", labelKey: "tomato" },
+      { icon: "🥕", labelKey: "carrot" },
+      { icon: "🥬", labelKey: "leafyGreens" },
+      { icon: "🥒", labelKey: "cucumber" },
+      { icon: "🌶️", labelKey: "chiliPepper" },
+      { icon: "🫑", labelKey: "bellPepper" },
+      { icon: "🥦", labelKey: "broccoli" },
+      { icon: "🧅", labelKey: "onion" },
+      { icon: "🥔", labelKey: "potato" },
+      { icon: "🍆", labelKey: "eggplant" },
+      { icon: "🌽", labelKey: "corn" },
+      { icon: "🎃", labelKey: "pumpkin" },
+      { icon: "🧄", labelKey: "garlic" },
+      { icon: "🫛", labelKey: "peaPod" },
+      { icon: "🥜", labelKey: "peanuts" },
+      { icon: "🫒", labelKey: "olive" },
+    ],
+  },
+  {
+    key: "herbs",
+    items: [
+      { icon: "🌿", labelKey: "herbs" },
+      { icon: "🍃", labelKey: "freshLeaves" },
+      { icon: "☘️", labelKey: "shamrock" },
+      { icon: "🍀", labelKey: "fourLeafClover" },
+      { icon: "🌾", labelKey: "sheafOfRice" },
+    ],
+  },
+  {
+    key: "flowers",
+    items: [
+      { icon: "🌻", labelKey: "sunflower" },
+      { icon: "🌼", labelKey: "blossom" },
+      { icon: "🌸", labelKey: "cherryBlossom" },
+      { icon: "🌺", labelKey: "hibiscus" },
+      { icon: "🌷", labelKey: "tulip" },
+      { icon: "🌹", labelKey: "rose" },
+      { icon: "🏵️", labelKey: "rosette" },
+      { icon: "💐", labelKey: "bouquet" },
+      { icon: "💮", labelKey: "whiteFlower" },
+      { icon: "🪷", labelKey: "lotus" },
+      { icon: "🥀", labelKey: "wiltedFlower" },
+    ],
+  },
+  {
+    key: "fruits",
+    items: [
+      { icon: "🍓", labelKey: "strawberry" },
+      { icon: "🍒", labelKey: "cherries" },
+      { icon: "🍑", labelKey: "peach" },
+      { icon: "🍊", labelKey: "orange" },
+      { icon: "🍋", labelKey: "lemon" },
+      { icon: "🍌", labelKey: "banana" },
+      { icon: "🍍", labelKey: "pineapple" },
+      { icon: "🥭", labelKey: "mango" },
+      { icon: "🍎", labelKey: "apple" },
+      { icon: "🍏", labelKey: "greenApple" },
+      { icon: "🍐", labelKey: "pear" },
+      { icon: "🍉", labelKey: "watermelon" },
+      { icon: "🍇", labelKey: "grapes" },
+      { icon: "🥝", labelKey: "kiwi" },
+      { icon: "🫐", labelKey: "blueberries" },
+      { icon: "🍈", labelKey: "melon" },
+      { icon: "🥥", labelKey: "coconut" },
+    ],
+  },
+  {
+    key: "seedlings",
+    items: [
+      { icon: "🌱", labelKey: "seedling" },
+      { icon: "🪴", labelKey: "pottedPlant" },
+      { icon: "🍁", labelKey: "mapleLeaf" },
+      { icon: "🍂", labelKey: "fallenLeaves" },
+    ],
+  },
+  {
+    key: "trees",
+    items: [
+      { icon: "🌲", labelKey: "evergreenTree" },
+      { icon: "🌳", labelKey: "deciduousTree" },
+      { icon: "🌴", labelKey: "palmTree" },
+      { icon: "🌵", labelKey: "cactus" },
+      { icon: "🎋", labelKey: "bamboo" },
+      { icon: "🎍", labelKey: "pineDecoration" },
+    ],
+  },
+] as const;
 
 // ---------------------------------------------------------------------------
 // Confidence badge helper
@@ -136,6 +203,12 @@ export function PlantDialog({
     mediumTitle: t("dialogs.plantDefinitionDialog.aiSuggestionVerifyTitle"),
     lowTitle: t("dialogs.plantDefinitionDialog.lowConfidenceTitle"),
   };
+
+  const getEmojiCategoryLabel = (categoryKey: (typeof EMOJI_CATEGORIES)[number]["key"]) =>
+    t(`dialogs.plantDefinitionDialog.emojiCategories.${categoryKey}`);
+
+  const getEmojiLabel = (labelKey: (typeof EMOJI_CATEGORIES)[number]["items"][number]["labelKey"]) =>
+    t(`dialogs.plantDefinitionDialog.emojiLabels.${labelKey}`);
   const getLocalizedColorName = (colorValue: string) => {
     switch (colorValue) {
       case "#ef4444":
@@ -174,7 +247,7 @@ export function PlantDialog({
   const [description, setDescription] = useState(
     getLocalizedPlantContent(initialPlant, "description", i18n.language) || "",
   );
-  const [icon, setIcon] = useState(initialPlant?.icon || EMOJIS[0]);
+  const [icon, setIcon] = useState(initialPlant?.icon || DEFAULT_ICON);
   const [color, setColor] = useState(initialPlant?.color || COLORS[0]);
   const [daysToHarvest, setDaysToHarvest] = useState(
     initialPlant?.daysToHarvest || 60,
@@ -240,7 +313,7 @@ export function PlantDialog({
         getLocalizedPlantContent(initialPlant, "description", i18n.language) ||
           "",
       );
-      setIcon(initialPlant?.icon || EMOJIS[0]);
+      setIcon(initialPlant?.icon || DEFAULT_ICON);
       setColor(initialPlant?.color || COLORS[0]);
       setDaysToHarvest(initialPlant?.daysToHarvest || 60);
       setIsSeed(initialPlant?.isSeed ?? defaultIsSeed);
@@ -507,9 +580,9 @@ export function PlantDialog({
             </div>
           </div>
 
-          {/* Plant Name + icon preview */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="col-span-3">
+          {/* Plant Name + taxonomy + preview */}
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_5.5rem] gap-4 items-start">
+            <div className="space-y-4">
               <label
                 htmlFor="plant-name"
                 className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
@@ -544,15 +617,77 @@ export function PlantDialog({
                   {nameError}
                 </p>
               )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="plant-latin-name"
+                    className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+                  >
+                    {t("dialogs.plantDefinitionDialog.latinName")}
+                    <ConfidenceBadge
+                      confidence={confidence?.latinName}
+                      {...confidenceBadgeTitles}
+                    />
+                  </label>
+                  <input
+                    id="plant-latin-name"
+                    type="text"
+                    value={latinName}
+                    onChange={(e) => {
+                      setLatinName(e.target.value);
+                      markOverride("latinName");
+                    }}
+                    placeholder={t(
+                      "dialogs.plantDefinitionDialog.latinNamePlaceholder",
+                    )}
+                    className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner italic"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="plant-variety"
+                    className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
+                  >
+                    {t("dialogs.plantDefinitionDialog.variety")}
+                  </label>
+                  <input
+                    id="plant-variety"
+                    type="text"
+                    value={variety}
+                    onChange={(e) => setVariety(e.target.value)}
+                    placeholder={t(
+                      "dialogs.plantDefinitionDialog.varietyPlaceholder",
+                    )}
+                    className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
+                  />
+                </div>
+              </div>
             </div>
+
             <div>
               <label className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-1.5 text-center">
                 {t("dialogs.plantDefinitionDialog.icon")}
               </label>
               <div className="flex flex-col items-center gap-1">
-                <div className="w-12 h-12 flex items-center justify-center text-3xl bg-primary/10 rounded-xl border border-primary/20 shadow-sm mb-1">
+                <div
+                  className="w-14 h-14 flex items-center justify-center text-3xl rounded-xl border shadow-sm mb-1"
+                  style={{
+                    backgroundColor: `${color}22`,
+                    borderColor: `${color}66`,
+                  }}
+                >
                   {icon}
                 </div>
+                <span
+                  className="h-2.5 w-10 rounded-full border"
+                  style={{
+                    backgroundColor: color,
+                    borderColor: `${color}99`,
+                  }}
+                  aria-hidden="true"
+                />
               </div>
             </div>
           </div>
@@ -605,27 +740,37 @@ export function PlantDialog({
             <p className="text-[11px] text-red-500 -mt-2 px-1">{aiError}</p>
           )}
 
-          {/* Emoji picker */}
-          <div className="grid grid-cols-6 gap-2 bg-muted/20 p-3 rounded-2xl border border-white/20">
-            {EMOJIS.map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => {
-                  setIcon(e);
-                  markOverride("icon");
-                }}
-                className={`w-10 h-10 flex items-center justify-center text-xl rounded-lg transition-[background-color,transform] hover:bg-white/80 active:scale-95 ${icon === e ? "bg-white shadow-md ring-2 ring-primary/20" : ""}`}
-                aria-label={t(
-                  "dialogs.plantDefinitionDialog.selectIconAriaLabel",
-                  {
-                    icon: e,
-                  },
-                )}
-                aria-pressed={icon === e}
-              >
-                {e}
-              </button>
+          {/* Emoji picker - organized by category */}
+          <div className="space-y-3 bg-linear-to-b from-muted/10 to-muted/5 p-4 rounded-2xl border border-white/20">
+            {EMOJI_CATEGORIES.map(({ key, items }) => (
+              <div key={key}>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 ml-1">
+                  {getEmojiCategoryLabel(key)}
+                </p>
+                <div className="grid grid-cols-6 gap-2">
+                  {items.map((item) => (
+                    <button
+                      key={`${key}-${item.icon}`}
+                      type="button"
+                      onClick={() => {
+                        setIcon(item.icon);
+                        markOverride("icon");
+                      }}
+                      className={`w-10 h-10 flex items-center justify-center text-xl rounded-lg transition-[background-color,transform] hover:bg-white/80 active:scale-95 ${icon === item.icon ? "bg-white shadow-md ring-2 ring-primary/20" : ""}`}
+                      title={getEmojiLabel(item.labelKey)}
+                      aria-label={t(
+                        "dialogs.plantDefinitionDialog.selectIconAriaLabel",
+                        {
+                          icon: getEmojiLabel(item.labelKey),
+                        },
+                      )}
+                      aria-pressed={icon === item.icon}
+                    >
+                      {item.icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
 
@@ -654,58 +799,17 @@ export function PlantDialog({
                     },
                   )}
                   aria-pressed={color === c}
+                  title={getLocalizedColorName(c)}
                 />
               ))}
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {t("dialogs.plantDefinitionDialog.colorIdentityHint")}
+            </p>
           </div>
 
-          {/* Latin Name */}
-          <div>
-            <label
-              htmlFor="plant-latin-name"
-              className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-            >
-              {t("dialogs.plantDefinitionDialog.latinName")}
-              <ConfidenceBadge
-                confidence={confidence?.latinName}
-                {...confidenceBadgeTitles}
-              />
-            </label>
-            <input
-              id="plant-latin-name"
-              type="text"
-              value={latinName}
-              onChange={(e) => {
-                setLatinName(e.target.value);
-                markOverride("latinName");
-              }}
-              placeholder={t(
-                "dialogs.plantDefinitionDialog.latinNamePlaceholder",
-              )}
-              className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner italic"
-            />
-          </div>
-
-          {/* Variety, Days to Harvest, Spacing */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label
-                htmlFor="plant-variety"
-                className="text-sm font-black text-muted-foreground uppercase tracking-widest block mb-2"
-              >
-                {t("dialogs.plantDefinitionDialog.variety")}
-              </label>
-              <input
-                id="plant-variety"
-                type="text"
-                value={variety}
-                onChange={(e) => setVariety(e.target.value)}
-                placeholder={t(
-                  "dialogs.plantDefinitionDialog.varietyPlaceholder",
-                )}
-                className="w-full px-4 py-3 bg-muted/30 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
-              />
-            </div>
+          {/* Days to Harvest, Spacing */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label
                 htmlFor="plant-days-to-harvest"
