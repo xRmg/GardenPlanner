@@ -65,6 +65,63 @@ interface UseGardenEventsParams {
   repositoryRef: React.MutableRefObject<GardenRepository>;
 }
 
+function mapSuggestionTypeToEventType(
+  suggestionType: Suggestion["type"],
+): GardenEvent["type"] | null {
+  if (suggestionType === "no_water") return null;
+  if (suggestionType === "water") return "watered";
+  if (suggestionType === "harvest") return "harvested";
+  if (suggestionType === "treatment") return "treatment";
+  if (
+    suggestionType === "fertilize" ||
+    suggestionType === "compost" ||
+    suggestionType === "mulch"
+  ) {
+    return "composted";
+  }
+  if (suggestionType === "weed") return "weeded";
+  if (suggestionType === "sow" || suggestionType === "succession_sow") {
+    return "sown";
+  }
+  if (suggestionType === "pest_alert") return "pest";
+
+  return "observation";
+}
+
+export function buildCompletedSuggestionEvent(
+  suggestion: Suggestion,
+  date = new Date().toISOString(),
+): GardenEvent | null {
+  const eventType = mapSuggestionTypeToEventType(suggestion.type);
+  if (!eventType) return null;
+
+  const scope: GardenEvent["scope"] = suggestion.plant
+    ? "plant"
+    : suggestion.planterId
+      ? "planter"
+      : suggestion.areaId
+        ? "area"
+        : undefined;
+
+  return {
+    id: `event-${Date.now()}-${Math.random()}`,
+    type: eventType,
+    plant: suggestion.plant,
+    date,
+    gardenId: suggestion.planterId,
+    instanceId: suggestion.instanceId,
+    note:
+      suggestion.type === "treatment" ? suggestion.description : undefined,
+    scope,
+    areaId: suggestion.areaId,
+    planterName: suggestion.planterName,
+    areaName: suggestion.areaName,
+    suggestionType: suggestion.type,
+    suggestionDescription: suggestion.description,
+    suggestionSource: suggestion.source,
+  };
+}
+
 export function useGardenEvents({
   setEvents,
   repositoryRef,
@@ -188,53 +245,8 @@ export function useGardenEvents({
   };
 
   const handleCompleteSuggestion = (suggestion: Suggestion) => {
-    // Map suggestion type → event type for the journal log.
-    // "no_water" carries no positive action — skip journal logging entirely.
-    if (suggestion.type === "no_water") return;
-
-    const eventType: GardenEvent["type"] =
-      suggestion.type === "water"
-        ? "watered"
-        : suggestion.type === "harvest"
-          ? "harvested"
-          : suggestion.type === "treatment"
-            ? "treatment"
-            : suggestion.type === "fertilize" ||
-                suggestion.type === "compost" ||
-                suggestion.type === "mulch"
-              ? "composted"
-              : suggestion.type === "weed"
-                ? "weeded"
-                : suggestion.type === "sow" ||
-                    suggestion.type === "succession_sow"
-                  ? "sown"
-                  : suggestion.type === "pest_alert"
-                    ? "pest"
-                    : "observation"; // companion_conflict, disease_risk, frost_protect, prune, repot, thin_seedlings, harden_seedlings, end_of_season
-
-    // Determine scope from suggestion shape
-    const scope: GardenEvent["scope"] = suggestion.plant
-      ? "plant"
-      : suggestion.planterId
-        ? "planter"
-        : suggestion.areaId
-          ? "area"
-          : undefined;
-
-    const completedEvent: GardenEvent = {
-      id: `event-${Date.now()}-${Math.random()}`,
-      type: eventType,
-      plant: suggestion.plant,
-      date: new Date().toISOString(),
-      gardenId: suggestion.planterId,
-      instanceId: suggestion.instanceId,
-      note:
-        suggestion.type === "treatment" ? suggestion.description : undefined,
-      scope,
-      areaId: suggestion.areaId,
-      planterName: suggestion.planterName,
-      areaName: suggestion.areaName,
-    };
+    const completedEvent = buildCompletedSuggestionEvent(suggestion);
+    if (!completedEvent) return;
     setEvents((prev) => [completedEvent, ...prev]);
     void repositoryRef.current.saveEvent(
       completedEvent as unknown as SchemaGardenEvent,

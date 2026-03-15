@@ -48,6 +48,12 @@ export interface GardenEvent {
   planterName?: string;
   /** Human-readable area name for display in the journal. */
   areaName?: string;
+  /** Original suggestion type when this log came from a completed suggestion. */
+  suggestionType?: Suggestion["type"];
+  /** Original suggestion title for journal rendering. */
+  suggestionDescription?: string;
+  /** Source of the suggestion that produced this event. */
+  suggestionSource?: "rules" | "ai" | "static";
 }
 
 export interface Suggestion {
@@ -162,6 +168,26 @@ const eventBg: Partial<Record<GardenEvent["type"], string>> = {
   treatment: "bg-emerald-50",
   observation: "bg-teal-50",
 };
+
+function getEventVisual(event: Pick<GardenEvent, "type" | "suggestionType">) {
+  if (event.suggestionType) {
+    const suggestionVisual =
+      suggestionIcons[event.suggestionType] ?? DEFAULT_SUGGESTION_ICON;
+
+    return {
+      icon: suggestionVisual.icon,
+      color: suggestionVisual.color,
+      background: suggestionBg[event.suggestionType] ?? "bg-white",
+    };
+  }
+
+  const eventVisual = eventIcons[event.type] ?? DEFAULT_SUGGESTION_ICON;
+  return {
+    icon: eventVisual.icon,
+    color: eventVisual.color,
+    background: eventBg[event.type] ?? "bg-white",
+  };
+}
 
 const suggestionBg: Record<string, string> = {
   water: "bg-blue-50",
@@ -284,6 +310,8 @@ export function EventsBar({
     scope?: GardenEvent["scope"];
     planterName?: string;
     areaName?: string;
+    suggestionType?: GardenEvent["suggestionType"];
+    suggestionDescription?: GardenEvent["suggestionDescription"];
   };
 
   const groupedEvents = sortedEvents.reduce<EventGroup[]>((acc, event) => {
@@ -298,7 +326,18 @@ export function EventsBar({
       last?.scope === event.scope &&
       last?.planterName === event.planterName &&
       last?.areaName === event.areaName;
-    if (last && sameType && samePlant && sameNote && sameScope) {
+    const sameSuggestionType = last?.suggestionType === event.suggestionType;
+    const sameSuggestionDescription =
+      last?.suggestionDescription === event.suggestionDescription;
+    if (
+      last &&
+      sameType &&
+      samePlant &&
+      sameNote &&
+      sameScope &&
+      sameSuggestionType &&
+      sameSuggestionDescription
+    ) {
       last.count += 1;
     } else {
       acc.push({
@@ -311,6 +350,8 @@ export function EventsBar({
         scope: event.scope,
         planterName: event.planterName,
         areaName: event.areaName,
+        suggestionType: event.suggestionType,
+        suggestionDescription: event.suggestionDescription,
       });
     }
     return acc;
@@ -574,12 +615,19 @@ export function EventsBar({
           </h3>
           <div className="space-y-1.5 ">
               {groupedEvents.map((group, groupIdx) => {
-              const eventIcon = eventIcons[group.type] ?? DEFAULT_SUGGESTION_ICON;
-              const IconComponent = eventIcon.icon;
-              const iconColor = eventIcon.color;
+              const eventVisual = getEventVisual(group);
+              const IconComponent = eventVisual.icon;
+              const iconColor = eventVisual.color;
               const plantName = group.plant
                 ? getPlantName(group.plant.id, group.plant.name)
                 : undefined;
+              const title = group.suggestionDescription
+                ? group.suggestionDescription
+                : `${getEventTypeLabel(t, group.type)}${plantName ? ` ${plantName}` : ""}`;
+              const detailNote =
+                group.note && group.note !== group.suggestionDescription
+                  ? group.note
+                  : undefined;
 
               return (
                 <div
@@ -588,16 +636,13 @@ export function EventsBar({
                   style={{ animationDelay: `${Math.min(groupIdx, 8) * 40}ms` }}
                 >
                   <div
-                    className={`p-1 rounded-md ${eventBg[group.type] ?? "bg-white"} shadow-sm border border-border/5 ${iconColor} shrink-0`}
+                    className={`p-1 rounded-md ${eventVisual.background} shadow-sm border border-border/5 ${iconColor} shrink-0`}
                   >
                     <IconComponent className="w-3 h-3" />
                   </div>
                   <div className="flex-1 min-w-0 text-xs">
                     <p className="font-semibold text-foreground truncate text-[11px]">
-                      <span className="font-black">
-                        {getEventTypeLabel(t, group.type)}
-                      </span>
-                      {plantName && ` ${plantName}`}
+                      <span className="font-black">{title}</span>
                     </p>
                     {/* Scope context — show area name for area-scope events, planter name for planter-scope events */}
                     {(group.scope === "planter" || group.scope === "area") && (() => {
@@ -613,9 +658,9 @@ export function EventsBar({
                         </p>
                       ) : null;
                     })()}
-                    {group.note && (
+                    {detailNote && (
                       <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">
-                        {group.note}
+                        {detailNote}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-0">

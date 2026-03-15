@@ -107,6 +107,30 @@
       "frostRiskProtect": "Vorstrisico in {{planterName}} — bescherm vorstgevoelige planten vannacht",
       "reviewTreatment": "Controleer {{plantName}} en behandel de recente plaag"
     },
+    "groupedSuggestionDescriptions": {
+      "waterPlanters": "Geef {{count}} planters water",
+      "skipWateringPlanters": "De regen zou {{count}} planters moeten dekken",
+      "weedPlanters": "Wied {{count}} planters",
+      "fertilizePlanters": "Voeg compost of mest toe aan {{count}} planters",
+      "protectFrostPlanters": "Bescherm vorstgevoelige planten in {{count}} planters vannacht",
+      "mulchPlanters": "Mulch {{count}} planters",
+      "inspectPestsPlanters": "Controleer {{count}} planters op plagen",
+      "inspectDiseaseRiskPlanters": "Controleer {{count}} planters op ziekterisico",
+      "reviewCompanionsPlanters": "Controleer combinatieteelt in {{count}} planters",
+      "wrapSeasonPlanters": "Rond het seizoen af voor {{count}} planters",
+      "prunePlanters": "Snoei planten in {{count}} planters",
+      "repotPlanters": "Verpot planten in {{count}} planters",
+      "thinSeedlings": "Dun {{count}} zaailingen uit",
+      "hardenSeedlings": "Laat {{count}} zaailingen afharden",
+      "protectFrostPlants": "Bescherm {{count}} vorstgevoelige planten vannacht",
+      "inspectPestsPlants": "Controleer {{count}} planten op plagen",
+      "inspectDiseaseRiskPlants": "Controleer {{count}} planten op ziekterisico",
+      "reviewCompanionsPlants": "Controleer combinatieteelt voor {{count}} planten",
+      "prunePlants": "Snoei {{count}} planten",
+      "repotPlants": "Verpot {{count}} planten",
+      "generalPlanters": "Controleer {{count}} vergelijkbare planters",
+      "generalPlants": "Controleer {{count}} vergelijkbare planten"
+    },
     "scopeBadgeArea": "tuin"
   },
   "areas": {

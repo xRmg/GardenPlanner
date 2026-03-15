@@ -31,6 +31,7 @@ const PRIORITY_ORDER: Record<Priority, number> = {
 export interface CalendarEventItem {
   id: string;
   type: GardenEvent["type"];
+  visualType: GardenEvent["type"] | Suggestion["type"];
   label: string;
   detail?: string;
   plantName?: string;
@@ -276,15 +277,22 @@ function buildEventItem(
   const plantName = event.plant
     ? getPlantName(event.plant.id, event.plant.name)
     : undefined;
-  const label = event.plant
-    ? `${getEventLabel(event.type)} ${plantName}`
-    : event.note?.trim() || getEventLabel(event.type);
+  const label = event.suggestionDescription
+    ? event.suggestionDescription
+    : event.plant
+      ? `${getEventLabel(event.type)} ${plantName}`
+      : event.note?.trim() || getEventLabel(event.type);
+  const noteDetail =
+    event.note?.trim() && event.note.trim() !== event.suggestionDescription
+      ? event.note.trim()
+      : undefined;
 
   return {
     id: event.id,
     type: event.type,
+    visualType: event.suggestionType ?? event.type,
     label,
-    detail: formatLocation(location, event.note),
+    detail: formatLocation(location, noteDetail),
     plantName,
     plantIcon: event.plant?.icon,
     dateKey,

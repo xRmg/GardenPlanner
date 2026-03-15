@@ -105,6 +105,7 @@ export interface AISuggestionResult {
 export interface AISuggestionContextPlant {
   name: string;
   displayName: string;
+  areaName: string;
   planterName: string;
   plantedDaysAgo?: number;
   daysToHarvest?: number;
@@ -126,6 +127,7 @@ export interface AISuggestionContextSeedling {
 export interface AISuggestionContextEvent {
   type: string;
   daysAgo: number;
+  areaName?: string;
   planterName?: string;
 }
 
@@ -133,6 +135,8 @@ export interface AISuggestionContext {
   koeppenZone: string;
   hemisphere: "N" | "S";
   currentMonth: number;
+  lat?: number;
+  lng?: number;
   responseLocale: "en" | "nl";
   responseLanguage: string;
   /** AI model used to generate this batch — included in the cache key. */

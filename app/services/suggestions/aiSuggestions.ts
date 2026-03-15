@@ -201,6 +201,7 @@ export function buildAISuggestionContext(
     return {
       name: truncate(p.plant.name, 80, "plant.name"),
       displayName,
+      areaName: truncate(p.areaName, 80, "areaName"),
       planterName: truncate(p.planterName, 80, "planterName"),
       plantedDaysAgo,
       daysToHarvest: p.plant.daysToHarvest,
@@ -241,14 +242,16 @@ export function buildAISuggestionContext(
     typeMap.forEach((date, type) => {
       if (date.getTime() >= cutoff) {
         const [planterId] = key.split(":");
-        const planterName = ctx.placedPlants.find(
+        const location = ctx.placedPlants.find(
           (p) => p.planterId === planterId,
-        )?.planterName;
+        );
+        const planterName = location?.planterName;
         recentEvents.push({
           type,
           daysAgo: Math.floor(
             (today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
           ),
+          areaName: location?.areaName,
           planterName: planterName !== undefined ? truncate(planterName, 80, "recentEvent.planterName") : undefined,
         });
       }
@@ -262,6 +265,8 @@ export function buildAISuggestionContext(
     koeppenZone: ctx.koeppenZone,
     hemisphere,
     currentMonth: ctx.currentMonth,
+    lat: ctx.lat,
+    lng: ctx.lng,
     responseLocale,
     responseLanguage,
     model: model ?? "unknown",

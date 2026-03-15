@@ -438,6 +438,12 @@ export const GardenEventSchema = z.object({
   planterName: z.string().optional(),
   /** Human-readable area name for display in the journal. */
   areaName: z.string().optional(),
+  /** Original suggestion type when this event was created from a suggestion. */
+  suggestionType: SuggestionTypeSchema.optional(),
+  /** Original suggestion title for suggestion-derived journal rendering. */
+  suggestionDescription: z.string().max(500).optional(),
+  /** Source of the suggestion that produced this event. */
+  suggestionSource: z.enum(["rules", "ai", "static"]).optional(),
 });
 
 // ---------------------------------------------------------------------------

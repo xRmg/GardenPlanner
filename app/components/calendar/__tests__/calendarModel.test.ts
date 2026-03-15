@@ -229,6 +229,43 @@ describe("calendarModel", () => {
     expect(march15?.events[0].detail).toContain("Kitchen Garden · Bed B");
   });
 
+  it("uses suggestion-derived label and visual type for completed suggestions", () => {
+    const model = buildCalendarMonth({
+      month: new Date("2026-03-01T12:00:00.000Z"),
+      areas: [
+        makeArea({
+          planters: [
+            {
+              id: "planter-1",
+              name: "Bed A",
+              rows: 1,
+              cols: 1,
+              squares: [[{ plantInstance: null }]],
+              virtualSections: [],
+            },
+          ],
+        }),
+      ],
+      events: [
+        makeEvent({
+          type: "observation",
+          gardenId: "planter-1",
+          suggestionType: "frost_protect",
+          suggestionDescription: "Protect frost-sensitive plants in 2 planters tonight",
+        }),
+      ],
+      suggestions: [],
+      today: new Date("2026-03-12T12:00:00.000Z"),
+    });
+
+    const march15 = model.days.find((day) => day.dateKey === "2026-03-15");
+
+    expect(march15?.events[0].label).toBe(
+      "Protect frost-sensitive plants in 2 planters tonight",
+    );
+    expect(march15?.events[0].visualType).toBe("frost_protect");
+  });
+
   it("keeps undated suggestions on the current month only", () => {
     const currentMonthModel = buildCalendarMonth({
       month: new Date("2026-03-01T12:00:00.000Z"),

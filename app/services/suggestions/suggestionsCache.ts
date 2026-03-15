@@ -103,13 +103,25 @@ function djb2(raw: string): string {
  */
 export function buildCacheKey(ctx: AISuggestionContext): string {
   const plantKeys = ctx.plants
-    .map((p) => `${p.name}@${p.planterName}`)
+    .map((p) => `${p.areaName}>${p.planterName}@${p.name}`)
     .sort()
     .join(",");
   const seedlingKeys = ctx.seedlings
     .map((s) => `${s.name}:${s.status}`)
     .sort()
     .join(",");
+  const recentEventKeys = ctx.recentEvents
+    .map(
+      (event) =>
+        `${event.type}:${event.daysAgo}:${event.areaName ?? "-"}>${event.planterName ?? "-"}`,
+    )
+    .sort()
+    .join(",");
+  const ruleSuggestionKeys = [...ctx.activeRuleSuggestionKeys].sort().join(",");
+  const locationFingerprint =
+    ctx.lat !== undefined && ctx.lng !== undefined
+      ? `${Math.round(ctx.lat * 10) / 10}|${Math.round(ctx.lng * 10) / 10}`
+      : "no-coords";
   const weatherFingerprint = ctx.weather
     ? `${Math.round(ctx.weather.todayTempMaxC)}|${Math.round(ctx.weather.next7DaysTotalPrecipMm / 5) * 5}`
     : "no-weather";
@@ -117,11 +129,14 @@ export function buildCacheKey(ctx: AISuggestionContext): string {
     ctx.koeppenZone,
     ctx.hemisphere,
     ctx.currentMonth,
+    locationFingerprint,
     ctx.responseLocale,   // LAS.4: locale partition
     ctx.model,            // LAS.4: model partition
     weatherFingerprint,
     plantKeys,
     seedlingKeys,
+    recentEventKeys,
+    ruleSuggestionKeys,
   ].join("|");
 
   return `ai-sug-v${CACHE_VERSION}-${djb2(raw)}`;

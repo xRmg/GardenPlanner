@@ -56,10 +56,15 @@ const MODE_BADGES: Record<
   },
 };
 
-const EVENT_STYLES: Record<
-  CalendarEventItem["type"],
+const DEFAULT_EVENT_STYLE = {
+  chip: "border-slate-200 bg-slate-50 text-slate-700",
+  count: "bg-slate-50 text-slate-700",
+};
+
+const EVENT_STYLES: Partial<Record<
+  CalendarEventItem["visualType"],
   { chip: string; count: string }
-> = {
+>> = {
   planted: {
     chip: "border-emerald-200 bg-emerald-50 text-emerald-700",
     count: "bg-emerald-50 text-emerald-700",
@@ -104,7 +109,83 @@ const EVENT_STYLES: Record<
     chip: "border-teal-200 bg-teal-50 text-teal-700",
     count: "bg-teal-50 text-teal-700",
   },
+  water: {
+    chip: "border-sky-200 bg-sky-50 text-sky-700",
+    count: "bg-sky-50 text-sky-700",
+  },
+  harvest: {
+    chip: "border-violet-200 bg-violet-50 text-violet-700",
+    count: "bg-violet-50 text-violet-700",
+  },
+  repot: {
+    chip: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    count: "bg-indigo-50 text-indigo-700",
+  },
+  compost: {
+    chip: "border-amber-200 bg-amber-50 text-amber-700",
+    count: "bg-amber-50 text-amber-700",
+  },
+  weed: {
+    chip: "border-orange-200 bg-orange-50 text-orange-700",
+    count: "bg-orange-50 text-orange-700",
+  },
+  sow: {
+    chip: "border-lime-200 bg-lime-50 text-lime-700",
+    count: "bg-lime-50 text-lime-700",
+  },
+  fertilize: {
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-700",
+    count: "bg-yellow-50 text-yellow-700",
+  },
+  no_water: {
+    chip: "border-cyan-200 bg-cyan-50 text-cyan-700",
+    count: "bg-cyan-50 text-cyan-700",
+  },
+  frost_protect: {
+    chip: "border-cyan-200 bg-cyan-50 text-cyan-700",
+    count: "bg-cyan-50 text-cyan-700",
+  },
+  thin_seedlings: {
+    chip: "border-lime-200 bg-lime-50 text-lime-700",
+    count: "bg-lime-50 text-lime-700",
+  },
+  harden_seedlings: {
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-700",
+    count: "bg-yellow-50 text-yellow-700",
+  },
+  companion_conflict: {
+    chip: "border-rose-200 bg-rose-50 text-rose-700",
+    count: "bg-rose-50 text-rose-700",
+  },
+  succession_sow: {
+    chip: "border-teal-200 bg-teal-50 text-teal-700",
+    count: "bg-teal-50 text-teal-700",
+  },
+  pest_alert: {
+    chip: "border-red-200 bg-red-50 text-red-700",
+    count: "bg-red-50 text-red-700",
+  },
+  disease_risk: {
+    chip: "border-orange-200 bg-orange-50 text-orange-700",
+    count: "bg-orange-50 text-orange-700",
+  },
+  end_of_season: {
+    chip: "border-amber-200 bg-amber-50 text-amber-700",
+    count: "bg-amber-50 text-amber-700",
+  },
+  mulch: {
+    chip: "border-amber-200 bg-amber-50 text-amber-800",
+    count: "bg-amber-50 text-amber-800",
+  },
+  prune: {
+    chip: "border-violet-200 bg-violet-50 text-violet-700",
+    count: "bg-violet-50 text-violet-700",
+  },
 };
+
+function getEventStyle(visualType: CalendarEventItem["visualType"]) {
+  return EVENT_STYLES[visualType] ?? DEFAULT_EVENT_STYLE;
+}
 
 const PRIORITY_STYLES: Record<
   CalendarSuggestionItem["priority"],
@@ -256,7 +337,7 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
         <span
           className={cn(
             "rounded-full px-1.5 py-0.5 text-xs font-black uppercase tracking-wider",
-            EVENT_STYLES[day.events[0].type].count,
+            getEventStyle(day.events[0].visualType).count,
           )}
         >
           {t("calendarView.logCount", { count: eventCount })}
@@ -351,13 +432,13 @@ function DayCell({ day, onSelect }: { day: CalendarDayCell; onSelect: (day: Cale
             : eventPreview.label}
           className={cn(
             "rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight",
-            EVENT_STYLES[eventPreview.type].chip,
+            getEventStyle(eventPreview.visualType).chip,
           )}
         >
           <div className="flex items-center gap-1.5">
-            {eventPreview.plantIcon && (
-              <span className="text-xs">{eventPreview.plantIcon}</span>
-            )}
+            <span className="text-xs">
+              {eventPreview.plantIcon ?? EVENT_TYPE_ICONS[eventPreview.visualType] ?? "📋"}
+            </span>
             <span className="truncate">{eventPreview.label}</span>
           </div>
         </div>
@@ -414,7 +495,7 @@ export function CalendarView({
     model.counts.harvests === 0;
 
   return (
-    <div className="flex-1 overflow-auto bg-card rounded-2xl border border-border/20 shadow-sm p-4 custom-scrollbar h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-auto bg-card rounded-2xl border border-border/20 shadow-sm p-4 custom-scrollbar">
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
@@ -659,7 +740,7 @@ export function CalendarView({
   );
 }
 
-const EVENT_TYPE_ICONS: Partial<Record<CalendarEventItem["type"], string>> = {
+const EVENT_TYPE_ICONS: Partial<Record<CalendarEventItem["visualType"], string>> = {
   planted: "🌱",
   watered: "💧",
   composted: "🌿",
@@ -671,6 +752,24 @@ const EVENT_TYPE_ICONS: Partial<Record<CalendarEventItem["type"], string>> = {
   pest: "🪲",
   treatment: "💊",
   observation: "👁️",
+  water: "💧",
+  harvest: "🌾",
+  repot: "🪴",
+  compost: "🌿",
+  weed: "✂️",
+  sow: "🌰",
+  fertilize: "🌿",
+  no_water: "🌧️",
+  frost_protect: "❄️",
+  thin_seedlings: "🌱",
+  harden_seedlings: "☀️",
+  companion_conflict: "🌿",
+  succession_sow: "🌱",
+  pest_alert: "🪲",
+  disease_risk: "🦠",
+  end_of_season: "🍂",
+  mulch: "🍂",
+  prune: "✂️",
 };
 
 function DayDetailPanel({
@@ -777,12 +876,12 @@ function DayDetailPanel({
                       key={event.id}
                       className={cn(
                         "rounded-xl border px-3 py-2.5",
-                        EVENT_STYLES[event.type].chip,
+                        getEventStyle(event.visualType).chip,
                       )}
                     >
                       <div className="flex items-start gap-2">
                         <span className="text-base leading-none mt-0.5">
-                          {event.plantIcon ?? EVENT_TYPE_ICONS[event.type] ?? "📋"}
+                          {event.plantIcon ?? EVENT_TYPE_ICONS[event.visualType] ?? "📋"}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-bold leading-snug">

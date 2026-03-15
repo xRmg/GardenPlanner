@@ -8,7 +8,7 @@
  *   - LAS.4  Locale-partitioned cache keys (locale + model in key)
  *   - LAS.6  Per-type TTL policy (fast/slow types)
  *   - LAS.7  Locale switch invalidation
- *   - LAS.11 Scope-aware aggregation in merger (dedup by scope)
+ *   - LAS.11 Scope-aware aggregation in merger
  *   - LAS.14 Legacy rows without cacheVersion treated as stale
  *   - LAS.15 buildAISuggestionContext carries model field
  */
@@ -21,6 +21,7 @@ import {
 } from "../../services/suggestions/suggestionsCache";
 import { mergeSuggestions } from "../../services/suggestions/merger";
 import { buildAISuggestionContext } from "../../services/suggestions/aiSuggestions";
+import { buildCompletedSuggestionEvent } from "../../hooks/useGardenEvents";
 import type {
   AISuggestionContext,
   SuggestionResult,
@@ -58,6 +59,8 @@ function makeBaseContext(
     koeppenZone: "Cfb",
     hemisphere: "N",
     currentMonth: 5,
+    lat: 52,
+    lng: 4,
     responseLocale: "en",
     responseLanguage: "English",
     model: "openai/gpt-4o-mini",
@@ -144,6 +147,37 @@ describe("buildCacheKey — LAS.4 locale and model partitioning", () => {
       },
     });
     expect(buildCacheKey(noWeather)).not.toBe(buildCacheKey(withWeather));
+  });
+
+  it("produces different keys when coordinates change", () => {
+    const amsterdamCtx = makeBaseContext({ lat: 52.4, lng: 4.9 });
+    const rotterdamCtx = makeBaseContext({ lat: 51.9, lng: 4.5 });
+    expect(buildCacheKey(amsterdamCtx)).not.toBe(buildCacheKey(rotterdamCtx));
+  });
+
+  it("produces different keys when recent events change", () => {
+    const baselineCtx = makeBaseContext({
+      recentEvents: [
+        {
+          type: "watered",
+          daysAgo: 2,
+          areaName: "Garden",
+          planterName: "Bed A",
+        },
+      ],
+    });
+    const updatedCtx = makeBaseContext({
+      recentEvents: [
+        {
+          type: "weeded",
+          daysAgo: 1,
+          areaName: "Garden",
+          planterName: "Bed A",
+        },
+      ],
+    });
+
+    expect(buildCacheKey(baselineCtx)).not.toBe(buildCacheKey(updatedCtx));
   });
 });
 
@@ -262,11 +296,11 @@ describe("merger — LAS.1 scope field propagation", () => {
 });
 
 // ---------------------------------------------------------------------------
-// LAS.11 — Scope-aware deduplication in merger
+// LAS.11 — Scope-aware aggregation in merger
 // ---------------------------------------------------------------------------
 
-describe("merger — LAS.11 scope-aware deduplication", () => {
-  it("does not deduplicate area-scope and planter-scope suggestions of the same type", () => {
+describe("merger — LAS.11 scope-aware aggregation", () => {
+  it("promotes planter duplicates to one area-scope suggestion", () => {
     const areaResult: AISuggestionResult = {
       type: "frost_protect",
       priority: "high",
@@ -292,30 +326,45 @@ describe("merger — LAS.11 scope-aware deduplication", () => {
     };
 
     const merged = mergeSuggestions([planterResult], [areaResult], false, "en");
-    // Both should appear since they have different scopes
-    expect(merged).toHaveLength(2);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].scope).toBe("area");
+    expect(merged[0].description).toBe("Area frost warning");
   });
 
-  it("deduplicates two planter-scope suggestions with same key", () => {
+  it("promotes multiple plant-scope suggestions in one planter to one planter suggestion", () => {
     const result1: SuggestionResult = {
-      key: "water:p1:global",
-      type: "water",
+      key: "pest_alert:p1:i1",
+      type: "pest_alert",
       planterId: "p1",
-      priority: "medium",
-      description: "Water Bed A",
+      instanceId: "i1",
+      plant: makePlant({ id: "tomato", name: "Tomato" }),
+      priority: "high",
+      description: "Check Tomato for aphids",
       source: "rules",
-      ruleId: "water",
-      scope: "planter",
+      ruleId: "pest_alert",
+      scope: "plant",
     };
-    // Identical key — second should be deduplicated
     const result2: SuggestionResult = {
-      ...result1,
-      description: "Water Bed A (duplicate)",
+      key: "pest_alert:p1:i2",
+      type: "pest_alert",
+      planterId: "p1",
+      instanceId: "i2",
+      plant: makePlant({ id: "pepper", name: "Pepper", icon: "🫑" }),
+      priority: "high",
+      description: "Check Pepper for aphids",
+      source: "rules",
+      ruleId: "pest_alert",
+      areaId: "a1",
+      areaName: "Garden",
+      planterName: "Bed A",
+      scope: "plant",
     };
 
     const merged = mergeSuggestions([result1, result2], [], false, "en");
     expect(merged).toHaveLength(1);
-    expect(merged[0].description).toBe("Water Bed A");
+    expect(merged[0].scope).toBe("planter");
+    expect(merged[0].planterName).toBe("Bed A");
+    expect(merged[0].description).toBe("Inspect 2 plants for pests");
   });
 });
 
@@ -356,6 +405,85 @@ describe("buildAISuggestionContext — LAS.15 model field", () => {
     const r1 = buildAISuggestionContext(ctx, [], "en", "model-x");
     const r2 = buildAISuggestionContext(ctx, [], "en", "model-x");
     expect(buildCacheKey(r1)).toBe(buildCacheKey(r2));
+  });
+
+  it("includes area names in the AI context so area-scoped suggestions can stay area-targeted", () => {
+    const ctx = makeRuleContext({ placedPlants: [makePlacedPlant()] });
+    const result = buildAISuggestionContext(ctx, [], "en", "model-x");
+
+    expect(result.plants[0]?.areaName).toBe("Garden");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LAS.12 — Completion flow consistency
+// ---------------------------------------------------------------------------
+
+describe("buildCompletedSuggestionEvent — LAS.12 scope-aware completion", () => {
+  it("creates one area-scoped event for an area suggestion", () => {
+    const event = buildCompletedSuggestionEvent(
+      {
+        id: "s1",
+        type: "frost_protect",
+        priority: "high",
+        description: "Protect frost-sensitive plants in 2 planters tonight",
+        source: "rules",
+        scope: "area",
+        areaId: "area-1",
+        areaName: "Garden",
+      },
+      "2026-05-15T00:00:00.000Z",
+    );
+
+    expect(event?.scope).toBe("area");
+    expect(event?.gardenId).toBeUndefined();
+    expect(event?.plant).toBeUndefined();
+    expect(event?.suggestionType).toBe("frost_protect");
+  });
+
+  it("creates a planter-scoped event for planter maintenance", () => {
+    const event = buildCompletedSuggestionEvent(
+      {
+        id: "s2",
+        type: "water",
+        priority: "medium",
+        description: "Water 2 planters",
+        source: "rules",
+        scope: "planter",
+        planterId: "planter-1",
+        planterName: "Bed A",
+        areaId: "area-1",
+        areaName: "Garden",
+      },
+      "2026-05-15T00:00:00.000Z",
+    );
+
+    expect(event?.scope).toBe("planter");
+    expect(event?.gardenId).toBe("planter-1");
+    expect(event?.type).toBe("watered");
+  });
+
+  it("keeps plant identity for plant-scoped suggestion completion", () => {
+    const plant = makePlant();
+    const event = buildCompletedSuggestionEvent(
+      {
+        id: "s3",
+        type: "treatment",
+        priority: "high",
+        description: "Review Tomato and apply a treatment",
+        source: "rules",
+        scope: "plant",
+        planterId: "planter-1",
+        instanceId: "instance-1",
+        plant,
+      },
+      "2026-05-15T00:00:00.000Z",
+    );
+
+    expect(event?.scope).toBe("plant");
+    expect(event?.instanceId).toBe("instance-1");
+    expect(event?.plant?.id).toBe("tomato");
+    expect(event?.note).toBe("Review Tomato and apply a treatment");
   });
 });
 

@@ -107,6 +107,30 @@
       "frostRiskProtect": "Frost risk in {{planterName}} — protect frost-sensitive plants tonight",
       "reviewTreatment": "Review {{plantName}} and apply a treatment for the recent pest issue"
     },
+    "groupedSuggestionDescriptions": {
+      "waterPlanters": "Water {{count}} planters",
+      "skipWateringPlanters": "Rain should cover {{count}} planters",
+      "weedPlanters": "Weed {{count}} planters",
+      "fertilizePlanters": "Add compost or fertilizer to {{count}} planters",
+      "protectFrostPlanters": "Protect frost-sensitive plants in {{count}} planters tonight",
+      "mulchPlanters": "Mulch {{count}} planters",
+      "inspectPestsPlanters": "Inspect {{count}} planters for pests",
+      "inspectDiseaseRiskPlanters": "Inspect {{count}} planters for disease risk",
+      "reviewCompanionsPlanters": "Review companion planting in {{count}} planters",
+      "wrapSeasonPlanters": "Wrap up {{count}} planters for the season",
+      "prunePlanters": "Prune plants across {{count}} planters",
+      "repotPlanters": "Repot plants across {{count}} planters",
+      "thinSeedlings": "Thin {{count}} seedlings",
+      "hardenSeedlings": "Harden off {{count}} seedlings",
+      "protectFrostPlants": "Protect {{count}} frost-sensitive plants tonight",
+      "inspectPestsPlants": "Inspect {{count}} plants for pests",
+      "inspectDiseaseRiskPlants": "Inspect {{count}} plants for disease risk",
+      "reviewCompanionsPlants": "Review companion planting for {{count}} plants",
+      "prunePlants": "Prune {{count}} plants",
+      "repotPlants": "Repot {{count}} plants",
+      "generalPlanters": "Review {{count}} similar planters",
+      "generalPlants": "Review {{count}} similar plants"
+    },
     "scopeBadgeArea": "area"
   },
   "areas": {

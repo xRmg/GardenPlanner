@@ -120,6 +120,7 @@ export default function App() {
 
   // ── View mode — derived from settings and persisted to Dexie ──────────────
   const isEditMode = settings.isEditMode ?? false;
+  const toolbarVisible = isEditMode && activeTab === "areas";
   const setIsEditMode = (value: boolean | ((prev: boolean) => boolean)) => {
     setSettings((prev) => ({
       ...prev,
@@ -428,11 +429,11 @@ export default function App() {
       </div>
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden p-2 sm:p-4 gap-2 sm:gap-4 relative z-10">
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="flex-1 flex min-h-0 flex-col gap-4">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            className="w-full"
+            className="flex min-h-0 w-full flex-1 flex-col"
           >
             <TabsList className="w-full h-auto flex-wrap justify-start bg-muted border border-border">
               <TabsTrigger value="areas">
@@ -459,10 +460,10 @@ export default function App() {
 
             <TabsContent
               value="areas"
-              className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+              className="mt-0 flex-1 min-h-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
               <div
-                className={`flex-1 overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar ${isEditMode ? "h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)]" : "h-[calc(100dvh-8rem)] md:h-[calc(100dvh-7rem)]"}`}
+                className="h-full overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar"
               >
                 <div className="mb-4 px-1 flex items-center justify-between">
                   <div>
@@ -807,7 +808,7 @@ export default function App() {
 
             <TabsContent
               value="calendar"
-              className="flex-1 mt-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+              className="mt-0 flex-1 min-h-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
               <CalendarView
                 areas={areas as unknown as import("./data/schema").Area[]}
@@ -840,9 +841,9 @@ export default function App() {
 
             <TabsContent
               value="plants"
-              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+              className="flex-1 min-h-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
-              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+              <div className="h-full overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-5">
                 <div className="mb-5">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -1258,9 +1259,9 @@ export default function App() {
 
             <TabsContent
               value="seedlings"
-              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+              className="flex-1 min-h-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
-              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+              <div className="h-full overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-5">
                 <div className="flex justify-between items-center mb-5">
                   <div>
                     <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
@@ -1512,9 +1513,9 @@ export default function App() {
 
             <TabsContent
               value="settings"
-              className="data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
+              className="flex-1 min-h-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
-              <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5 h-[calc(100dvh-13rem)] md:h-[calc(100dvh-12rem)] overflow-auto">
+              <div className="h-full overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-5">
                 <h2 className="text-2xl font-black text-foreground tracking-tight uppercase mb-6 leading-none">
                   {t("settings.title")}
                 </h2>
@@ -1998,7 +1999,7 @@ export default function App() {
       {/* Mobile FAB — opens events sheet */}
       <button
         onClick={() => setEventsSheetOpen(true)}
-        className="md:hidden fixed right-3 bottom-30 z-30 w-12 h-12 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-[background-color,transform] duration-150"
+        className={`md:hidden fixed right-3 z-30 w-12 h-12 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-[background-color,transform,bottom] duration-150 ${toolbarVisible ? "bottom-30" : "bottom-4"}`}
         aria-label="Open garden events and suggestions"
       >
         <Bell className="w-5 h-5" />
@@ -2009,8 +2010,8 @@ export default function App() {
         )}
       </button>
 
-      {/* Bottom toolbar - Floating style (hidden in view mode) */}
-      {isEditMode && (
+      {/* Bottom toolbar - only shown for the areas planner in edit mode */}
+      {toolbarVisible && (
         <div className="px-4 pb-4 relative z-20">
           <div className="max-w-5xl mx-auto drop-shadow-xl">
             <ToolBar
