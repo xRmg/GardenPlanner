@@ -1,7 +1,7 @@
 {
   "name": "garden-planner",
   "private": true,
-  "version": "1.0.0-hotfix",
+  "version": "1.0.1-hotfix",
   "type": "module",
   "scripts": {
     "prepare": "node scripts/setup-git-hooks.mjs",
