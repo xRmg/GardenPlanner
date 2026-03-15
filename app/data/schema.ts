@@ -373,14 +373,6 @@ export const SettingsPatchSchema = z
   })
   .strict();
 
-export const AiKeySubmissionSchema = z.object({
-  key: z.string().min(1),
-});
-
-export const LocationResolutionSchema = z.object({
-  query: z.string().min(1),
-});
-
 export function toFrontendSettings(stored: StoredSettings): Settings {
   return {
     location: stored.location,
@@ -522,8 +514,6 @@ export type AiProvider = z.infer<typeof AiProviderSchema>;
 export type StoredSettings = z.infer<typeof StoredSettingsSchema>;
 export type Settings = z.infer<typeof SettingsSchema>;
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>;
-export type AiKeySubmission = z.infer<typeof AiKeySubmissionSchema>;
-export type LocationResolution = z.infer<typeof LocationResolutionSchema>;
 export type GardenEvent = z.infer<typeof GardenEventSchema>;
 export type Suggestion = z.infer<typeof SuggestionSchema>;
 

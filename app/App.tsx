@@ -223,7 +223,6 @@ export default function App() {
 
   // ── Events + suggestions ──────────────────────────────────────────────────
   const {
-    harvestAlerts,
     handlePlantAdded,
     handlePlantRemoved,
     handlePlantUpdated,
@@ -1957,7 +1956,6 @@ export default function App() {
             suggestions={
               suggestions as unknown as import("./components/EventsBar").Suggestion[]
             }
-            harvestAlerts={harvestAlerts}
             onCompleteSuggestion={(s) => {
               handleCompleteSuggestion(s);
               dismissSuggestion(s.id);
@@ -1980,7 +1978,6 @@ export default function App() {
             suggestions={
               suggestions as unknown as import("./components/EventsBar").Suggestion[]
             }
-            harvestAlerts={harvestAlerts}
             onCompleteSuggestion={(s) => {
               handleCompleteSuggestion(s);
               dismissSuggestion(s.id);

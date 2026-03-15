@@ -66,9 +66,6 @@
     "settings": "Instellingen"
   },
   "eventsBar": {
-    "harvestSoon": "Binnenkort Oogsten",
-    "now": "Nu!",
-    "daysUntil": "{{count}}d",
     "nextSteps": "Volgende Stappen",
     "allCaughtUp": "Alles bijgewerkt!",
     "gardenJournal": "Tuindagboek",

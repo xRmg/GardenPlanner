@@ -99,12 +99,6 @@ export interface Suggestion {
 interface EventsBarProps {
   events: GardenEvent[];
   suggestions: Suggestion[];
-  harvestAlerts?: Array<{
-    plantName: string;
-    plantIcon: string;
-    daysUntilHarvest: number;
-    areaName: string;
-  }>;
   onCompleteSuggestion?: (suggestion: Suggestion) => void;
   onOpenTreatmentSuggestion?: (suggestion: Suggestion) => void;
   suggestionsMode?: SuggestionMode;
@@ -288,7 +282,6 @@ function getSuggestionLocationLabel(s: Suggestion): string | null {
 export function EventsBar({
   events,
   suggestions,
-  harvestAlerts = [],
   onCompleteSuggestion,
   onOpenTreatmentSuggestion,
   suggestionsMode,
@@ -416,47 +409,6 @@ export function EventsBar({
 
       {/* Scrollable container for both sections */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 custom-scrollbar space-y-6">
-        {/* Harvest Soon Section */}
-        {harvestAlerts.length > 0 && (
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3 px-1">
-              {t("eventsBar.harvestSoon")}
-            </h3>
-            <div className="space-y-1.5 mb-2">
-              {harvestAlerts.slice(0, 5).map((alert, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 bg-purple-50/60 border border-purple-100 rounded-lg px-2.5 py-2 animate-in fade-in slide-in-from-bottom-1 duration-300 fill-mode-both"
-                  style={{ animationDelay: `${i * 50}ms` }}
-                >
-                  <span className="text-base shrink-0">{alert.plantIcon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black text-foreground truncate">
-                      {alert.plantName}
-                    </p>
-                    <p className="text-xs text-muted-foreground/60 uppercase tracking-wider font-bold">
-                      {alert.areaName}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-xs font-black px-1.5 py-0.5 rounded-md shrink-0 ${
-                      alert.daysUntilHarvest <= 3
-                        ? "bg-red-100 text-red-600"
-                        : alert.daysUntilHarvest <= 7
-                          ? "bg-orange-100 text-orange-600"
-                          : "bg-purple-100 text-purple-600"
-                    }`}
-                  >
-                    {alert.daysUntilHarvest <= 0
-                      ? t("eventsBar.now")
-                      : t("eventsBar.daysUntil", { count: alert.daysUntilHarvest })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Next Steps Section */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">

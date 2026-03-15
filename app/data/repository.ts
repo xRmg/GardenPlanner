@@ -69,8 +69,6 @@ export interface GardenRepository {
   saveSettings(settings: Settings): Promise<void>;
   /** Validate and store a new OpenRouter API key server-side. */
   storeAiKey(key: string): Promise<Settings>;
-  /** Remove the stored OpenRouter API key server-side. */
-  clearAiKey(): Promise<Settings>;
   /** Resolve a location string to canonical location + coordinates + growth zone. */
   resolveLocation(query: string): Promise<Settings>;
 

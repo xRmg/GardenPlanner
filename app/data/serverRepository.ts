@@ -310,10 +310,6 @@ class ServerRepository implements GardenRepository {
     return this.requestSettings("POST", `${API_SETTINGS}/ai-key`, { key });
   }
 
-  async clearAiKey(): Promise<Settings> {
-    return this.requestSettings("DELETE", `${API_SETTINGS}/ai-key`);
-  }
-
   async resolveLocation(query: string): Promise<Settings> {
     return this.requestSettings("POST", `${API_SETTINGS}/location/resolve`, {
       query,

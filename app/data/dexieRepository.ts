@@ -431,18 +431,6 @@ export class DexieRepository implements GardenRepository {
     throw new Error("AI key storage requires the backend repository.");
   }
 
-  async clearAiKey(): Promise<Settings> {
-    const current = await this.getSettings();
-    const next: Settings = {
-      ...current,
-      aiProvider: { type: "none" },
-      aiLastValidatedAt: undefined,
-      aiValidationError: undefined,
-    };
-    await this.saveSettings(next);
-    return next;
-  }
-
   async resolveLocation(): Promise<Settings> {
     throw new Error("Location resolution requires the backend repository.");
   }
@@ -480,19 +468,4 @@ export class DexieRepository implements GardenRepository {
       this.db.events.clear(),
     ]);
   }
-}
-
-// ---------------------------------------------------------------------------
-// Singleton factory
-// ---------------------------------------------------------------------------
-
-let _instance: DexieRepository | null = null;
-
-/**
- * Returns the shared DexieRepository instance.
- * Call `await repo.ready()` once before the first read/write.
- */
-export function getDexieRepository(): DexieRepository {
-  if (!_instance) _instance = new DexieRepository();
-  return _instance;
 }

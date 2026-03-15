@@ -66,9 +66,6 @@
     "settings": "Settings"
   },
   "eventsBar": {
-    "harvestSoon": "Harvest Soon",
-    "now": "Now!",
-    "daysUntil": "{{count}}d",
     "nextSteps": "Next Steps",
     "allCaughtUp": "All caught up!",
     "gardenJournal": "Garden Journal",
