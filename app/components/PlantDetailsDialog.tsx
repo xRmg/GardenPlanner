@@ -25,6 +25,7 @@ import { cn } from "./ui/utils";
 import { getBundledPlantByMatch } from "../data/bundledPlants";
 import { deriveGrowthStage } from "../services/plantGrowthStage";
 import type { GrowthStage, HealthState } from "../data/schema";
+import { shouldTriggerDialogSubmit } from "../lib/dialogKeyboard";
 import {
   getLocalizedPlantContent,
   getPlantDisplayName,
@@ -224,7 +225,7 @@ export function PlantDetailsDialog({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && e.ctrlKey) {
+      if (shouldTriggerDialogSubmit(e)) {
         e.preventDefault();
         handleSave();
       } else if (e.key === "Escape") {
@@ -240,7 +241,7 @@ export function PlantDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <span
@@ -494,8 +495,13 @@ export function PlantDetailsDialog({
                   placeholder={t("dialogs.plantDetailsDialog.eventPlaceholder")}
                   className="flex-1 bg-white/50 border border-border/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddEvent();
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAddEvent();
+                    }
                   }}
+                  data-dialog-enter-submit="false"
                 />
                 <button
                   onClick={handleAddEvent}

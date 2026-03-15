@@ -13,6 +13,7 @@ import { Input } from "./ui/input";
 import { Plant } from "./PlanterGrid";
 import { Sprout } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { shouldTriggerDialogSubmit } from "../lib/dialogKeyboard";
 import { getPlantDisplayName } from "../i18n/utils/plantTranslation";
 
 interface SowSeedsDialogProps {
@@ -43,7 +44,7 @@ export function SowSeedsDialog({
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
+      if (shouldTriggerDialogSubmit(e)) {
         e.preventDefault();
         handleSow();
       } else if (e.key === "Escape") {

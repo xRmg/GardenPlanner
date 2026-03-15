@@ -10,6 +10,7 @@ import {
 import { Plus, Trash2, Minus } from "lucide-react";
 import { Button } from "./ui/button";
 import type { CellDimensions, PlanterLayout, UnitSystem } from "../data/schema";
+import { shouldTriggerDialogSubmit } from "../lib/dialogKeyboard";
 import { defaultCellDimensions, formatDimensions } from "../i18n/utils/formatting";
 
 export interface VirtualSection {
@@ -131,7 +132,7 @@ export function PlanterDialog({
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
+      if (shouldTriggerDialogSubmit(e)) {
         e.preventDefault();
         handleSaveRef.current();
       } else if (e.key === "Escape") {

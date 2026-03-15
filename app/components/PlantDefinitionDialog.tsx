@@ -17,6 +17,7 @@ import { InfoTooltip } from "./ui/info-tooltip";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import type { Settings } from "../data/schema";
 import { usePlantAILookup } from "../hooks/usePlantAILookup";
+import { shouldTriggerDialogSubmit } from "../lib/dialogKeyboard";
 import { CONFIDENCE } from "../services/ai/prompts";
 import { formatMonthNarrow } from "@/app/i18n/utils/formatting";
 import {
@@ -408,7 +409,7 @@ export function PlantDialog({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && e.ctrlKey) {
+      if (shouldTriggerDialogSubmit(e)) {
         e.preventDefault();
         handleSave();
       } else if (e.key === "Escape") {

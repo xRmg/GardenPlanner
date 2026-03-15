@@ -12,6 +12,7 @@ import { Plant } from "./PlanterGrid";
 import { Sprout, Search } from "lucide-react";
 import { InfoTooltip } from "./ui/info-tooltip";
 import { useTranslation } from "react-i18next";
+import { shouldTriggerDialogSubmit } from "../lib/dialogKeyboard";
 import {
   getPlantDisplayName,
   matchesPlantSearchQuery,
@@ -77,7 +78,7 @@ export function AddSeedlingDialog({
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
+      if (shouldTriggerDialogSubmit(e)) {
         e.preventDefault();
         handleSave();
       } else if (e.key === "Escape") {
