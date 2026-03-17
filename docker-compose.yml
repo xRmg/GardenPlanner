@@ -11,9 +11,11 @@ services:
 
     environment:
       - NODE_ENV=production
+      - GARDEN_PROXY_AUTH_FILE=/auth/proxy-auth-token
 
     volumes:
       - garden-data:/app/data
+      - auth-data:/auth
 
     healthcheck:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/health"]
@@ -34,10 +36,14 @@ services:
 
     environment:
       - NODE_ENV=production
+      - GARDEN_PROXY_AUTH_FILE=/auth/proxy-auth-token
 
     depends_on:
       backend:
         condition: service_healthy
+
+    volumes:
+      - auth-data:/auth:ro
 
     healthcheck:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/index.html"]
@@ -48,6 +54,7 @@ services:
 
 volumes:
   garden-data:
+  auth-data:
 
 networks:
   pangolin:

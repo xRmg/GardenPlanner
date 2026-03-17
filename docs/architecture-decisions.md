@@ -154,3 +154,22 @@
 **Date/number formatting**: Use `Intl.DateTimeFormat` and `Intl.NumberFormat` — not hardcoded arrays.
 
 See `docs/i18n-and-plant-library-architecture.md` for full implementation spec.
+
+---
+
+## Planning Workflow: Custom Garden Planner Agent
+
+**Decision**: Add a dedicated planning custom agent at `.github/agents/garden-planner-planning.agent.md`.
+
+**Why**:
+- Keep planning scope explicit and prevent uncontrolled requirement expansion
+- Ensure plans are end-to-end (implementation through validation and docs), with no premature stop
+- Standardize expert-assisted planning by requiring subagent delegation before final plan output
+- Enforce project hygiene with mandatory `todo.md` updates and concise shipped-change notes
+
+**Planning workflow requirements**:
+1. Ask scoped clarifying questions up front using the ask-questions tool
+2. Identify and consult relevant experts via `runSubagent`
+3. Produce a concrete implementation + verification plan
+4. Include documentation impact and required doc updates
+5. Require `todo.md` updates, including a short **What Was Done** section

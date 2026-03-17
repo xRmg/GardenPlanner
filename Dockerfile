@@ -20,8 +20,13 @@ RUN npm run build:frontend
 # Stage 2: Serve with nginx
 FROM nginx:alpine
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
+# Install envsubst for runtime config templating
+RUN apk add --no-cache gettext
+
+# Copy nginx config template and startup entrypoint
+COPY nginx.conf /etc/nginx/nginx.conf.template
+COPY docker/nginx-entrypoint.sh /usr/local/bin/nginx-entrypoint.sh
+RUN chmod +x /usr/local/bin/nginx-entrypoint.sh
 
 # Copy built app from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -34,4 +39,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost/index.html || exit 1
 
 # Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/usr/local/bin/nginx-entrypoint.sh"]

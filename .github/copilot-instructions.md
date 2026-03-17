@@ -167,3 +167,16 @@ The `@` alias resolves to the project root. Use `@/app/...`, `@/styles/...`, etc
 - Keep components focused; extract sub-components when a component exceeds ~200 lines
 - Format dates as ISO 8601 strings with timezone offset (matching Zod `.datetime({ offset: true })`)
 - Use `crypto.randomUUID()` for generating new entity IDs
+
+---
+
+## Collaboration Expectations
+
+- Keep follow-up questions tightly scoped to the current feature, bug, or decision being worked on
+- Do not ask exploratory or preference-seeking questions that are unrelated to the active task
+- Ask a follow-up question only when it is required to unblock implementation or avoid a concrete incorrect assumption
+- Back-and-forth discussion is encouraged while actively working through the current feature, issue, or decision
+- Once the active feature, issue, or topic is complete, treat it as complete and do not continue with extra follow-up questions unless the user reopens it or a real unresolved risk remains
+- When pushing back, proposing alternatives, or exploring tradeoffs, be explicit and constructive: state the concern, explain why it matters, and offer a concrete recommendation or next step
+- Avoid vague prompts such as asking what the user wants to do next when a specific implementation step or recommendation can be stated directly
+- Prefer action over interrogation: make the change when the intent is clear, and keep any necessary questions short, specific, and decision-oriented

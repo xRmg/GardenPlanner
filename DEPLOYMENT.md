@@ -177,7 +177,12 @@ docker stats garden-planner
 Nginx is typically lightweight; if high, check for runaway processes or increase available host RAM.
 
 ### Data persistence
-The current app stores all data in **localStorage** (browser storage), so data persists per browser/device. To back up, users should export from the app UI (future feature). No server-side database is required.
+This deployment stores data in two places:
+
+- Browser IndexedDB (Dexie) for local-first UX
+- Backend SQLite at `/app/data/garden.db` via the `garden-data` Docker volume
+
+Back up both the Docker volume and user browser data export when available.
 
 ## Image Size and Performance
 
@@ -193,10 +198,13 @@ Memory usage: ~10-20MB idle
 
 ## Security Notes
 
-1. **Data Privacy**: All localStorage data stays on the client device. No data is sent to the server beyond app files.
-2. **HTTPS**: Consider terminating TLS at the reverse proxy level (host nginx) rather than in the container.
-3. **No Database**: Garden Planner is currently data-free on the server; all persistence is client-side.
-4. **Open-Meteo API**: The app calls free public APIs (Open-Meteo Geocoding, archive) from the browser directly—no credentials needed.
+1. **Backend API auth (auto-configured)**: On first boot, backend generates a strong proxy auth token at `/auth/proxy-auth-token` and reuses it on subsequent boots.
+2. **Shared token injection**: The `garden-planner` nginx container reads the same token file and injects it as `X-Garden-Proxy-Auth` on `/api/*` proxy requests.
+3. **Gateway identity required**: Backend also requires a non-empty `X-Garden-User` identity header on all `/api/*` requests (returned as `401` with `reason: missing_gateway_identity` when absent).
+4. **Gateway forwarding contract**: Configure your upstream gateway to authenticate users, overwrite `X-Forwarded-User`, and never trust client-supplied identity headers.
+5. **Fail-closed backend**: Backend rejects all `/api/*` calls without valid proxy token and gateway identity.
+6. **HTTPS**: Terminate TLS at host/proxy edge rather than inside the container.
+7. **Open-Meteo API**: Location resolve runs through backend proxy endpoints; monitor external API usage and apply rate limiting.
 
 ## Updates
 

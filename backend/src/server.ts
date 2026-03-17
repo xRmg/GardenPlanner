@@ -1,9 +1,50 @@
 import express from "express";
+import { timingSafeEqual } from "node:crypto";
 import { initializeSchema, closeDb } from "./db.js";
 import routes from "./routes.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
+const PROXY_AUTH_HEADER = "x-garden-proxy-auth";
+const GATEWAY_IDENTITY_HEADER = (
+  process.env.GARDEN_AUTH_IDENTITY_HEADER || "x-garden-user"
+)
+  .trim()
+  .toLowerCase();
+const PROXY_AUTH_TOKEN = process.env.GARDEN_PROXY_AUTH_TOKEN?.trim();
+const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const CORS_ALLOWED_ORIGINS = new Set(configuredOrigins);
+
+if (!PROXY_AUTH_TOKEN) {
+  console.error(
+    "[AUTH] Missing GARDEN_PROXY_AUTH_TOKEN. Refusing to start in fail-closed mode.",
+  );
+  process.exit(1);
+}
+
+function safeTokenEqual(provided: string, expected: string): boolean {
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(providedBuffer, expectedBuffer);
+}
+
+function isAllowedOrigin(req: express.Request, origin: string): boolean {
+  const host = req.get("host");
+  if (!host) return false;
+
+  const protocol = req.get("x-forwarded-proto") || req.protocol;
+  const sameOrigin = `${protocol}://${host}`;
+
+  return origin === sameOrigin || CORS_ALLOWED_ORIGINS.has(origin);
+}
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -33,19 +74,62 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// CORS headers (allow frontend to connect from different origins)
+// CORS headers (same-origin by default; optional allowlist via env)
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const origin = req.get("origin");
+
+  if (origin) {
+    if (!isAllowedOrigin(req, origin)) {
+      res.status(403).json({ error: "CORS origin denied" });
+      return;
+    }
+
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Vary", "Origin");
+  }
+
   res.header(
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
   );
   res.header("Access-Control-Allow-Headers", "Content-Type");
+
   if (req.method === "OPTIONS") {
     res.sendStatus(200);
   } else {
     next();
   }
+});
+
+// Require proxy auth token for all API requests.
+app.use((req, res, next) => {
+  if (!req.path.startsWith("/api")) {
+    next();
+    return;
+  }
+
+  if (req.method === "OPTIONS") {
+    next();
+    return;
+  }
+
+  const providedToken = req.get(PROXY_AUTH_HEADER);
+  if (!providedToken || !safeTokenEqual(providedToken, PROXY_AUTH_TOKEN)) {
+    res
+      .status(401)
+      .json({ error: "Unauthorized", reason: "invalid_proxy_auth" });
+    return;
+  }
+
+  const authenticatedUser = req.get(GATEWAY_IDENTITY_HEADER)?.trim();
+  if (!authenticatedUser) {
+    res
+      .status(401)
+      .json({ error: "Unauthorized", reason: "missing_gateway_identity" });
+    return;
+  }
+
+  next();
 });
 
 // Initialize database schema

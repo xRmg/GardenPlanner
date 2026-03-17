@@ -18,6 +18,14 @@
 
 ---
 
+## What Was Done
+
+- 2026-03-17: Added a custom planning agent at `.github/agents/garden-planner-planning.agent.md` that enforces bounded scope, end-to-end planning, ask-questions usage, expert delegation through `runSubagent`, documentation updates, and mandatory `todo.md` update steps.
+- 2026-03-17: Hardened backend API access with fail-closed proxy token auth (`X-Garden-Proxy-Auth`), auto-generated shared secret bootstrap in Docker, and same-origin CORS restrictions.
+- 2026-03-17: Enforced gateway user identity on all API calls by requiring `X-Garden-User` (forwarded from gateway `X-Forwarded-User`) in addition to proxy token auth.
+
+---
+
 ## Completed
 
 - [x] **Phase 1 — Foundation + Smart Suggestions** — Local-first repository, JSON import/export, backend AI proxy, dual-mode rules/weather/AI suggestions, plant care enrichment, calendar view, and async error handling. See `docs/ai-integration-design.md` and `docs/suggestion-engine-architecture.md`.
