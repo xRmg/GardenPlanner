@@ -67,6 +67,8 @@ This will:
 - Automatically restart if it crashes
 - Expose port 80
 
+The Dockerfiles now use BuildKit cache mounts for the npm cache and TypeScript build metadata. On modern Docker and Docker Compose this is enabled by default. If your host does not use BuildKit yet, export `DOCKER_BUILDKIT=1` before building so repeated builds can reuse those caches.
+
 ### 3. Verify Deployment
 
 ```bash
@@ -192,7 +194,7 @@ Dockerfile stages:
   Final: ~50MB (nginx + assets)
 ```
 
-Build time: ~2-3 minutes (first time, longer on slow networks)
+Build time: ~2-3 minutes for a cold build, typically less on repeat builds thanks to Docker layer reuse and BuildKit caches
 Container startup: ~2 seconds
 Memory usage: ~10-20MB idle
 
