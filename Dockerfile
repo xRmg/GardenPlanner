@@ -13,14 +13,10 @@ COPY scripts ./scripts
 # Install dependencies
 RUN --mount=type=cache,target=/root/.npm npm ci
 
-# Copy only frontend build inputs so backend-only changes do not invalidate this layer
+# Copy only frontend build inputs so backend-only changes do not invalidate this layer.
+# The app directory already contains the frontend data, hooks, i18n, lib, and services code.
 COPY app ./app
-COPY data ./data
-COPY hooks ./hooks
 COPY images ./images
-COPY i18n ./i18n
-COPY lib ./lib
-COPY services ./services
 COPY src ./src
 COPY styles ./styles
 COPY components.json ./components.json
