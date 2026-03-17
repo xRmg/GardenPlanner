@@ -37,13 +37,19 @@ function safeTokenEqual(provided: string, expected: string): boolean {
 }
 
 function isAllowedOrigin(req: express.Request, origin: string): boolean {
-  const host = req.get("host");
-  if (!host) return false;
+  try {
+    const originUrl = new URL(origin);
+    const forwardedHost = req.get("x-forwarded-host");
+    const requestHost = (forwardedHost || req.get("host") || "").toLowerCase();
 
-  const protocol = req.get("x-forwarded-proto") || req.protocol;
-  const sameOrigin = `${protocol}://${host}`;
+    if (requestHost && originUrl.host.toLowerCase() === requestHost) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
 
-  return origin === sameOrigin || CORS_ALLOWED_ORIGINS.has(origin);
+  return CORS_ALLOWED_ORIGINS.has(origin);
 }
 
 // Request logging middleware

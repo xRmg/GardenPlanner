@@ -201,7 +201,7 @@ Memory usage: ~10-20MB idle
 1. **Backend API auth (auto-configured)**: On first boot, backend generates a strong proxy auth token at `/auth/proxy-auth-token` and reuses it on subsequent boots.
 2. **Shared token injection**: The `garden-planner` nginx container reads the same token file and injects it as `X-Garden-Proxy-Auth` on `/api/*` proxy requests.
 3. **Gateway identity required**: Backend also requires a non-empty `X-Garden-User` identity header on all `/api/*` requests (returned as `401` with `reason: missing_gateway_identity` when absent).
-4. **Gateway forwarding contract**: Configure your upstream gateway to authenticate users, overwrite `X-Forwarded-User`, and never trust client-supplied identity headers.
+4. **Gateway forwarding contract**: Configure your upstream gateway to authenticate users and overwrite one of these headers: `X-Forwarded-User`, `X-Auth-Request-User`, or `X-Auth-Request-Email` (all map to backend `X-Garden-User`). Never trust client-supplied identity headers.
 5. **Fail-closed backend**: Backend rejects all `/api/*` calls without valid proxy token and gateway identity.
 6. **HTTPS**: Terminate TLS at host/proxy edge rather than inside the container.
 7. **Open-Meteo API**: Location resolve runs through backend proxy endpoints; monitor external API usage and apply rate limiting.
