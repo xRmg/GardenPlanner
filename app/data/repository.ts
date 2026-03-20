@@ -13,7 +13,7 @@
  *   SupabaseRepository      — Postgres + Dexie local cache (Phase 3)
  */
 
-import type { Area, GardenEvent, Plant, Seedling, Settings } from "./schema";
+import type { Area, GardenEvent, Plant, Seedling, Settings, SettingsPatch } from "./schema";
 
 // ---------------------------------------------------------------------------
 // Repository interface
@@ -67,6 +67,13 @@ export interface GardenRepository {
   getSettings(): Promise<Settings>;
   /** Persist the full settings object. */
   saveSettings(settings: Settings): Promise<void>;
+  /**
+   * Patch a subset of settings fields without clobbering unrelated values.
+   * Use this instead of saveSettings when only one or two fields are changing
+   * (e.g. aiModel from the settings panel) to avoid startup bootstrap saves
+   * accidentally overwriting server-authoritative values.
+   */
+  patchSettings(patch: SettingsPatch): Promise<void>;
   /** Validate and store a new OpenRouter API key server-side. */
   storeAiKey(key: string): Promise<Settings>;
   /** Resolve a location string to canonical location + coordinates + growth zone. */

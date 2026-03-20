@@ -21,12 +21,12 @@ import {
   type Settings,
   type SettingsPatch,
 } from "./schema";
-import type { GardenRepository } from "./repository";
 import {
   dismissErrorToast,
   ERROR_TOAST_IDS,
   notifyErrorToast,
 } from "../lib/asyncErrors";
+import type { GardenRepository } from "./repository";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const API_GARDEN = `${API_BASE}/api/garden`;
@@ -135,8 +135,11 @@ class ServerRepository implements GardenRepository {
   private buildSettingsPatch(settings: Settings): SettingsPatch {
     return {
       growthZone: settings.growthZone,
-      aiModel: settings.aiModel,
       locale: settings.locale,
+      // aiModel is intentionally excluded — only sent via patchSettings() when
+      // the user explicitly changes it in the UI. Including it in every
+      // saveSettings() call caused startup bootstrap writes (locale/unit
+      // detection) to overwrite the server's stored model with a stale default.
     };
   }
 
@@ -304,6 +307,31 @@ class ServerRepository implements GardenRepository {
       API_SETTINGS,
       this.buildSettingsPatch(settings),
     );
+  }
+
+  async patchSettings(patch: SettingsPatch): Promise<void> {
+    // Update Dexie first (merge with current to preserve local-only fields).
+    const current = await this.dexie.getSettings();
+    await this.dexie.saveSettings({ ...current, ...patch });
+
+    // Tell the server. We deliberately do NOT call requestSettings() here
+    // because its response (lacking isEditMode / unitSystem / etc.) would
+    // overwrite local-only Dexie fields with schema defaults.
+    const response = await fetch(API_SETTINGS, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (!response.ok) {
+      let message = `Settings patch failed: ${response.status}`;
+      try {
+        const error = (await response.json()) as { error?: string };
+        if (error.error) message = error.error;
+      } catch {
+        // ignore JSON parse failure
+      }
+      throw new Error(message);
+    }
   }
 
   async storeAiKey(key: string): Promise<Settings> {

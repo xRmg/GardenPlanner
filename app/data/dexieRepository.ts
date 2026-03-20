@@ -37,6 +37,7 @@ import {
   type Plant,
   type Seedling,
   type Settings,
+  type SettingsPatch,
 } from "./schema";
 import type { GardenRepository } from "./repository";
 
@@ -425,6 +426,11 @@ export class DexieRepository implements GardenRepository {
 
   async saveSettings(settings: Settings): Promise<void> {
     await this.db.settings.put({ key: "singleton", value: settings });
+  }
+
+  async patchSettings(patch: SettingsPatch): Promise<void> {
+    const current = await this.getSettings();
+    await this.saveSettings({ ...current, ...patch });
   }
 
   async storeAiKey(): Promise<Settings> {
