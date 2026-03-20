@@ -19,7 +19,7 @@ import type { Settings } from "../data/schema";
 import { usePlantAILookup } from "../hooks/usePlantAILookup";
 import { shouldTriggerDialogSubmit } from "../lib/dialogKeyboard";
 import { CONFIDENCE } from "../services/ai/prompts";
-import { formatMonthNarrow } from "@/app/i18n/utils/formatting";
+import { formatDate, formatMonthNarrow } from "@/app/i18n/utils/formatting";
 import {
   formatPlantReferenceList,
   getLocalizedPlantContent,
@@ -315,7 +315,12 @@ export function PlantDialog({
     handleAiLookup,
     cancelAiLookup,
     clearAiResult,
+    aiResultSource,
+    aiResultUpdatedAt,
   } = usePlantAILookup(settings ?? DEFAULT_SETTINGS);
+  const aiLastUpdatedLabel = aiResultUpdatedAt
+    ? formatDate(new Date(aiResultUpdatedAt), "short")
+    : null;
 
   // Reset form when dialog opens/closes or initialPlant changes
   useEffect(() => {
@@ -734,9 +739,32 @@ export function PlantDialog({
               ) : aiResult ? (
                 <>
                   <Sparkles className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-sm text-primary font-medium">
-                    {t("dialogs.plantDefinitionDialog.aiFilledReview")}
-                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm text-primary font-medium truncate">
+                      {aiResultSource === "cache"
+                        ? t("dialogs.plantDefinitionDialog.aiShowingSaved")
+                        : t("dialogs.plantDefinitionDialog.aiFilledReview")}
+                    </p>
+                    {aiLastUpdatedLabel ? (
+                      <p className="text-[11px] text-primary/80 truncate">
+                        {t("dialogs.plantDefinitionDialog.aiLastUpdated", {
+                          date: aiLastUpdatedLabel,
+                        })}
+                      </p>
+                    ) : null}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      handleAiLookup(name, variety, latinName, {
+                        forceRefresh: true,
+                      })
+                    }
+                    className="ml-auto shrink-0"
+                  >
+                    {t("dialogs.plantDefinitionDialog.askAgain")}
+                  </Button>
                 </>
               ) : (
                 <>

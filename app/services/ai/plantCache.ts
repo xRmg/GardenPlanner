@@ -16,15 +16,18 @@ import type { FilteredPlantAIResponse } from "./prompts";
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+export interface PlantCacheEntry {
+  data: FilteredPlantAIResponse;
+  timestamp: number;
+  model: string;
+}
+
 // ---------------------------------------------------------------------------
 // PlantCache
 // ---------------------------------------------------------------------------
 
 export class PlantCache {
-  private memCache = new Map<
-    string,
-    { data: FilteredPlantAIResponse; timestamp: number; model: string }
-  >();
+  private memCache = new Map<string, PlantCacheEntry>();
 
   private normalizeVariety(value?: string): string | undefined {
     const normalized = value?.toLowerCase().trim().replace(/\s+/g, " ");
@@ -52,13 +55,17 @@ export class PlantCache {
       .join("|");
   }
 
-  async get(
+  private isExpired(timestamp: number): boolean {
+    return Date.now() - timestamp > CACHE_TTL_MS;
+  }
+
+  async getEntry(
     name: string,
     requestedLatinName?: string,
     koeppenZone?: string,
     locale?: string,
     variety?: string,
-  ): Promise<FilteredPlantAIResponse | null> {
+  ): Promise<PlantCacheEntry | null> {
     const key = this.normalizeKey(
       name,
       requestedLatinName,
@@ -67,32 +74,48 @@ export class PlantCache {
       variety,
     );
 
-    // 1. Memory cache
     const mem = this.memCache.get(key);
-    if (mem && Date.now() - mem.timestamp <= CACHE_TTL_MS) {
-      return mem.data;
+    if (mem && !this.isExpired(mem.timestamp)) {
+      return mem;
     }
 
-    // 2. Dexie cache
     try {
       const db = getGardenPlannerDB();
       const cached = await db.aiPlantCache.get(key);
       if (!cached) return null;
-      if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+      if (this.isExpired(cached.timestamp)) {
         await db.aiPlantCache.delete(key);
         this.memCache.delete(key);
         return null;
       }
-      this.memCache.set(key, {
+
+      const entry: PlantCacheEntry = {
         data: cached.data as FilteredPlantAIResponse,
         timestamp: cached.timestamp,
         model: cached.model,
-      });
-      return cached.data as FilteredPlantAIResponse;
+      };
+      this.memCache.set(key, entry);
+      return entry;
     } catch {
-      // IndexedDB unavailable (e.g. tests without a real browser)
       return null;
     }
+  }
+
+  async get(
+    name: string,
+    requestedLatinName?: string,
+    koeppenZone?: string,
+    locale?: string,
+    variety?: string,
+  ): Promise<FilteredPlantAIResponse | null> {
+    const entry = await this.getEntry(
+      name,
+      requestedLatinName,
+      koeppenZone,
+      locale,
+      variety,
+    );
+    return entry?.data ?? null;
   }
 
   async set(
@@ -103,7 +126,7 @@ export class PlantCache {
     koeppenZone?: string,
     locale?: string,
     variety?: string,
-  ): Promise<void> {
+  ): Promise<number> {
     const key = this.normalizeKey(
       name,
       requestedLatinName,
@@ -111,7 +134,7 @@ export class PlantCache {
       locale,
       variety,
     );
-    const entry = { data, timestamp: Date.now(), model };
+    const entry: PlantCacheEntry = { data, timestamp: Date.now(), model };
     this.memCache.set(key, entry);
     try {
       const db = getGardenPlannerDB();
@@ -119,6 +142,7 @@ export class PlantCache {
     } catch {
       // Persist failure is non-fatal — memory cache still works for the session
     }
+    return entry.timestamp;
   }
 
   /**

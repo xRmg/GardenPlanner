@@ -263,6 +263,20 @@ describe("PlantCache (in-memory)", () => {
       await cache.get("pumpkin", undefined, undefined, "en", "Musquee de Provence"),
     ).toBeNull();
   });
+
+  it("returns cache metadata for transparent UI state", async () => {
+    const cache = new PlantCache();
+    const data = makeAiResponse("tomato");
+
+    const timestamp = await cache.set("tomato", data, "gemini");
+    const entry = await cache.getEntry("tomato");
+
+    expect(entry).toMatchObject({
+      data,
+      model: "gemini",
+      timestamp,
+    });
+  });
 });
 
 describe("filterLowConfidenceFields", () => {

@@ -60,6 +60,10 @@ export interface PlantAILookupState {
   aiError: string;
   /** The model name that produced the current `aiResult`. */
   aiModel: string;
+  /** Whether the current result came from cache or a fresh API call. */
+  aiResultSource: "cache" | "fresh" | null;
+  /** When the current result was last cached/generated. */
+  aiResultUpdatedAt: number | null;
   /**
    * Trigger an AI lookup for the given plant name + variety + optional latin name.
    * Checks cache first; only calls the API on cache miss.
@@ -68,6 +72,7 @@ export interface PlantAILookupState {
     plantName: string,
     variety?: string,
     latinName?: string,
+    options?: { forceRefresh?: boolean },
   ) => Promise<void>;
   /** Cancel an in-progress lookup. */
   cancelAiLookup: () => void;
@@ -84,6 +89,8 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiModel, setAiModel] = useState("");
+  const [aiResultSource, setAiResultSource] = useState<"cache" | "fresh" | null>(null);
+  const [aiResultUpdatedAt, setAiResultUpdatedAt] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const cancelAiLookup = useCallback(() => {
@@ -96,14 +103,22 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
     setAiResult(null);
     setAiError("");
     setAiModel("");
+    setAiResultSource(null);
+    setAiResultUpdatedAt(null);
   }, []);
 
   const handleAiLookup = useCallback(
-    async (plantName: string, variety?: string, latinName?: string) => {
+    async (
+      plantName: string,
+      variety?: string,
+      latinName?: string,
+      options?: { forceRefresh?: boolean },
+    ) => {
       const isDev = import.meta.env.DEV;
       const name = plantName.trim();
       const requestedVariety = variety?.trim() || undefined;
       const requestedLatinName = latinName?.trim() || undefined;
+      const forceRefresh = options?.forceRefresh ?? false;
       if (!name || settings.aiProvider.type === "none") return;
 
       if (isDev)
@@ -125,24 +140,30 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         const cache = getPlantCache();
         const koeppenZone = settings.growthZone || undefined;
 
-        // 1. Try cache first (no API call needed)
-        if (isDev) console.log("[usePlantAILookup] Checking cache…");
-        const cached = await cache.get(
-          name,
-          requestedLatinName,
-          koeppenZone,
-          settings.locale,
-          requestedVariety,
-        );
-        if (cached) {
-          if (isDev) console.log("[usePlantAILookup] ✓ Cache hit:", cached);
-          setAiResult(cached);
-          setAiModel("cache");
-          setAiLoading(false);
-          dismissErrorToast(ERROR_TOAST_IDS.plantAiLookup);
-          return;
+        // 1. Try cache first unless the user explicitly asked again.
+        if (!forceRefresh) {
+          if (isDev) console.log("[usePlantAILookup] Checking cache…");
+          const cached = await cache.getEntry(
+            name,
+            requestedLatinName,
+            koeppenZone,
+            settings.locale,
+            requestedVariety,
+          );
+          if (cached) {
+            if (isDev) console.log("[usePlantAILookup] ✓ Cache hit:", cached);
+            setAiResult(cached.data);
+            setAiModel(cached.model);
+            setAiResultSource("cache");
+            setAiResultUpdatedAt(cached.timestamp);
+            setAiLoading(false);
+            dismissErrorToast(ERROR_TOAST_IDS.plantAiLookup);
+            return;
+          }
+          if (isDev) console.log("[usePlantAILookup] Cache miss, calling API…");
+        } else if (isDev) {
+          console.log("[usePlantAILookup] Skipping cache because forceRefresh=true");
         }
-        if (isDev) console.log("[usePlantAILookup] Cache miss, calling API…");
 
         // 2. Build the API client
         // All AI calls are routed through the server proxy so the API key
@@ -285,7 +306,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 
         // 6. Cache result
         if (isDev) console.log("[usePlantAILookup] Caching result…");
-        await cache.set(
+        const cachedAt = await cache.set(
           name,
           filtered,
           model,
@@ -302,6 +323,8 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 
         setAiResult(filtered);
         setAiModel(model);
+        setAiResultSource("fresh");
+        setAiResultUpdatedAt(cachedAt);
         dismissErrorToast(ERROR_TOAST_IDS.plantAiLookup);
       } catch (error) {
         if (isAbortError(error)) {
@@ -332,6 +355,8 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
     aiLoading,
     aiError,
     aiModel,
+    aiResultSource,
+    aiResultUpdatedAt,
     handleAiLookup,
     cancelAiLookup,
     clearAiResult,
