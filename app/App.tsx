@@ -872,7 +872,7 @@ export default function App() {
             >
               <div className="h-full overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-5">
                 <div className="mb-5">
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
                         {t("plants.title")}
@@ -881,7 +881,7 @@ export default function App() {
                         {t("plants.subtitle")}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                       <Button
                         onClick={() => {
                           setEditingPlant(null);
@@ -889,7 +889,7 @@ export default function App() {
                           setShowAddPlantModal(true);
                         }}
                         variant="outline"
-                        className="h-8 rounded-lg px-3 border-primary/40 text-primary hover:bg-primary/5 shadow-sm text-xs font-bold uppercase tracking-wider"
+                        className="h-9 justify-center rounded-lg px-3 border-primary/40 text-primary hover:bg-primary/5 shadow-sm text-xs font-bold uppercase tracking-wider sm:h-8"
                       >
                         <Plus className="mr-1.5 h-3.5 w-3.5" />{" "}
                         {t("plants.addSeeds")}
@@ -900,7 +900,7 @@ export default function App() {
                           setDialogDefaultIsSeed(false);
                           setShowAddPlantModal(true);
                         }}
-                        className="h-8 rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider"
+                        className="h-9 justify-center rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider sm:h-8"
                       >
                         <Plus className="mr-1.5 h-3.5 w-3.5" />{" "}
                         {t("plants.addPlant")}
@@ -909,15 +909,15 @@ export default function App() {
                   </div>
 
                   {/* Search + filter row */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <input
                       type="search"
                       placeholder={t("plants.searchPlaceholder")}
                       value={plantsSearch}
                       onChange={(e) => setPlantsSearch(e.target.value)}
-                      className="h-8 flex-1 max-w-xs bg-white/60 border border-border/40 rounded-lg px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
+                      className="h-9 w-full flex-1 bg-white/60 border border-border/40 rounded-lg px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner sm:h-8 sm:max-w-xs"
                     />
-                    <div className="flex gap-0.5 bg-muted/30 rounded-lg p-0.5">
+                    <div className="flex w-full flex-wrap gap-0.5 bg-muted/30 rounded-lg p-0.5 sm:w-auto sm:flex-nowrap">
                       {(
                         [
                           {
@@ -946,7 +946,7 @@ export default function App() {
                         <button
                           key={key}
                           onClick={() => setPlantsFilter(key)}
-                          className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-[color,background-color] ${
+                          className={`flex-1 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-[color,background-color] sm:flex-none sm:py-1 ${
                             plantsFilter === key
                               ? "bg-white shadow-sm text-foreground"
                               : "text-muted-foreground hover:text-foreground"
@@ -1013,7 +1013,7 @@ export default function App() {
                               return (
                                 <div
                                   key={plant.id}
-                                  className={`group relative flex gap-4 items-start p-4 rounded-xl border transition-[border-color] ${
+                                  className={`group relative flex flex-col gap-4 p-4 rounded-xl border transition-[border-color] sm:flex-row sm:items-start ${
                                     isDepleted
                                       ? "border-red-200 bg-red-50/20 grayscale-[0.3]"
                                       : "border-primary/20 bg-primary/5 hover:border-primary/40"
@@ -1079,7 +1079,7 @@ export default function App() {
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col gap-1.5 shrink-0">
+                                  <div className="flex w-full flex-row flex-wrap gap-1.5 shrink-0 sm:w-auto sm:flex-col">
                                     {plant.isSeed && !isDepleted && (
                                       <Tooltip delayDuration={250}>
                                         <TooltipTrigger asChild>
@@ -1087,7 +1087,7 @@ export default function App() {
                                             onClick={() =>
                                               handleOpenSowModal(plant)
                                             }
-                                            className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+                                            className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-primary p-2 text-white shadow-sm shadow-primary/20 transition-colors hover:bg-primary/90"
                                             aria-label={t(
                                               "plants.sowSeedsAriaLabel",
                                               { name: displayName },
@@ -1109,7 +1109,7 @@ export default function App() {
                                           onClick={() =>
                                             handleEditPlantManually(plant)
                                           }
-                                          className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                                          className="flex h-9 min-w-9 items-center justify-center rounded-md bg-primary/10 p-2 text-primary transition-colors hover:bg-primary/20 sm:h-auto sm:min-w-0 sm:p-1.5"
                                           aria-label={t(
                                             "plants.editAriaLabel",
                                             { name: displayName },
@@ -1121,7 +1121,7 @@ export default function App() {
                                           onClick={() =>
                                             handleRemovePlantManually(plant.id)
                                           }
-                                          className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
+                                          className="flex h-9 min-w-9 items-center justify-center rounded-md bg-destructive/10 p-2 text-destructive transition-colors hover:bg-destructive/20 sm:h-auto sm:min-w-0 sm:p-1.5"
                                           aria-label={t(
                                             "plants.deleteAriaLabel",
                                             { name: displayName },
@@ -1136,7 +1136,7 @@ export default function App() {
                                         aria-label={t(
                                           "plants.bundledCannotEdit",
                                         )}
-                                        className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
+                                        className="flex h-9 min-w-9 items-center justify-center rounded-md bg-muted/50 p-2 text-muted-foreground opacity-30 cursor-not-allowed sm:h-auto sm:min-w-0 sm:p-1.5"
                                       >
                                         <SettingsIcon className="w-3 h-3" />
                                       </button>
@@ -1174,32 +1174,34 @@ export default function App() {
                               return (
                                 <div
                                   key={plant.id}
-                                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-[background-color,opacity] ${
+                                  className={`group flex flex-col gap-2 px-3 py-2.5 rounded-lg transition-[background-color,opacity] sm:flex-row sm:items-center ${
                                     isDepleted
                                       ? "opacity-50"
                                       : "hover:bg-muted/30"
                                   }`}
                                 >
-                                  <div
-                                    className={`w-8 h-8 flex items-center justify-center text-xl ${
-                                      plant.isSeed
-                                        ? "bg-blue-50"
-                                        : "bg-emerald-50"
-                                    } rounded-lg shrink-0`}
-                                  >
-                                    {plant.icon}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <span className="font-bold text-sm text-foreground truncate block leading-tight">
-                                      {displayName}
-                                    </span>
-                                    {plant.variety && (
-                                      <span className="text-[9px] font-black text-primary/70 uppercase tracking-wider">
-                                        {plant.variety}
+                                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                                    <div
+                                      className={`w-8 h-8 flex items-center justify-center text-xl ${
+                                        plant.isSeed
+                                          ? "bg-blue-50"
+                                          : "bg-emerald-50"
+                                      } rounded-lg shrink-0`}
+                                    >
+                                      {plant.icon}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <span className="font-bold text-sm text-foreground truncate block leading-tight">
+                                        {displayName}
                                       </span>
-                                    )}
+                                      {plant.variety && (
+                                        <span className="text-[9px] font-black text-primary/70 uppercase tracking-wider">
+                                          {plant.variety}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-1.5 shrink-0">
+                                  <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0">
                                     {plant.isSeed && (
                                       <span
                                         className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest ${
@@ -1227,7 +1229,7 @@ export default function App() {
                                       {plant.daysToHarvest ?? 60}d
                                     </span>
                                   </div>
-                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
+                                  <div className="flex w-full justify-end gap-1 opacity-100 transition-opacity sm:w-auto sm:shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
                                     {plant.isSeed && !isDepleted && (
                                       <Tooltip delayDuration={250}>
                                         <TooltipTrigger asChild>
@@ -1235,7 +1237,7 @@ export default function App() {
                                             onClick={() =>
                                               handleOpenSowModal(plant)
                                             }
-                                            className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 rounded-md transition-colors"
+                                            className="flex h-9 min-w-9 items-center justify-center rounded-md bg-blue-500/10 p-2 text-blue-600 transition-colors hover:bg-blue-500/20 sm:h-auto sm:min-w-0 sm:p-1.5"
                                             aria-label={t(
                                               "plants.sowSeedsAriaLabel",
                                               { name: displayName },
@@ -1257,7 +1259,7 @@ export default function App() {
                                           onClick={() =>
                                             handleEditPlantManually(plant)
                                           }
-                                          className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                                          className="flex h-9 min-w-9 items-center justify-center rounded-md bg-primary/10 p-2 text-primary transition-colors hover:bg-primary/20 sm:h-auto sm:min-w-0 sm:p-1.5"
                                           aria-label={t(
                                             "plants.editAriaLabel",
                                             { name: displayName },
@@ -1269,7 +1271,7 @@ export default function App() {
                                           onClick={() =>
                                             handleRemovePlantManually(plant.id)
                                           }
-                                          className="p-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-md transition-colors"
+                                          className="flex h-9 min-w-9 items-center justify-center rounded-md bg-destructive/10 p-2 text-destructive transition-colors hover:bg-destructive/20 sm:h-auto sm:min-w-0 sm:p-1.5"
                                           aria-label={t(
                                             "plants.deleteAriaLabel",
                                             { name: displayName },
@@ -1284,7 +1286,7 @@ export default function App() {
                                         aria-label={t(
                                           "plants.bundledCannotEdit",
                                         )}
-                                        className="p-1.5 bg-muted/50 text-muted-foreground rounded-md cursor-not-allowed opacity-30"
+                                        className="flex h-9 min-w-9 items-center justify-center rounded-md bg-muted/50 p-2 text-muted-foreground opacity-30 cursor-not-allowed sm:h-auto sm:min-w-0 sm:p-1.5"
                                       >
                                         <SettingsIcon className="w-3 h-3" />
                                       </button>
@@ -1307,7 +1309,7 @@ export default function App() {
               className="flex-1 min-h-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
               <div className="h-full overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-5">
-                <div className="flex justify-between items-center mb-5">
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 className="text-2xl font-black text-foreground tracking-tight uppercase leading-none">
                       {t("seedlings.title")}
@@ -1318,7 +1320,7 @@ export default function App() {
                   </div>
                   <Button
                     onClick={() => setShowAddSeedlingModal(true)}
-                    className="h-8 rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider"
+                    className="h-9 justify-center rounded-lg px-3 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider sm:h-8"
                   >
                     <Plus className="mr-1.5 h-3.5 w-3.5" />{" "}
                     {t("seedlings.addSeedling")}
@@ -1431,12 +1433,12 @@ export default function App() {
                                             })}
                                           </span>
                                         </div>
-                                        <div className="flex gap-2 mt-3">
+                                        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                                           <Button
                                             onClick={() =>
                                               handlePlantFromBatch(seedling)
                                             }
-                                            className="flex-1 h-7 bg-primary hover:bg-primary/90 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm shadow-primary/20"
+                                            className="h-8 flex-1 bg-primary hover:bg-primary/90 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm shadow-primary/20 sm:h-7"
                                           >
                                             {t("seedlings.useBatch")}
                                           </Button>
@@ -1445,7 +1447,7 @@ export default function App() {
                                             onClick={() =>
                                               handleRemoveSeedling(seedling.id)
                                             }
-                                            className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
+                                            className="h-8 w-full rounded-lg text-destructive hover:bg-destructive/10 shrink-0 sm:h-7 sm:w-7"
                                             aria-label={t(
                                               "seedlings.removeSeedlingAriaLabel",
                                             )}
@@ -1475,21 +1477,23 @@ export default function App() {
                                   return (
                                     <div
                                       key={seedling.id}
-                                      className={`group flex items-center gap-3 pl-3 pr-3 py-2.5 rounded-lg border-l-2 ${borderColor} bg-muted/10 hover:bg-muted/20 transition-[background-color]`}
+                                      className={`group flex flex-col gap-3 pl-3 pr-3 py-2.5 rounded-lg border-l-2 ${borderColor} bg-muted/10 hover:bg-muted/20 transition-[background-color] sm:flex-row sm:items-center`}
                                     >
-                                      <div className="text-xl w-8 h-8 flex items-center justify-center shrink-0">
-                                        {seedling.plant.icon}
+                                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                                        <div className="text-xl w-8 h-8 flex items-center justify-center shrink-0">
+                                          {seedling.plant.icon}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <span className="font-bold text-sm text-foreground truncate block">
+                                            {displayName}
+                                          </span>
+                                          <span className="text-[9px] text-muted-foreground/60 font-medium wrap-break-word">
+                                            {daysOld}d · {seedling.seedCount}× ·{" "}
+                                            {seedling.location}
+                                          </span>
+                                        </div>
                                       </div>
-                                      <div className="flex-1 min-w-0">
-                                        <span className="font-bold text-sm text-foreground truncate block">
-                                          {displayName}
-                                        </span>
-                                        <span className="text-[9px] text-muted-foreground/60 font-medium">
-                                          {daysOld}d · {seedling.seedCount}× ·{" "}
-                                          {seedling.location}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                      <div className="flex flex-wrap items-center justify-end gap-1.5 opacity-100 transition-opacity sm:shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
                                         {status === "germinating" && (
                                           <Button
                                             onClick={() =>
@@ -1498,9 +1502,12 @@ export default function App() {
                                                 "growing",
                                               )
                                             }
-                                            className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 shadow-none"
+                                            className="h-8 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 shadow-none sm:h-7"
+                                            aria-label={t("seedlings.sprouted")}
                                           >
-                                            {t("seedlings.sprouted")}
+                                            <Sprout className="h-3.5 w-3.5 sm:hidden" />
+                                            <span className="hidden sm:inline">{t("seedlings.sprouted")}</span>
+                                            <span className="sr-only sm:hidden">{t("seedlings.sprouted")}</span>
                                           </Button>
                                         )}
                                         {status === "growing" && (
@@ -1511,9 +1518,12 @@ export default function App() {
                                                 "hardening",
                                               )
                                             }
-                                            className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 shadow-none"
+                                            className="h-8 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 shadow-none sm:h-7"
+                                            aria-label={t("seedlings.hardenOff")}
                                           >
-                                            {t("seedlings.hardenOff")}
+                                            <Package className="h-3.5 w-3.5 sm:hidden" />
+                                            <span className="hidden sm:inline">{t("seedlings.hardenOff")}</span>
+                                            <span className="sr-only sm:hidden">{t("seedlings.hardenOff")}</span>
                                           </Button>
                                         )}
                                         {status === "hardening" && (
@@ -1524,9 +1534,12 @@ export default function App() {
                                                 "ready",
                                               )
                                             }
-                                            className="h-7 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-none"
+                                            className="h-8 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-none sm:h-7"
+                                            aria-label={t("seedlings.markReady")}
                                           >
-                                            {t("seedlings.markReady")}
+                                            <CheckCircle2 className="h-3.5 w-3.5 sm:hidden" />
+                                            <span className="hidden sm:inline">{t("seedlings.markReady")}</span>
+                                            <span className="sr-only sm:hidden">{t("seedlings.markReady")}</span>
                                           </Button>
                                         )}
                                         <Button
@@ -1534,7 +1547,7 @@ export default function App() {
                                           onClick={() =>
                                             handleRemoveSeedling(seedling.id)
                                           }
-                                          className="h-7 w-7 rounded-lg text-destructive hover:bg-destructive/10 shrink-0"
+                                          className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10 shrink-0 sm:h-7 sm:w-7"
                                           aria-label={t(
                                             "seedlings.removeSeedlingAriaLabel",
                                           )}
@@ -1906,6 +1919,11 @@ export default function App() {
                             aiModel: e.target.value,
                           }))
                         }
+                        onBlur={() => {
+                          repositoryRef.current?.patchSettings({
+                            aiModel: settings.aiModel,
+                          });
+                        }}
                         placeholder={t("settings.aiModelDefault")}
                       />
                       <p className="text-[11px] text-muted-foreground ml-1">
