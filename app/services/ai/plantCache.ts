@@ -5,7 +5,7 @@
  *   1. In-memory Map (instant, lost on page refresh)
  *   2. Dexie/IndexedDB (persistent, 30-day TTL)
  *
- * Key format: "name|latinName|koeppenZone|locale" (lowercase, trimmed).
+ * Key format: "name|variety|latinName|koeppenZone|locale" (lowercase, trimmed).
  * Pre-seed from the saved plant catalogue to avoid repeated AI calls.
  */
 
@@ -26,15 +26,27 @@ export class PlantCache {
     { data: FilteredPlantAIResponse; timestamp: number; model: string }
   >();
 
+  private normalizeVariety(value?: string): string | undefined {
+    const normalized = value?.toLowerCase().trim().replace(/\s+/g, " ");
+    return normalized || undefined;
+  }
+
   private normalizeKey(
     name: string,
     latinName?: string,
     koeppenZone?: string,
     locale?: string,
+    variety?: string,
   ): string {
     const normalizedLocale = locale?.split("-")[0]?.toLowerCase() ?? "en";
 
-    return [normalizePlantReference(name), latinName, koeppenZone, normalizedLocale]
+    return [
+      normalizePlantReference(name),
+      this.normalizeVariety(variety),
+      latinName,
+      koeppenZone,
+      normalizedLocale,
+    ]
       .filter(Boolean)
       .map((s) => s!.toLowerCase().trim())
       .join("|");
@@ -45,8 +57,9 @@ export class PlantCache {
     latinName?: string,
     koeppenZone?: string,
     locale?: string,
+    variety?: string,
   ): Promise<FilteredPlantAIResponse | null> {
-    const key = this.normalizeKey(name, latinName, koeppenZone, locale);
+    const key = this.normalizeKey(name, latinName, koeppenZone, locale, variety);
 
     // 1. Memory cache
     const mem = this.memCache.get(key);
@@ -83,8 +96,9 @@ export class PlantCache {
     latinName?: string,
     koeppenZone?: string,
     locale?: string,
+    variety?: string,
   ): Promise<void> {
-    const key = this.normalizeKey(name, latinName, koeppenZone, locale);
+    const key = this.normalizeKey(name, latinName, koeppenZone, locale, variety);
     const entry = { data, timestamp: Date.now(), model };
     this.memCache.set(key, entry);
     try {
@@ -102,7 +116,13 @@ export class PlantCache {
   seedFromPlants(plants: Plant[]): void {
     for (const p of plants) {
       if (!p.latinName) continue;
-      const key = this.normalizeKey(p.name, p.latinName);
+      const key = this.normalizeKey(
+        p.name,
+        p.latinName,
+        undefined,
+        undefined,
+        p.variety,
+      );
       if (this.memCache.has(key)) continue;
       // Build a minimal PlantAIResponse from the saved Plant
       const data: FilteredPlantAIResponse = {

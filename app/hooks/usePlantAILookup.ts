@@ -125,6 +125,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           undefined,
           koeppenZone,
           settings.locale,
+          variety?.trim() || undefined,
         );
         if (cached) {
           if (isDev) console.log("[usePlantAILookup] ✓ Cache hit:", cached);
@@ -277,6 +278,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           filtered.latinName,
           koeppenZone,
           settings.locale,
+          variety?.trim() || undefined,
         );
         if (isDev)
           console.log(

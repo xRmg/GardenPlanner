@@ -206,6 +206,47 @@ describe("PlantCache (in-memory)", () => {
     );
     expect(await cache.get("tomato", undefined, undefined, "en")).toBeNull();
   });
+
+  it("separates cache entries by variety for the same plant", async () => {
+    const cache = new PlantCache();
+    const uchiki = makeAiResponse("pumpkin");
+    const amoro = { ...makeAiResponse("pumpkin"), variety: "Amoro F1" };
+
+    await cache.set(
+      "pumpkin",
+      uchiki,
+      "gemini",
+      undefined,
+      undefined,
+      "en",
+      "Uchiki Kuri",
+    );
+    await cache.set(
+      "pumpkin",
+      amoro,
+      "gemini",
+      undefined,
+      undefined,
+      "en",
+      "Amoro F1",
+    );
+
+    expect(
+      await cache.get(
+        "pumpkin",
+        undefined,
+        undefined,
+        "en",
+        "Uchiki Kuri",
+      ),
+    ).toEqual(uchiki);
+    expect(
+      await cache.get("pumpkin", undefined, undefined, "en", "Amoro F1"),
+    ).toEqual(amoro);
+    expect(
+      await cache.get("pumpkin", undefined, undefined, "en", "Musquee de Provence"),
+    ).toBeNull();
+  });
 });
 
 describe("filterLowConfidenceFields", () => {
