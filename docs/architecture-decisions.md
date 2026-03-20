@@ -7,7 +7,7 @@
 
 ## Persistence: Dexie.js (not SQLite WASM)
 
-**Decision**: IndexedDB via Dexie.js v4 for local persistence. Supabase added later as a cloud sync layer.
+**Decision**: IndexedDB via Dexie.js v4 for local persistence. Hosted sync lands later as part of the Phase 3 slices in `todo.md`.
 
 **Why not SQLite WASM**:
 
@@ -54,7 +54,8 @@
 | Phase | Approach                                         | Notes                                  |
 | ----- | ------------------------------------------------ | -------------------------------------- |
 | 1     | User enters key in Settings → backend validates/stores it → AI uses `/api/ai/chat` proxy | Key stored server-side |
-| 3     | Cloudflare Worker proxy — key in env secrets     | Same pattern, different host           |
+| P3A/P3B | Hosted rollout keeps the same proxy pattern while adding hosted auth, managed AI modes, and admin controls | API contract should stay stable |
+| Later portability | Worker or equivalent runtime target | Only after hosted feature/API parity is preserved |
 
 **How it works**:
 1. User enters an OpenRouter key in Settings.
@@ -70,12 +71,16 @@
 - The frontend always routes AI requests through the backend proxy and never falls back to direct browser calls
 - Validate and store keys via `POST /api/settings/ai-key`; show green ✓ or red ✗ based on the backend response
 
-**Current backend-owned settings endpoints**:
+**Current server-managed settings endpoints**:
 1. `GET /api/settings` — returns sanitized settings only
 2. `PATCH /api/settings` — persists editable non-secret settings such as locale, growth zone, and model
 3. `POST /api/settings/ai-key` — validates and stores a new OpenRouter key server-side
 4. `DELETE /api/settings/ai-key` — clears the stored key
 5. `POST /api/settings/location/resolve` — resolves a location query to canonical location, coordinates, and growth zone server-side
+
+**Phase 3 note**:
+- P3A adds hosted auth and workspace scoping around these capabilities.
+- P3B adds the managed AI mode and backend/admin controls without changing the core browser-to-proxy contract.
 
 
 **Docker self-hosted key injection** (for deployers):

@@ -28,8 +28,7 @@ import {
   type TreatmentOption,
   type TreatmentOptionsResponse,
 } from "../services/ai/treatmentOptions";
-
-const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
+import { apiUrl } from "../lib/api";
 const CUSTOM_NOTE_MAX_LENGTH = 180;
 
 const METHOD_BADGES: Record<TreatmentMethod, string> = {
@@ -136,7 +135,7 @@ export function TreatmentOptionsDialog({
     abortRef.current = controller;
     setLoading(true);
 
-    const proxyUrl = API_BASE ? `${API_BASE}/api/ai/chat` : "/api/ai/chat";
+    const proxyUrl = apiUrl("/api/ai/chat");
     const client = new OpenRouterClient({
       apiKey: "",
       model: settings.aiModel,

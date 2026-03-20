@@ -321,7 +321,22 @@
     "unitSystem": "Measurement Units",
     "unitSystemHint": "Sets default cell size presets when creating new planters.",
     "unitSystemImperial": "Imperial (feet)",
-    "unitSystemMetric": "Metric (cm)"
+    "unitSystemMetric": "Metric (cm)",
+    "account": "Hosted Account",
+    "accountHint": "Your hosted workspace stays private to your signed-in account in this release.",
+    "hostedEmail": "Signed-in email",
+    "workspace": "Workspace",
+    "workspacePending": "Pending setup",
+    "signOut": "Sign out",
+    "aiMode": "AI Mode",
+    "aiModeHint": "Choose whether this hosted workspace should stay AI-free, use your own OpenRouter key, or wait for managed AI.",
+    "aiModeNoneHint": "AI stays off. You can turn it back on later without affecting the rest of your garden data.",
+    "aiModeManagedHint": "Managed AI selection is saved now. Managed hosted AI delivery lands in Phase 3B, so suggestions stay off until then.",
+    "aiModeOptions": {
+      "none": "No AI",
+      "ownKey": "Use my own key",
+      "managed": "Use managed AI later"
+    }
   },
   "dbError": "⚠ Database error – data will not persist:",
   "dialogs": {
@@ -763,5 +778,83 @@
     "logCount_other": "{{count}} logs",
     "harvestCount": "{{count}} harvest",
     "overflowMore": "+{{count}} more"
+  },
+  "auth": {
+    "loadingHostedSession": "Loading your hosted workspace…",
+    "signInTab": "Sign in",
+    "signUpTab": "Create account",
+    "recoveryTab": "Recover access",
+    "signInTitle": "Sign in to your garden",
+    "signInDescription": "Open your hosted workspace and continue where you left off.",
+    "signUpTitle": "Create your hosted account",
+    "signUpDescription": "Start with one private workspace and finish setup in onboarding.",
+    "recoveryTitle": "Recover your account",
+    "recoveryDescription": "Request a recovery token, then set a fresh password.",
+    "marketingBlurb": "Hosted mode gives you a private workspace, backend persistence, and a guided first-run setup while keeping local mode available by config.",
+    "hostedBenefitsTitle": "Hosted mode in this slice",
+    "hostedBenefitOne": "Email sign-in with verification and recovery tokens",
+    "hostedBenefitTwo": "One private workspace owned by your account",
+    "hostedBenefitThree": "First-run onboarding for workspace, location, and AI mode",
+    "noticeTitle": "Good to go",
+    "previewTokenTitle": "Preview token",
+    "previewTokenDescription": "Email delivery is running in preview mode here, so use this token to continue the flow.",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "newPasswordLabel": "New password",
+    "confirmPasswordLabel": "Confirm password",
+    "passwordPlaceholder": "At least 10 characters",
+    "emailRequired": "Enter your email address first.",
+    "passwordRequired": "Enter a password first.",
+    "emailAndPasswordRequired": "Enter both an email address and password.",
+    "passwordTooShort": "Use at least 10 characters for your password.",
+    "passwordMismatch": "The passwords do not match yet.",
+    "verificationSent": "Account created. Verify your email to finish sign-in.",
+    "verifyBeforeSignIn": "That account still needs email verification. Use the token below to finish setup.",
+    "verificationTokenLabel": "Verification token",
+    "verificationTokenPlaceholder": "Paste the verification token",
+    "verificationTokenRequired": "Paste your verification token to continue.",
+    "verifyEmailAction": "Verify email and continue",
+    "signUpAction": "Create account",
+    "signInAction": "Sign in",
+    "requestRecoveryAction": "Send recovery token",
+    "recoveryTokenLabel": "Recovery token",
+    "recoveryTokenPlaceholder": "Paste the recovery token",
+    "recoveryTokenRequired": "Paste your recovery token to continue.",
+    "resetPasswordAction": "Reset password and continue",
+    "recoverySent": "If that email exists, a recovery token is ready.",
+    "signUpFailed": "Could not create the account.",
+    "signInFailed": "Could not sign in.",
+    "verificationFailed": "Could not verify that token.",
+    "recoveryRequestFailed": "Could not start recovery.",
+    "recoveryConfirmFailed": "Could not reset the password."
+  },
+  "onboarding": {
+    "title": "Set up your hosted workspace",
+    "description": "Welcome, {{email}}. Choose a workspace name, set your garden location, and decide how you want AI to work.",
+    "workspaceNameLabel": "Workspace name",
+    "workspaceNamePlaceholder": "e.g. Balcony garden",
+    "workspaceNameHint": "This is the private workspace attached to your hosted account in Phase 3A.",
+    "workspaceNameRequired": "Choose a workspace name to continue.",
+    "locationLabel": "Garden location",
+    "locationPlaceholder": "e.g. Utrecht, NL",
+    "locationHint": "We use this to resolve coordinates and set the right Köppen climate zone.",
+    "locationRequired": "Enter a location to continue.",
+    "aiModeLabel": "AI mode",
+    "aiModes": {
+      "none": {
+        "title": "No AI",
+        "description": "Keep the planner fully manual for now."
+      },
+      "ownKey": {
+        "title": "Use my own key",
+        "description": "Bring your own OpenRouter key after onboarding."
+      },
+      "managed": {
+        "title": "Managed AI later",
+        "description": "Save the intent now and switch on managed AI in the next hosted phase."
+      }
+    },
+    "finishAction": "Create workspace",
+    "submitFailed": "Could not complete onboarding."
   }
 }

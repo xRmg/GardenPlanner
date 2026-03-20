@@ -846,6 +846,12 @@ async function syncPlantLibrary() {
 | **Phase 5**          | TypeScript augmentation for key safety, CI lint for missing keys                         | 0.5 day  |
 | **Phase 6** (future) | Shared plant library backend, API, IndexedDB sync                                        | Weeks    |
 
+## Phase 3 Integration Notes
+
+- Phase **P3A** in `todo.md` adds hosted auth and onboarding; user locale preference should be persisted through the hosted workspace model instead of only local bootstrap storage.
+- Phase **P3C** introduces the shared plant library using the same translation model, but starts on the interim current backend path before any longer-term hosted platform migration.
+- The i18n architecture itself stays the same across local and hosted modes; only the persistence and sync layer changes.
+
 ### Quick-Start Commands
 
 ```bash

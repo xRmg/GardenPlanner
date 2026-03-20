@@ -60,17 +60,16 @@ export interface PlantAIResponse {
   };
 }
 
-export interface FilteredPlantAIResponse
-  extends Omit<
-    PlantAIResponse,
-    | "latinName"
-    | "description"
-    | "daysToHarvest"
-    | "spacingCm"
-    | "sunRequirement"
-    | "watering"
-    | "growingTips"
-  > {
+export interface FilteredPlantAIResponse extends Omit<
+  PlantAIResponse,
+  | "latinName"
+  | "description"
+  | "daysToHarvest"
+  | "spacingCm"
+  | "sunRequirement"
+  | "watering"
+  | "growingTips"
+> {
   latinName?: string;
   description?: string;
   daysToHarvest?: number;
@@ -249,7 +248,9 @@ export const PLANT_LOOKUP_SCHEMA = {
 
 export function truncate(s: string, max: number, fieldName?: string): string {
   if (s.length <= max) return s;
-  console.warn(`[prompts] Truncated ${fieldName ?? "string"} from ${s.length} to ${max} chars`);
+  console.warn(
+    `[prompts] Truncated ${fieldName ?? "string"} from ${s.length} to ${max} chars`,
+  );
   return s.slice(0, max);
 }
 
@@ -268,7 +269,8 @@ export function buildPlantLookupUserPrompt(input: {
 }): string {
   const { locale, languageName } = getAIResponseLanguage(input.locale);
   const lines = [`Plant: "${truncate(input.plantName, 80, "plantName")}"`];
-  if (input.variety) lines.push(`Variety: "${truncate(input.variety, 80, "variety")}"`);
+  if (input.variety)
+    lines.push(`Variety: "${truncate(input.variety, 80, "variety")}"`);
   if (input.latinName) {
     lines.push(
       `User-provided latin name to verify: "${truncate(input.latinName, 120, "latinName")}"`,

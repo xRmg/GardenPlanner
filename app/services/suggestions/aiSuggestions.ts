@@ -26,9 +26,7 @@ import type {
 import { getCachedAISuggestions, cacheAISuggestions } from "./suggestionsCache";
 import type { Plant, Settings, SuggestionType } from "../../data/schema";
 import type { SuggestionResult } from "./types";
-
-// Backend proxy URL — all AI calls are routed server-side (key never in browser)
-const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
+import { apiUrl } from "../../lib/api";
 
 // ---------------------------------------------------------------------------
 // Rate limiter: max 3 calls per 10 minutes (per the spec)
@@ -534,7 +532,7 @@ export async function getAISuggestions(
     siteUrl: "https://gardenplanner.app",
     siteName: "Garden Planner",
     model: settings.aiModel,
-    proxyUrl: API_BASE ? `${API_BASE}/api/ai/chat` : "/api/ai/chat",
+    proxyUrl: apiUrl("/api/ai/chat"),
   });
 
   const userMessage = JSON.stringify(aiContext, null, 0);

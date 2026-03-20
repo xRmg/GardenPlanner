@@ -307,6 +307,8 @@ export const AiProviderSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("server") }),
 ]);
 
+export const PreferredAiModeSchema = z.enum(["none", "own-key", "managed"]);
+
 export const StoredSettingsSchema = z.object({
   location: z.string().default(""),
   /**
@@ -329,6 +331,10 @@ export const StoredSettingsSchema = z.object({
   aiValidationError: z.string().optional(),
   /** Forward-compatibility for Tier 1c / Tier 4 multi-profile. */
   profileId: z.string().default("default"),
+  workspaceId: z.string().optional(),
+  workspaceName: z.string().optional(),
+  preferredAiMode: PreferredAiModeSchema.default("own-key"),
+  onboardingCompletedAt: z.string().datetime({ offset: true }).optional(),
   /** Whether the area planner is in edit-layout mode (vs view/interact mode). */
   isEditMode: z.boolean().default(false),
   /** The area last interacted with — restored on page reload. */
@@ -355,6 +361,10 @@ export const SettingsSchema = z.object({
   aiLastValidatedAt: z.string().datetime({ offset: true }).optional(),
   aiValidationError: z.string().optional(),
   profileId: z.string().default("default"),
+  workspaceId: z.string().optional(),
+  workspaceName: z.string().optional(),
+  preferredAiMode: PreferredAiModeSchema.default("own-key"),
+  onboardingCompletedAt: z.string().datetime({ offset: true }).optional(),
   /** Whether the area planner is in edit-layout mode (vs view/interact mode). */
   isEditMode: z.boolean().default(false),
   /** The area last interacted with — restored on page reload. */
@@ -370,6 +380,7 @@ export const SettingsPatchSchema = z
     growthZone: z.string().optional(),
     aiModel: z.string().optional(),
     locale: z.string().optional(),
+    preferredAiMode: PreferredAiModeSchema.optional(),
   })
   .strict();
 
@@ -386,6 +397,10 @@ export function toFrontendSettings(stored: StoredSettings): Settings {
     aiLastValidatedAt: stored.aiLastValidatedAt,
     aiValidationError: stored.aiValidationError,
     profileId: stored.profileId,
+    workspaceId: stored.workspaceId,
+    workspaceName: stored.workspaceName,
+    preferredAiMode: stored.preferredAiMode,
+    onboardingCompletedAt: stored.onboardingCompletedAt,
     isEditMode: stored.isEditMode,
     lastSelectedAreaId: stored.lastSelectedAreaId,
     lastSelectedPlanterId: stored.lastSelectedPlanterId,

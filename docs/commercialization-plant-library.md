@@ -6,33 +6,27 @@
 ## Scope
 
 The shared plant library is part of Commercialization, not the general backlog. It supports curated plant search, contribution workflows, and eventually a hosted/shared knowledge layer that reduces unnecessary AI lookups for common plants.
+This document maps to **P3C** in `todo.md`. For that first P3C slice, the shared plant library uses the **interim current backend path**: Express + SQLite/FTS5 first, with the contract kept portable for later migration into the longer-term hosted platform.
 
 ## Product Shape
 
 When the user types in the plant name field of `PlantDefinitionDialog`, backend plant library results should appear inline as suggestions, filtered by locale. Selecting a result should prefill the form. If nothing matches, the current manual and AI-assisted paths continue unchanged.
 
-## Commercialization Milestones
+## P3C Milestones
 
-- **C.5 — Shared plant library schema + seed data**
-  Stand up the library schema and ship initial English + Dutch seed data.
-
-- **C.6 — Plant library API**
-  Provide search, detail, and delta-sync endpoints.
-
-- **C.7 — Client-side plant library sync**
-  Support background sync with silent fallback to bundled plants.
-
-- **C.8 — Contribution + moderation workflow**
-  Allow contributed plants to flow into a review queue with clear publish states.
+- **P3C.1** — Shared plant library schema + seed data (English + Dutch)
+- **P3C.2** — Plant library API (search, detail, delta sync)
+- **P3C.3** — Client-side sync with silent fallback to bundled plants
+- **P3C.4** — Contribution + moderation workflow
 
 ## Design Decisions
 
-- **Local-first first**: Build against the current Express/SQLite backend first, while keeping the frontend contract portable to D1 later.
+- **Interim backend first**: Build against the current Express/SQLite backend first, while keeping the frontend contract portable for later migration.
 - **Locale-aware text storage**: user-visible text fields belong in locale-specific translation rows rather than a single flat table.
 - **Cross-locale deduplication**: `latinName` is the soft canonical key for cross-locale plant identity.
 - **Flat display model**: varieties remain flat records, displayed as `Plant (Variety)` when relevant.
 - **Static admin auth**: admin-only review routes use a server-side `ADMIN_TOKEN`.
-- **Profile-based attribution for now**: `submittedBy` can use `profileId` until real hosted auth is in place.
+- **Interim attribution**: `submittedBy` can use `profileId` until hosted auth/user identities from P3A are fully wired into the contribution flow.
 - **Local catalogue search first**: local matches should outrank backend library matches in the plant dialog.
 
 ## Open Questions
@@ -54,7 +48,8 @@ When the user types in the plant name field of `PlantDefinitionDialog`, backend 
 ## Recommended Storage Path
 
 - Start with SQLite + FTS5 on the current backend.
-- Migrate to Cloudflare D1 when the Workers backend becomes the active commercialization target.
+- Use this as the interim P3C implementation while keeping schemas and endpoints portable.
+- Migrate into the long-term hosted backend/runtime only after the hosted platform is stable enough to absorb the shared library without breaking the shipped API contract.
 - Revisit Turso only if offline replica requirements become more important than platform consolidation.
 
 ## Non-goals for the First Phase

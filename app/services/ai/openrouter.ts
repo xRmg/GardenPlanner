@@ -131,6 +131,7 @@ export class OpenRouterClient {
           maxTokens: options.maxTokens ?? 1024,
         }),
         signal: request.signal,
+        credentials: "include",
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));

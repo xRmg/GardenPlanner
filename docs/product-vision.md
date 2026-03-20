@@ -3,6 +3,8 @@
 > **Purpose**: Long-range product vision, deployment model, auth design, and cross-tier architecture principles.
 > This is reference material. Active implementation tasks live in `todo.md`.
 
+> Phase 3 implementation follows the delivery slices in `todo.md`: **P3A** hosted single-user foundation, **P3B** managed AI + admin controls, **P3C** shared plant library, and **P3D** collaboration + sync. This document remains the long-range tier vision; `todo.md` is the execution sequence.
+
 ---
 
 ## Deployment Tiers
@@ -63,9 +65,13 @@ Tier 1–3 (local):          Tier 4 (hosted):
 - The central plant API is **read-only** at this tier (no auth needed)
 - Sync failures must be silent — never block the user
 
+**Phase 3 note**:
+- Phase **P3C** first delivers the shared plant library on the hosted rollout, using the interim current backend path.
+- Local deploy plant-library sync remains a future follow-on after the hosted/shared flow is stable.
+
 ---
 
-### Tier 3 — Local Deploy + Central AI Engine (Far Future · Paid $)
+### Tier 3 — Local Deploy + Central AI Engine (Deferred Beyond Initial Phase 3)
 
 **Tagline**: _Your garden, local. Intelligence, centrally powered._
 
@@ -80,27 +86,37 @@ Tier 1–3 (local):          Tier 4 (hosted):
 - Garden context sent to AI must be **anonymised** — no PII, configurable opt-out
 - App must work identically in Tier 1 BYOK mode if user cancels subscription
 
+**Phase 3 note**:
+- Managed AI is introduced first in **P3B** for hosted workspaces.
+- A true local-deploy centralized AI tier remains a later product option, not part of the initial 3A–3D rollout.
+
 ---
 
-### Tier 4 — Hosted SaaS (Far Far Future · Paid $$)
+### Tier 4 — Hosted SaaS (Delivered Across P3A–P3D)
 
 **Tagline**: _Sign up and grow. No install needed._
 
 | Dimension         | Detail                                                                               |
 | ----------------- | ------------------------------------------------------------------------------------ |
 | **Deployment**    | SaaS. User signs in, data lives in cloud.                                            |
-| **Persistence**   | Postgres (Supabase) + Dexie as local cache with bi-directional sync. Works offline.  |
+| **Persistence**   | Phase 3A ships on the current Express + SQLite backend. Dexie cache + bi-directional sync remain a later Tier 4 target. |
 | **Auth**          | **4a** single · **4b** team/family (3–5) · **4c** community (10–100, stretch)        |
 | **AI**            | Central AI engine from Tier 3, included in subscription.                             |
 | **Plant library** | Shared, community-curated, fully translated.                                         |
 | **Cost**          | Paid subscription. Free tier with limits.                                            |
 
 **Architecture requirements**:
-- Supabase Auth; all tables carry `workspace_id` + `user_id` with RLS from day one
-- `GardenRepository` becomes the sync boundary — local Dexie ↔ remote Postgres
+- Phase 3A uses first-party hosted auth on the current backend with session cookies and workspace-scoped records
+- `GardenRepository` remains the sync boundary so local mode and future hosted sync can share UI code
 - `area_members` table (`area_id`, `user_id`, `role`) is the single permission source
 - Scale limits enforced at API layer, not in client code
 - Same codebase as local tiers — different runtime config only
+
+**Phase 3 rollout**:
+- **P3A** — sign-in, single-user hosted workspace, onboarding, and preservation of local/self-hosted mode
+- **P3B** — managed AI modes, entitlements, cache/admin controls, and runtime portability only after API parity
+- **P3C** — shared plant library on the hosted path, starting on the interim current backend
+- **P3D** — invites, roles, hosted sync, and collaboration
 
 ---
 
@@ -147,9 +163,11 @@ Viewer  — read-only
 | **Service abstraction**      | `aiService`, `weatherService`, `plantLibraryService` are interfaces; tiers swap implementations    |
 | **Offline first**            | Every feature must function without internet                                                        |
 | **No PII in AI calls**       | Garden context stripped of identifying info at service layer                                        |
-| **Feature flags**            | `app/config/features.ts` controls capabilities — tier upgrades become config changes               |
+| **Feature flags**            | `app/config/features.ts` is the target capability model — tier upgrades should become config changes |
 
 ### `AppCapabilities` Design
+
+This is a target architecture reference for the Phase 3 hosted/local coexistence work. Phase 3A now partially implements this through `app/config/capabilities.ts`; the remaining capability surface is still a target state.
 
 ```typescript
 // app/config/features.ts

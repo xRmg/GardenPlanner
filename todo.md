@@ -14,7 +14,7 @@
 | **1**  | Foundation + smart suggestions (local-first)    | ✅ Complete    |
 | **1B** | Plant intelligence & garden UX polish           | ✅ Complete    |
 | **2**  | Internationalization (i18next, en + nl)         | ✅ Complete    |
-| **3A** | Hosted single-user foundation + onboarding      | ⬜ Planned     |
+| **3A** | Hosted single-user foundation + onboarding      | 🟨 In progress |
 | **3B** | Managed AI + admin controls                     | ⬜ Planned     |
 | **3C** | Shared plant library                            | ⬜ Planned     |
 | **3D** | Team / family collaboration + sync              | ⬜ Planned     |
@@ -27,6 +27,7 @@
 - 2026-03-17: Hardened backend API access with fail-closed proxy token auth (`X-Garden-Proxy-Auth`), auto-generated shared secret bootstrap in Docker, and same-origin CORS restrictions.
 - 2026-03-17: Enforced gateway user identity on all API calls by requiring `X-Garden-User` (forwarded from gateway `X-Forwarded-User`) in addition to proxy token auth.
 - 2026-03-20: Re-sliced Phase 3 into shippable hosted increments so each release delivers a complete feature, preserves local mode, and avoids half-migrated backend work.
+- 2026-03-20: Shipped Phase 3A foundation: hosted sign-up/sign-in/session/recovery, single-user workspace ownership, workspace-scoped backend persistence, config-gated hosted onboarding, and no-regression local mode.
 
 ---
 
@@ -58,12 +59,12 @@
 
 **Release outcome**: A new user can sign up, complete onboarding, get a personal hosted workspace, and use Garden Planner end-to-end without collaboration features yet.
 
-- [ ] **P3A.1** — Choose hosted auth provider and lock the minimal user profile shape (`auth_subject_id`, `email`, verification state, timestamps, locale only when needed)
-- [ ] **P3A.2** — Add hosted sign-up / sign-in / sign-out / session handling with email verification and a simple recovery flow
-- [ ] **P3A.3** — Introduce hosted `users`, `workspaces`, and `workspace_memberships` schema with RLS-safe ownership from day one
-- [ ] **P3A.4** — Build first-run onboarding: create workspace, set location, choose AI mode (`none`, `own key`, `managed`)
+- [x] **P3A.1** — Choose the hosted auth foundation and lock the minimal user profile shape (`id`, `email`, verification state, timestamps, locale only when needed) using the current Express/SQLite backend as the Phase 3A runtime
+- [x] **P3A.2** — Add hosted sign-up / sign-in / sign-out / session handling with email verification and a simple recovery flow
+- [x] **P3A.3** — Introduce hosted `users`, `workspaces`, and `workspace_memberships` schema with single-owner workspace scoping from day one
+- [x] **P3A.4** — Build first-run onboarding: create workspace, set location, choose AI mode (`none`, `own key`, `managed`)
 - [ ] **P3A.5** — Add a minimal internal admin/support surface for users, workspaces, entitlement flags, and support diagnostics
-- [ ] **P3A.6** — Keep the current local/self-hosted mode available via config with no regression to existing users
+- [x] **P3A.6** — Keep the current local/self-hosted mode available via config with no regression to existing users
 
 ### Phase 3B — Managed AI + Admin Controls
 
@@ -132,7 +133,7 @@
 | `hono@^4.7`                           | 3B+ | Backend portability / Workers target |
 | `@hono/zod-validator@^0.5`            | 3B+ | Request validation             |
 | `wrangler@^4`                         | 3B+ | Cloudflare Workers CLI         |
-| `@supabase/supabase-js@^2.49` or equivalent OIDC SDK | 3A | Hosted auth + sync client      |
+| `@supabase/supabase-js@^2.49` or equivalent OIDC SDK | 3D+ | Future provider portability target if hosted auth moves beyond the current backend implementation |
 
 ---
 

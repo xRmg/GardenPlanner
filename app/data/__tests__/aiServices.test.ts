@@ -26,7 +26,10 @@ import {
   buildAISuggestionContext,
   hasSamePlanterCompanionConflict,
 } from "../../services/suggestions/aiSuggestions";
-import type { RuleContext, PlacedPlant } from "../../services/suggestions/types";
+import type {
+  RuleContext,
+  PlacedPlant,
+} from "../../services/suggestions/types";
 import type { Plant } from "../schema";
 import {
   applyUserVerifiedPlantIdentity,
@@ -81,7 +84,9 @@ describe("buildPlantLookupUserPrompt", () => {
       latinName: "Cucurbita maxima",
     });
 
-    expect(prompt).toContain('User-provided latin name to verify: "Cucurbita maxima"');
+    expect(prompt).toContain(
+      'User-provided latin name to verify: "Cucurbita maxima"',
+    );
     expect(prompt).toContain(
       "Verify any user-provided variety and latin name.",
     );
@@ -217,9 +222,7 @@ describe("PlantCache (in-memory)", () => {
 
     await cache.set("tomato", data, "gemini", undefined, undefined, "nl");
 
-    expect(await cache.get("tomato", undefined, undefined, "nl")).toEqual(
-      data,
-    );
+    expect(await cache.get("tomato", undefined, undefined, "nl")).toEqual(data);
     expect(await cache.get("tomato", undefined, undefined, "en")).toBeNull();
   });
 
@@ -248,19 +251,19 @@ describe("PlantCache (in-memory)", () => {
     );
 
     expect(
-      await cache.get(
-        "pumpkin",
-        undefined,
-        undefined,
-        "en",
-        "Uchiki Kuri",
-      ),
+      await cache.get("pumpkin", undefined, undefined, "en", "Uchiki Kuri"),
     ).toEqual(uchiki);
     expect(
       await cache.get("pumpkin", undefined, undefined, "en", "Amoro F1"),
     ).toEqual(amoro);
     expect(
-      await cache.get("pumpkin", undefined, undefined, "en", "Musquee de Provence"),
+      await cache.get(
+        "pumpkin",
+        undefined,
+        undefined,
+        "en",
+        "Musquee de Provence",
+      ),
     ).toBeNull();
   });
 });

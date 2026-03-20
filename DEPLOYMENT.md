@@ -2,6 +2,8 @@
 
 Garden Planner is deployed as a containerized React app using Docker and nginx. This document covers the complete deployment process on `alienlabs.eu`.
 
+This guide covers the current **local/self-hosted deployment path**. Phase 3 in `todo.md` introduces a separate hosted rollout (3A–3D) with different infrastructure concerns; this file is not the hosted deployment guide.
+
 ## Architecture
 
 ```

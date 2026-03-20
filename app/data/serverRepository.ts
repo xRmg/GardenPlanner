@@ -11,6 +11,8 @@
  */
 
 import { DexieRepository } from "./dexieRepository";
+import { APP_CAPABILITIES, isHostedAuthEnabled } from "../config/capabilities";
+import { apiFetch, apiUrl } from "../lib/api";
 import {
   SettingsSchema,
   parseWithDefaults,
@@ -28,9 +30,15 @@ import {
 } from "../lib/asyncErrors";
 import type { GardenRepository } from "./repository";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "";
-const API_GARDEN = `${API_BASE}/api/garden`;
-const API_SETTINGS = `${API_BASE}/api/settings`;
+const API_GARDEN = apiUrl("/api/garden");
+
+interface HostedSessionBootstrapState {
+  workspace: { id: string } | null;
+  onboarding: {
+    completed: boolean;
+  };
+}
+
 class ServerRepository implements GardenRepository {
   private dexie: DexieRepository;
   private syncQueued = false;
@@ -44,10 +52,34 @@ class ServerRepository implements GardenRepository {
    * Initialize: open local Dexie, then sync from server if available.
    */
   async ready(): Promise<void> {
-    // Open local Dexie first
     await this.dexie.ready();
 
-    // Try to sync from server on startup
+    if (!APP_CAPABILITIES.sync.enabled) {
+      return;
+    }
+
+    if (isHostedAuthEnabled()) {
+      const authResponse = await apiFetch("/api/auth/me");
+      if (authResponse.status === 401 || authResponse.status === 403) {
+        if (import.meta.env.DEV) {
+          console.log("[ServerRepository] Hosted auth session not established yet; skipping startup sync.");
+        }
+        return;
+      }
+      if (!authResponse.ok) {
+        throw new Error(`Hosted auth session check failed (${authResponse.status})`);
+      }
+
+      const session =
+        (await authResponse.json()) as HostedSessionBootstrapState;
+      if (!session.workspace?.id || !session.onboarding.completed) {
+        if (import.meta.env.DEV) {
+          console.log("[ServerRepository] Hosted workspace not ready yet; skipping startup sync.");
+        }
+        return;
+      }
+    }
+
     try {
       await this.syncFromServer();
       dismissErrorToast(ERROR_TOAST_IDS.startupSync);
@@ -75,8 +107,8 @@ class ServerRepository implements GardenRepository {
    */
   private async syncFromServer(): Promise<void> {
     const [gardenResponse, settingsResponse] = await Promise.all([
-      fetch(API_GARDEN),
-      fetch(API_SETTINGS),
+      apiFetch("/api/garden"),
+      apiFetch("/api/settings"),
     ]);
     if (!gardenResponse.ok) {
       throw new Error(`Garden API returned ${gardenResponse.status}`);
@@ -136,6 +168,7 @@ class ServerRepository implements GardenRepository {
     return {
       growthZone: settings.growthZone,
       locale: settings.locale,
+      preferredAiMode: settings.preferredAiMode,
       // aiModel is intentionally excluded — only sent via patchSettings() when
       // the user explicitly changes it in the UI. Including it in every
       // saveSettings() call caused startup bootstrap writes (locale/unit
@@ -145,12 +178,11 @@ class ServerRepository implements GardenRepository {
 
   private async requestSettings(
     method: "PATCH" | "POST" | "DELETE",
-    url: string,
+    path: string,
     body?: unknown,
   ): Promise<Settings> {
-    const response = await fetch(url, {
+    const response = await apiFetch(path, {
       method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
       body: body ? JSON.stringify(body) : undefined,
     });
 
@@ -192,9 +224,8 @@ class ServerRepository implements GardenRepository {
         events: events.length,
       });
 
-    const response = await fetch(API_GARDEN + "/sync", {
+    const response = await apiFetch("/api/garden/sync", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         areas,
         plants: allPlants,
@@ -304,7 +335,7 @@ class ServerRepository implements GardenRepository {
     await this.dexie.saveSettings(settings);
     await this.requestSettings(
       "PATCH",
-      API_SETTINGS,
+      "/api/settings",
       this.buildSettingsPatch(settings),
     );
   }
@@ -317,9 +348,8 @@ class ServerRepository implements GardenRepository {
     // Tell the server. We deliberately do NOT call requestSettings() here
     // because its response (lacking isEditMode / unitSystem / etc.) would
     // overwrite local-only Dexie fields with schema defaults.
-    const response = await fetch(API_SETTINGS, {
+    const response = await apiFetch("/api/settings", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
     if (!response.ok) {
@@ -335,11 +365,11 @@ class ServerRepository implements GardenRepository {
   }
 
   async storeAiKey(key: string): Promise<Settings> {
-    return this.requestSettings("POST", `${API_SETTINGS}/ai-key`, { key });
+    return this.requestSettings("POST", "/api/settings/ai-key", { key });
   }
 
   async resolveLocation(query: string): Promise<Settings> {
-    return this.requestSettings("POST", `${API_SETTINGS}/location/resolve`, {
+    return this.requestSettings("POST", "/api/settings/location/resolve", {
       query,
     });
   }

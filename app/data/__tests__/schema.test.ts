@@ -198,6 +198,7 @@ describe("SettingsSchema", () => {
     expect(result.growthZone).toBe("Cfb");
     expect(result.locale).toBe("en");
     expect(result.aiProvider).toEqual({ type: "none" });
+    expect(result.preferredAiMode).toBe("own-key");
   });
 
   it("rejects a stored BYOK AI provider in the frontend-safe settings DTO", () => {

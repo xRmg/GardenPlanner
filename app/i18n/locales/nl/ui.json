@@ -321,7 +321,22 @@
     "unitSystem": "Maateenheden",
     "unitSystemHint": "Bepaalt de standaard celgrootte bij het aanmaken van nieuwe planters.",
     "unitSystemImperial": "Imperiaal (voet)",
-    "unitSystemMetric": "Metrisch (cm)"
+    "unitSystemMetric": "Metrisch (cm)",
+    "account": "Gehost account",
+    "accountHint": "Je gehoste werkruimte blijft in deze release privé voor je ingelogde account.",
+    "hostedEmail": "Ingelogd e-mailadres",
+    "workspace": "Werkruimte",
+    "workspacePending": "Nog niet ingesteld",
+    "signOut": "Uitloggen",
+    "aiMode": "AI-modus",
+    "aiModeHint": "Kies of deze gehoste werkruimte zonder AI blijft, je eigen OpenRouter-sleutel gebruikt, of wacht op beheerde AI.",
+    "aiModeNoneHint": "AI blijft uit. Je kunt dit later weer inschakelen zonder de rest van je tuingegevens te beïnvloeden.",
+    "aiModeManagedHint": "De keuze voor beheerde AI wordt nu opgeslagen. Gehoste beheerde AI komt in Fase 3B, dus suggesties blijven tot die tijd uit.",
+    "aiModeOptions": {
+      "none": "Geen AI",
+      "ownKey": "Mijn eigen sleutel gebruiken",
+      "managed": "Later beheerde AI gebruiken"
+    }
   },
   "dbError": "⚠ Databasefout – gegevens worden niet opgeslagen:",
   "dialogs": {
@@ -763,5 +778,83 @@
     "logCount_other": "{{count}} notities",
     "harvestCount": "{{count}} oogst",
     "overflowMore": "+{{count}} meer"
+  },
+  "auth": {
+    "loadingHostedSession": "Je gehoste werkruimte laden…",
+    "signInTab": "Inloggen",
+    "signUpTab": "Account maken",
+    "recoveryTab": "Toegang herstellen",
+    "signInTitle": "Log in op je tuin",
+    "signInDescription": "Open je gehoste werkruimte en ga verder waar je was gebleven.",
+    "signUpTitle": "Maak je gehoste account",
+    "signUpDescription": "Start met één privéwerkruimte en rond de rest af in onboarding.",
+    "recoveryTitle": "Herstel je account",
+    "recoveryDescription": "Vraag een hersteltoken aan en stel daarna een nieuw wachtwoord in.",
+    "marketingBlurb": "Gehoste modus geeft je een privéwerkruimte, backend-opslag en een begeleide eerste setup, terwijl lokale modus via configuratie beschikbaar blijft.",
+    "hostedBenefitsTitle": "Gehoste modus in deze slice",
+    "hostedBenefitOne": "Inloggen via e-mail met verificatie- en hersteltokens",
+    "hostedBenefitTwo": "Eén privéwerkruimte in eigendom van je account",
+    "hostedBenefitThree": "Eerste onboarding voor werkruimte, locatie en AI-modus",
+    "noticeTitle": "Klaar om verder te gaan",
+    "previewTokenTitle": "Preview-token",
+    "previewTokenDescription": "E-maillevering draait hier in previewmodus, dus gebruik deze token om de flow voort te zetten.",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Wachtwoord",
+    "newPasswordLabel": "Nieuw wachtwoord",
+    "confirmPasswordLabel": "Bevestig wachtwoord",
+    "passwordPlaceholder": "Minimaal 10 tekens",
+    "emailRequired": "Vul eerst je e-mailadres in.",
+    "passwordRequired": "Vul eerst een wachtwoord in.",
+    "emailAndPasswordRequired": "Vul zowel een e-mailadres als een wachtwoord in.",
+    "passwordTooShort": "Gebruik minstens 10 tekens voor je wachtwoord.",
+    "passwordMismatch": "De wachtwoorden komen nog niet overeen.",
+    "verificationSent": "Account aangemaakt. Verifieer je e-mail om verder te gaan.",
+    "verifyBeforeSignIn": "Dit account moet nog worden geverifieerd. Gebruik de token hieronder om de setup af te ronden.",
+    "verificationTokenLabel": "Verificatietoken",
+    "verificationTokenPlaceholder": "Plak het verificatietoken",
+    "verificationTokenRequired": "Plak je verificatietoken om verder te gaan.",
+    "verifyEmailAction": "E-mail verifiëren en doorgaan",
+    "signUpAction": "Account maken",
+    "signInAction": "Inloggen",
+    "requestRecoveryAction": "Hersteltoken sturen",
+    "recoveryTokenLabel": "Hersteltoken",
+    "recoveryTokenPlaceholder": "Plak het hersteltoken",
+    "recoveryTokenRequired": "Plak je hersteltoken om verder te gaan.",
+    "resetPasswordAction": "Wachtwoord resetten en doorgaan",
+    "recoverySent": "Als dat e-mailadres bestaat, staat er een hersteltoken klaar.",
+    "signUpFailed": "Het account kon niet worden aangemaakt.",
+    "signInFailed": "Inloggen is mislukt.",
+    "verificationFailed": "Die token kon niet worden geverifieerd.",
+    "recoveryRequestFailed": "Herstel starten is mislukt.",
+    "recoveryConfirmFailed": "Het wachtwoord kon niet worden gereset."
+  },
+  "onboarding": {
+    "title": "Stel je gehoste werkruimte in",
+    "description": "Welkom, {{email}}. Kies een werkruimtenaam, stel je tuinlocatie in en bepaal hoe je AI wilt gebruiken.",
+    "workspaceNameLabel": "Werkruimtenaam",
+    "workspaceNamePlaceholder": "bijv. Balkontuin",
+    "workspaceNameHint": "Dit is de privéwerkruimte die in Fase 3A aan je gehoste account wordt gekoppeld.",
+    "workspaceNameRequired": "Kies een werkruimtenaam om verder te gaan.",
+    "locationLabel": "Tuinlocatie",
+    "locationPlaceholder": "bijv. Utrecht, NL",
+    "locationHint": "We gebruiken dit om coördinaten op te lossen en de juiste Köppen-klimaatzone te kiezen.",
+    "locationRequired": "Vul een locatie in om verder te gaan.",
+    "aiModeLabel": "AI-modus",
+    "aiModes": {
+      "none": {
+        "title": "Geen AI",
+        "description": "Houd de planner voorlopig volledig handmatig."
+      },
+      "ownKey": {
+        "title": "Mijn eigen sleutel gebruiken",
+        "description": "Voeg na onboarding je eigen OpenRouter-sleutel toe."
+      },
+      "managed": {
+        "title": "Later beheerde AI",
+        "description": "Sla de intentie nu op en schakel beheerde AI in de volgende gehoste fase in."
+      }
+    },
+    "finishAction": "Werkruimte aanmaken",
+    "submitFailed": "Onboarding kon niet worden voltooid."
   }
 }

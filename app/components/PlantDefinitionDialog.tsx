@@ -198,6 +198,7 @@ const DEFAULT_SETTINGS: Settings = {
   location: "",
   growthZone: "Cfb",
   aiProvider: { type: "none" },
+  preferredAiMode: "own-key",
   aiModel: "google/gemini-2.0-flash",
   locale: "en",
   profileId: "default",
@@ -218,11 +219,13 @@ export function PlantDialog({
     lowTitle: t("dialogs.plantDefinitionDialog.lowConfidenceTitle"),
   };
 
-  const getEmojiCategoryLabel = (categoryKey: (typeof EMOJI_CATEGORIES)[number]["key"]) =>
-    t(`dialogs.plantDefinitionDialog.emojiCategories.${categoryKey}`);
+  const getEmojiCategoryLabel = (
+    categoryKey: (typeof EMOJI_CATEGORIES)[number]["key"],
+  ) => t(`dialogs.plantDefinitionDialog.emojiCategories.${categoryKey}`);
 
-  const getEmojiLabel = (labelKey: (typeof EMOJI_CATEGORIES)[number]["items"][number]["labelKey"]) =>
-    t(`dialogs.plantDefinitionDialog.emojiLabels.${labelKey}`);
+  const getEmojiLabel = (
+    labelKey: (typeof EMOJI_CATEGORIES)[number]["items"][number]["labelKey"],
+  ) => t(`dialogs.plantDefinitionDialog.emojiLabels.${labelKey}`);
   const getLocalizedColorName = (colorValue: string) => {
     switch (colorValue) {
       case "#ef4444":
@@ -844,7 +847,9 @@ export function PlantDialog({
                   />
                 </label>
                 <InfoTooltip
-                  content={t("dialogs.plantDefinitionDialog.daysToHarvestTooltip")}
+                  content={t(
+                    "dialogs.plantDefinitionDialog.daysToHarvestTooltip",
+                  )}
                   ariaLabel={t("dialogs.plantDefinitionDialog.daysToHarvest")}
                 />
               </div>

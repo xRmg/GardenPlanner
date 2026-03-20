@@ -5,14 +5,15 @@
 
 ## Scope
 
-This stream covers the commercial-ready backend runtime and the hosted intelligence capabilities that extend the local-first foundation already shipped in Phase 1.
+This stream covers the hosted intelligence and backend platform work that follows the local-first foundation already shipped in Phase 1. `todo.md` is the sequencing source of truth: hosted foundation starts in **P3A**, managed AI/admin controls land in **P3B**, and backend portability follows only after feature/API parity is preserved.
 
 ### Included work
 
-- Hono v4 backend on Cloudflare Workers
+- Hosted backend evolution from the current Express service
 - Weather proxy endpoint
 - AI-enhanced suggestion engine via proxy
 - Rate limiting and per-user usage tracking
+- Runtime portability work after hosted feature parity is stable
 
 ### Foundation already complete
 
@@ -20,31 +21,32 @@ This stream covers the commercial-ready backend runtime and the hosted intellige
 - Frontend AI calls already route through the backend-only proxy path
 - Frontend AI timeout and error surfacing are already hardened for slower models
 
-## Commercialization Milestones
+## Phase Alignment
 
-- **C.1 — Workers runtime migration**
-  Move the current backend responsibilities onto Hono v4 running on Cloudflare Workers without breaking the frontend API contract.
+### P3A dependency
 
-- **C.2 — Weather proxy**
-  Introduce a backend weather proxy layer where it adds operational or quota value, while keeping Open-Meteo's current no-key path in mind.
+- Hosted auth, single-user workspace ownership, workspace-scoped persistence, and onboarding now land on the current Express + SQLite backend.
+- The current Express backend remains the active hosted implementation until the managed-AI/admin surface has shipped with API parity.
+- Hosted onboarding records AI intent (`none`, `own key`, `managed`) without enabling managed AI yet; that contract carries into P3B.
 
-- **C.3 — AI-enhanced suggestion engine via proxy**
-  Extend the existing proxy-backed suggestion flow into a commercialization-ready service with clearer hosting assumptions and operational controls.
+### P3B scope
 
-- **C.4 — Rate limiting + usage tracking**
-  Add backend-side rate limiting, quota accounting, and user/workspace attribution so paid intelligence features have enforceable limits.
+- **P3B.1–P3B.3** — Three AI modes (`none`, `own key`, `managed`), entitlements, rate limiting, and usage tracking
+- **P3B.4–P3B.10** — Hosted AI caching, freshness metadata, invalidation, and admin/support visibility
+- **P3B.11** — Runtime portability (Workers or equivalent) only after the shipped hosted feature set preserves the existing API contract
 
 ## Notes
 
 - Do not reintroduce silent model fallback. The existing product decision still applies: surface the error and stop.
 - Maintain the local-first escape hatch. Hosted intelligence must remain an added capability, not a hard dependency for the base planner.
 - Preserve the current sanitized frontend settings shape. Secrets stay server-side.
+- Treat Hono/Workers as a portability target, not the starting point for hosted rollout.
 
 ## Open Questions
 
 - Should weather remain direct-to-provider in local/self-hosted mode and only move behind a proxy for hosted/commercial tiers?
 - Should usage tracking attach to `user_id`, `workspace_id`, or both from the first implementation?
-- Is the first hosted backend target Cloudflare-only, or should interfaces stay portable enough for alternative deployments?
+- When portability work starts, is the first non-Express hosted backend target Cloudflare-only, or should interfaces stay portable enough for alternative deployments?
 
 ## Dependencies
 

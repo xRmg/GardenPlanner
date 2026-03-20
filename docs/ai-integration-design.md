@@ -1333,6 +1333,8 @@ All models are negligibly cheap for this use case. Choose on quality, not cost.
 
 ## E. Implementation Roadmap
 
+This roadmap documents the original Phase 1 AI rollout that is already shipped. P3B in `todo.md` extends this with hosted managed-AI modes, usage controls, cache/admin visibility, and backend portability work; it does not replace the current BYOK proxy pattern.
+
 ### Phase 1: Foundation (Week 1)
 
 1. Extend the Settings UI around `aiProvider` / `aiModel` for BYOK OpenRouter validation and storage

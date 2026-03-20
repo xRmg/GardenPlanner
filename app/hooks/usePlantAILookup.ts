@@ -34,7 +34,7 @@ import {
   parseLocalizedPlantReferenceList,
 } from "../i18n/utils/plantTranslation";
 
-const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
+import { apiUrl } from "../lib/api";
 import {
   PLANT_LOOKUP_SYSTEM_PROMPT,
   buildPlantLookupUserPrompt,
@@ -80,7 +80,9 @@ export interface PlantAILookupState {
 // ---------------------------------------------------------------------------
 
 export function usePlantAILookup(settings: Settings): PlantAILookupState {
-  const [aiResult, setAiResult] = useState<FilteredPlantAIResponse | null>(null);
+  const [aiResult, setAiResult] = useState<FilteredPlantAIResponse | null>(
+    null,
+  );
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiModel, setAiModel] = useState("");
@@ -149,7 +151,7 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         // stays server-side (never exposed in the browser). The apiKey field
         // is intentionally left empty — the backend reads the key from its
         // own SQLite settings row.
-        const proxyUrl = API_BASE ? `${API_BASE}/api/ai/chat` : "/api/ai/chat";
+        const proxyUrl = apiUrl("/api/ai/chat");
         const client = new OpenRouterClient({
           apiKey: "", // Always empty — backend reads the key from its own SQLite DB
           model: settings.aiModel,
@@ -349,11 +351,13 @@ interface VerifiedPlantIdentityInput {
 }
 
 function normalizeComparableValue(value?: string): string {
-  return value
-    ?.trim()
-    .toLowerCase()
-    .replace(/["'`“”‘’]/g, "")
-    .replace(/\s+/g, " ") ?? "";
+  return (
+    value
+      ?.trim()
+      .toLowerCase()
+      .replace(/["'`“”‘’]/g, "")
+      .replace(/\s+/g, " ") ?? ""
+  );
 }
 
 function normalizeLatinNameForComparison(value?: string): string {
@@ -378,9 +382,14 @@ function areEquivalentLatinNames(left?: string, right?: string): boolean {
   return leftTokens[0][0] === rightTokens[0][0];
 }
 
-function proseMentionsValue(prose: string | undefined, value?: string): boolean {
+function proseMentionsValue(
+  prose: string | undefined,
+  value?: string,
+): boolean {
   if (!value) return true;
-  return normalizeComparableValue(prose).includes(normalizeComparableValue(value));
+  return normalizeComparableValue(prose).includes(
+    normalizeComparableValue(value),
+  );
 }
 
 function appendSentence(prose: string | undefined, sentence: string): string {
@@ -446,7 +455,10 @@ function ensureVerifiedIdentityMention(
   variety?: string,
   latinName?: string,
 ): string {
-  if (proseMentionsValue(prose, variety) && proseMentionsValue(prose, latinName)) {
+  if (
+    proseMentionsValue(prose, variety) &&
+    proseMentionsValue(prose, latinName)
+  ) {
     return prose ?? "";
   }
 
@@ -532,15 +544,16 @@ export function filterLowConfidenceFields(
     );
   }
 
-  resolvePlantLookupRefs(result.name, locale).forEach((ref) => selfRefs.add(ref));
+  resolvePlantLookupRefs(result.name, locale).forEach((ref) =>
+    selfRefs.add(ref),
+  );
 
   const normalizedCompanionLabels =
     (c.localizedCompanionLabels ?? c.companions ?? 1) >= CONFIDENCE.REJECT
       ? normalizeLocalizedLabelMap(result.localizedCompanionLabels, locale)
       : {};
   const normalizedAntagonistLabels =
-    (c.localizedAntagonistLabels ?? c.antagonists ?? 1) >=
-    CONFIDENCE.REJECT
+    (c.localizedAntagonistLabels ?? c.antagonists ?? 1) >= CONFIDENCE.REJECT
       ? normalizeLocalizedLabelMap(result.localizedAntagonistLabels, locale)
       : {};
   const companions = stripSelfReferences(
@@ -643,12 +656,17 @@ function isPlantLookupNameMatch(
 
 function resolvePlantLookupRefs(name: string, locale?: string): Set<string> {
   return new Set(
-    [normalizePlantReference(name), ...parseLocalizedPlantReferenceList(name, locale)]
-      .filter(Boolean),
+    [
+      normalizePlantReference(name),
+      ...parseLocalizedPlantReferenceList(name, locale),
+    ].filter(Boolean),
   );
 }
 
-function stripSelfReferences(values: string[], selfRefs: Set<string>): string[] {
+function stripSelfReferences(
+  values: string[],
+  selfRefs: Set<string>,
+): string[] {
   return values.filter((ref) => !selfRefs.has(ref));
 }
 
@@ -729,7 +747,10 @@ function normalizeLocalizedLabelMap(
     if (!normalizedRef || !trimmedLabel) return;
 
     if (locale && hasPlantNameTranslation(normalizedRef, locale)) {
-      const existingLabel = getLocalizedPlantReferenceName(normalizedRef, locale);
+      const existingLabel = getLocalizedPlantReferenceName(
+        normalizedRef,
+        locale,
+      );
       if (existingLabel.trim().toLowerCase() !== trimmedLabel.toLowerCase()) {
         console.warn(
           `[usePlantAILookup] Dropping AI label "${trimmedLabel}" for "${normalizedRef}" because the locale bundle already provides "${existingLabel}"`,
@@ -768,7 +789,8 @@ async function persistLocalizedRelationshipLabels(
       labels[ref] = {
         label,
         confidence:
-          result.confidence.localizedCompanionLabels ?? result.confidence.companions,
+          result.confidence.localizedCompanionLabels ??
+          result.confidence.companions,
         source: "ai",
       };
     },
@@ -779,7 +801,8 @@ async function persistLocalizedRelationshipLabels(
       labels[ref] = {
         label,
         confidence:
-          result.confidence.localizedAntagonistLabels ?? result.confidence.antagonists,
+          result.confidence.localizedAntagonistLabels ??
+          result.confidence.antagonists,
         source: "ai",
       };
     },

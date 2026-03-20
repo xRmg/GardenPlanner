@@ -47,6 +47,9 @@ import {
   Package,
   Scissors,
   MoreHorizontal,
+  LogOut,
+  Mail,
+  Building2,
 } from "lucide-react";
 import { Sheet, SheetContent } from "./components/ui/sheet";
 import { InfoTooltip } from "./components/ui/info-tooltip";
@@ -73,6 +76,10 @@ import { useGardenEvents } from "./hooks/useGardenEvents";
 import { useSuggestions } from "./hooks/useSuggestions";
 import { useGlobalAsyncErrorToasts } from "./hooks/useGlobalAsyncErrorToasts";
 import { APP_VERSION } from "./lib/version";
+import { APP_CAPABILITIES } from "./config/capabilities";
+import { HostedAuthScreen } from "./components/HostedAuthScreen";
+import { HostedOnboardingScreen } from "./components/HostedOnboardingScreen";
+import { useHostedSession } from "./hooks/useHostedSession";
 import type { PestEvent } from "./data/schema";
 import type { PlantMoveLocation } from "./services/plantMovement";
 import { movePlantBetweenLocations } from "./services/plantMovement";
@@ -87,6 +94,7 @@ export default function App() {
   const { t } = useTranslation();
 
   const [eventsSheetOpen, setEventsSheetOpen] = useState(false);
+  const hostedSession = useHostedSession();
 
   // ── Core data (DB loading + persistence) ──────────────────────────────────
   const {
@@ -258,6 +266,43 @@ export default function App() {
   });
 
   const currentMonth = new Date().getMonth() + 1; // 1–12
+  const isHostedMode = APP_CAPABILITIES.auth.mode === "hosted";
+  const hostedAccount = hostedSession.session;
+  const preferredAiMode = settings.preferredAiMode ?? "own-key";
+  const showHostedAiModeSelector = isHostedMode && Boolean(hostedAccount);
+  const showByokAiControls = !showHostedAiModeSelector || preferredAiMode === "own-key";
+
+  const handleHostedSignOut = async () => {
+    await hostedSession.signOut();
+    window.location.reload();
+  };
+
+  const handlePreferredAiModeChange = (nextMode: "none" | "own-key" | "managed") => {
+    setSettings((prev) => ({
+      ...prev,
+      preferredAiMode: nextMode,
+      ...(nextMode === "own-key"
+        ? {}
+        : {
+            aiProvider: { type: "none" },
+            aiLastValidatedAt: undefined,
+            aiValidationError: undefined,
+          }),
+    }));
+  };
+
+  if (isHostedMode && hostedSession.loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-5 py-4 shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm font-medium text-foreground">
+            {t("auth.loadingHostedSession")}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   // Scroll to last-selected area when the DB finishes loading.
   // We fire the effect when `settings.lastSelectedAreaId` changes (which happens
@@ -276,6 +321,14 @@ export default function App() {
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 150);
   }, [settings.lastSelectedAreaId]); // hasLoadedFromDB is a ref; check its .current inside
+
+  if (isHostedMode && !hostedAccount) {
+    return <HostedAuthScreen />;
+  }
+
+  if (isHostedMode && hostedAccount && !hostedAccount.onboarding.completed) {
+    return <HostedOnboardingScreen session={hostedAccount} />;
+  }
 
   const getLatestTreatmentContext = (pestEvents: PestEvent[]) => {
     const sorted = [...pestEvents].sort(
@@ -473,9 +526,7 @@ export default function App() {
               value="areas"
               className="mt-0 flex-1 min-h-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-200"
             >
-              <div
-                className="h-full overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar"
-              >
+              <div className="h-full overflow-auto bg-card rounded-2xl border border-border/60 shadow-sm p-4 custom-scrollbar">
                 <div className="mb-4 px-1 flex items-center justify-between">
                   <div>
                     <h1 className="text-xl font-black text-foreground tracking-tight uppercase">
@@ -600,7 +651,10 @@ export default function App() {
                                     {t("areas.quickActionsMenuButton")}
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-52">
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-52"
+                                >
                                   <DropdownMenuLabel>
                                     {t("areas.quickActionsMenuLabel")}
                                   </DropdownMenuLabel>
@@ -617,7 +671,9 @@ export default function App() {
                                         type: "composted",
                                         icon: Package,
                                         iconClassName: "text-amber-700",
-                                        label: t("areas.quickActions.fertilised"),
+                                        label: t(
+                                          "areas.quickActions.fertilised",
+                                        ),
                                       },
                                       {
                                         type: "weeded",
@@ -626,23 +682,36 @@ export default function App() {
                                         label: t("areas.quickActions.weeded"),
                                       },
                                     ] as const
-                                  ).map(({ type, icon: Icon, iconClassName, label }) => (
-                                    <DropdownMenuItem
-                                      key={type}
-                                      onClick={() =>
-                                        handleAreaAction({
-                                          type,
-                                          areaId: area.id,
-                                          areaName: area.name,
-                                          planterIds: area.planters.map((p) => p.id),
-                                          planterNames: area.planters.map((p) => p.name),
-                                        })
-                                      }
-                                    >
-                                      <Icon className={iconClassName + " h-4 w-4"} />
-                                      {label}
-                                    </DropdownMenuItem>
-                                  ))}
+                                  ).map(
+                                    ({
+                                      type,
+                                      icon: Icon,
+                                      iconClassName,
+                                      label,
+                                    }) => (
+                                      <DropdownMenuItem
+                                        key={type}
+                                        onClick={() =>
+                                          handleAreaAction({
+                                            type,
+                                            areaId: area.id,
+                                            areaName: area.name,
+                                            planterIds: area.planters.map(
+                                              (p) => p.id,
+                                            ),
+                                            planterNames: area.planters.map(
+                                              (p) => p.name,
+                                            ),
+                                          })
+                                        }
+                                      >
+                                        <Icon
+                                          className={iconClassName + " h-4 w-4"}
+                                        />
+                                        {label}
+                                      </DropdownMenuItem>
+                                    ),
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             )}
@@ -1096,7 +1165,10 @@ export default function App() {
                                             <Sprout className="w-3.5 h-3.5" />
                                           </button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="left" className="max-w-64 leading-relaxed">
+                                        <TooltipContent
+                                          side="left"
+                                          className="max-w-64 leading-relaxed"
+                                        >
                                           {t("plants.sowSeedsTooltip", {
                                             name: displayName,
                                           })}
@@ -1246,7 +1318,10 @@ export default function App() {
                                             <Sprout className="w-3 h-3" />
                                           </button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="left" className="max-w-64 leading-relaxed">
+                                        <TooltipContent
+                                          side="left"
+                                          className="max-w-64 leading-relaxed"
+                                        >
                                           {t("plants.sowSeedsTooltip", {
                                             name: displayName,
                                           })}
@@ -1506,8 +1581,12 @@ export default function App() {
                                             aria-label={t("seedlings.sprouted")}
                                           >
                                             <Sprout className="h-3.5 w-3.5 sm:hidden" />
-                                            <span className="hidden sm:inline">{t("seedlings.sprouted")}</span>
-                                            <span className="sr-only sm:hidden">{t("seedlings.sprouted")}</span>
+                                            <span className="hidden sm:inline">
+                                              {t("seedlings.sprouted")}
+                                            </span>
+                                            <span className="sr-only sm:hidden">
+                                              {t("seedlings.sprouted")}
+                                            </span>
                                           </Button>
                                         )}
                                         {status === "growing" && (
@@ -1519,11 +1598,17 @@ export default function App() {
                                               )
                                             }
                                             className="h-8 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 shadow-none sm:h-7"
-                                            aria-label={t("seedlings.hardenOff")}
+                                            aria-label={t(
+                                              "seedlings.hardenOff",
+                                            )}
                                           >
                                             <Package className="h-3.5 w-3.5 sm:hidden" />
-                                            <span className="hidden sm:inline">{t("seedlings.hardenOff")}</span>
-                                            <span className="sr-only sm:hidden">{t("seedlings.hardenOff")}</span>
+                                            <span className="hidden sm:inline">
+                                              {t("seedlings.hardenOff")}
+                                            </span>
+                                            <span className="sr-only sm:hidden">
+                                              {t("seedlings.hardenOff")}
+                                            </span>
                                           </Button>
                                         )}
                                         {status === "hardening" && (
@@ -1535,11 +1620,17 @@ export default function App() {
                                               )
                                             }
                                             className="h-8 px-2.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-none sm:h-7"
-                                            aria-label={t("seedlings.markReady")}
+                                            aria-label={t(
+                                              "seedlings.markReady",
+                                            )}
                                           >
                                             <CheckCircle2 className="h-3.5 w-3.5 sm:hidden" />
-                                            <span className="hidden sm:inline">{t("seedlings.markReady")}</span>
-                                            <span className="sr-only sm:hidden">{t("seedlings.markReady")}</span>
+                                            <span className="hidden sm:inline">
+                                              {t("seedlings.markReady")}
+                                            </span>
+                                            <span className="sr-only sm:hidden">
+                                              {t("seedlings.markReady")}
+                                            </span>
                                           </Button>
                                         )}
                                         <Button
@@ -1578,6 +1669,47 @@ export default function App() {
                   {t("settings.title")}
                 </h2>
                 <div className="max-w-lg space-y-8">
+                  {hostedAccount && (
+                    <section className="space-y-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Building2 className="w-4 h-4 text-primary" />
+                        <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
+                          {t("settings.account")}
+                        </h3>
+                      </div>
+                      <div className="rounded-2xl border border-border/60 bg-muted/25 p-4 space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          {t("settings.accountHint")}
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                              {t("settings.hostedEmail")}
+                            </p>
+                            <p className="mt-1 inline-flex items-center gap-2 text-sm font-medium text-foreground">
+                              <Mail className="h-4 w-4 text-primary" />
+                              {hostedAccount.user.email}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                              {t("settings.workspace")}
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-foreground">
+                              {hostedAccount.workspace?.name ?? t("settings.workspacePending")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button variant="outline" onClick={() => void handleHostedSignOut()}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            {t("settings.signOut")}
+                          </Button>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
                   {/* ── Location & Weather ─────────────────────────────── */}
                   <section className="space-y-4">
                     <div className="flex items-center gap-2 mb-1">
@@ -1799,6 +1931,48 @@ export default function App() {
                       )}
                     </div>
 
+                    {showHostedAiModeSelector && (
+                      <div className="space-y-1.5">
+                        <label
+                          htmlFor="settings-ai-mode"
+                          className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1"
+                        >
+                          {t("settings.aiMode")}
+                        </label>
+                        <select
+                          id="settings-ai-mode"
+                          className="w-full bg-white/50 border border-border/40 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-inner appearance-none"
+                          value={preferredAiMode}
+                          onChange={(e) =>
+                            handlePreferredAiModeChange(
+                              e.target.value as "none" | "own-key" | "managed",
+                            )
+                          }
+                        >
+                          <option value="none">{t("settings.aiModeOptions.none")}</option>
+                          <option value="own-key">{t("settings.aiModeOptions.ownKey")}</option>
+                          <option value="managed">{t("settings.aiModeOptions.managed")}</option>
+                        </select>
+                        <p className="text-[11px] text-muted-foreground ml-1">
+                          {t("settings.aiModeHint")}
+                        </p>
+                      </div>
+                    )}
+
+                    {showHostedAiModeSelector && preferredAiMode === "none" && (
+                      <p className="text-[11px] text-muted-foreground ml-1">
+                        {t("settings.aiModeNoneHint")}
+                      </p>
+                    )}
+
+                    {showHostedAiModeSelector && preferredAiMode === "managed" && (
+                      <p className="text-[11px] text-muted-foreground ml-1">
+                        {t("settings.aiModeManagedHint")}
+                      </p>
+                    )}
+
+                    {showByokAiControls && (
+                    <>
                     {/* OpenRouter API key */}
                     <div className="space-y-1.5">
                       <label
@@ -1930,6 +2104,8 @@ export default function App() {
                         {t("settings.aiModelHint")}
                       </p>
                     </div>
+                    </>
+                    )}
                   </section>
                   {/* ── Language ─────────────────────────────────────────────────────── */}
                   <section className="space-y-4">
