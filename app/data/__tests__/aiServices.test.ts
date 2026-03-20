@@ -28,7 +28,10 @@ import {
 } from "../../services/suggestions/aiSuggestions";
 import type { RuleContext, PlacedPlant } from "../../services/suggestions/types";
 import type { Plant } from "../schema";
-import { filterLowConfidenceFields } from "../../hooks/usePlantAILookup";
+import {
+  applyUserVerifiedPlantIdentity,
+  filterLowConfidenceFields,
+} from "../../hooks/usePlantAILookup";
 
 // ---------------------------------------------------------------------------
 // prompts.ts
@@ -69,6 +72,19 @@ describe("buildPlantLookupUserPrompt", () => {
       variety: "Roma",
     });
     expect(prompt).toContain('"Roma"');
+  });
+
+  it("includes a user-provided latin name verification hint", () => {
+    const prompt = buildPlantLookupUserPrompt({
+      plantName: "Pumpkin",
+      variety: "Uchiki Kuri",
+      latinName: "Cucurbita maxima",
+    });
+
+    expect(prompt).toContain('User-provided latin name to verify: "Cucurbita maxima"');
+    expect(prompt).toContain(
+      "Verify any user-provided variety and latin name.",
+    );
   });
 
   it("includes Köppen zone when provided", () => {
@@ -250,6 +266,37 @@ describe("PlantCache (in-memory)", () => {
 });
 
 describe("filterLowConfidenceFields", () => {
+  it("verifies user-provided variety and latin name and mentions them in prose", () => {
+    const verified = applyUserVerifiedPlantIdentity(
+      {
+        ...makeAiResponse("pumpkin"),
+        latinName: "Cucurbita maxima",
+        variety: "Uchiki Kuri",
+      },
+      {
+        variety: "Uchiki Kuri",
+        latinName: "Cucurbita maxima",
+        locale: "en",
+      },
+    );
+
+    expect(verified.variety).toBe("Uchiki Kuri");
+    expect(verified.latinName).toBe("Cucurbita maxima");
+    expect(verified.description).toContain("Uchiki Kuri");
+    expect(verified.description).toContain("Cucurbita maxima");
+    expect(verified.growingTips).toContain("Uchiki Kuri");
+    expect(verified.growingTips).toContain("Cucurbita maxima");
+  });
+
+  it("rejects a mismatched user-provided latin name", () => {
+    expect(() =>
+      applyUserVerifiedPlantIdentity(makeAiResponse("pumpkin"), {
+        latinName: "Cucurbita maxima",
+        locale: "en",
+      }),
+    ).toThrow(/could not verify the provided latin name/i);
+  });
+
   it("drops low-confidence scalar plant fields instead of auto-filling them", () => {
     const source = makeAiResponse("tomato");
     const filtered = filterLowConfidenceFields(

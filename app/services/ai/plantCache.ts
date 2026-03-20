@@ -5,7 +5,7 @@
  *   1. In-memory Map (instant, lost on page refresh)
  *   2. Dexie/IndexedDB (persistent, 30-day TTL)
  *
- * Key format: "name|variety|latinName|koeppenZone|locale" (lowercase, trimmed).
+ * Key format: "name|variety|requestedLatinName|koeppenZone|locale" (lowercase, trimmed).
  * Pre-seed from the saved plant catalogue to avoid repeated AI calls.
  */
 
@@ -33,7 +33,7 @@ export class PlantCache {
 
   private normalizeKey(
     name: string,
-    latinName?: string,
+    requestedLatinName?: string,
     koeppenZone?: string,
     locale?: string,
     variety?: string,
@@ -43,7 +43,7 @@ export class PlantCache {
     return [
       normalizePlantReference(name),
       this.normalizeVariety(variety),
-      latinName,
+      requestedLatinName,
       koeppenZone,
       normalizedLocale,
     ]
@@ -54,12 +54,18 @@ export class PlantCache {
 
   async get(
     name: string,
-    latinName?: string,
+    requestedLatinName?: string,
     koeppenZone?: string,
     locale?: string,
     variety?: string,
   ): Promise<FilteredPlantAIResponse | null> {
-    const key = this.normalizeKey(name, latinName, koeppenZone, locale, variety);
+    const key = this.normalizeKey(
+      name,
+      requestedLatinName,
+      koeppenZone,
+      locale,
+      variety,
+    );
 
     // 1. Memory cache
     const mem = this.memCache.get(key);
@@ -93,12 +99,18 @@ export class PlantCache {
     name: string,
     data: FilteredPlantAIResponse,
     model: string,
-    latinName?: string,
+    requestedLatinName?: string,
     koeppenZone?: string,
     locale?: string,
     variety?: string,
   ): Promise<void> {
-    const key = this.normalizeKey(name, latinName, koeppenZone, locale, variety);
+    const key = this.normalizeKey(
+      name,
+      requestedLatinName,
+      koeppenZone,
+      locale,
+      variety,
+    );
     const entry = { data, timestamp: Date.now(), model };
     this.memCache.set(key, entry);
     try {
@@ -115,10 +127,9 @@ export class PlantCache {
    */
   seedFromPlants(plants: Plant[]): void {
     for (const p of plants) {
-      if (!p.latinName) continue;
       const key = this.normalizeKey(
         p.name,
-        p.latinName,
+        undefined,
         undefined,
         undefined,
         p.variety,

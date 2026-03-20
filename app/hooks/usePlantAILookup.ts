@@ -61,10 +61,14 @@ export interface PlantAILookupState {
   /** The model name that produced the current `aiResult`. */
   aiModel: string;
   /**
-   * Trigger an AI lookup for the given plant name + variety.
+   * Trigger an AI lookup for the given plant name + variety + optional latin name.
    * Checks cache first; only calls the API on cache miss.
    */
-  handleAiLookup: (plantName: string, variety?: string) => Promise<void>;
+  handleAiLookup: (
+    plantName: string,
+    variety?: string,
+    latinName?: string,
+  ) => Promise<void>;
   /** Cancel an in-progress lookup. */
   cancelAiLookup: () => void;
   /** Clear the previous result (e.g. when the user clears the name field). */
@@ -95,15 +99,18 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
   }, []);
 
   const handleAiLookup = useCallback(
-    async (plantName: string, variety?: string) => {
+    async (plantName: string, variety?: string, latinName?: string) => {
       const isDev = import.meta.env.DEV;
       const name = plantName.trim();
+      const requestedVariety = variety?.trim() || undefined;
+      const requestedLatinName = latinName?.trim() || undefined;
       if (!name || settings.aiProvider.type === "none") return;
 
       if (isDev)
         console.log("[usePlantAILookup] Starting AI lookup for:", {
           name,
-          variety,
+          variety: requestedVariety,
+          latinName: requestedLatinName,
         });
 
       // Cancel any previous request
@@ -122,10 +129,10 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         if (isDev) console.log("[usePlantAILookup] Checking cache…");
         const cached = await cache.get(
           name,
-          undefined,
+          requestedLatinName,
           koeppenZone,
           settings.locale,
-          variety?.trim() || undefined,
+          requestedVariety,
         );
         if (cached) {
           if (isDev) console.log("[usePlantAILookup] ✓ Cache hit:", cached);
@@ -158,7 +165,8 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
         // 3. Call the API
         const userPrompt = buildPlantLookupUserPrompt({
           plantName: name,
-          variety: variety?.trim() || undefined,
+          variety: requestedVariety,
+          latinName: requestedLatinName,
           koeppenZone,
           latitude: settings.lat,
           longitude: settings.lng,
@@ -255,9 +263,15 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           );
         }
 
+        const verified = applyUserVerifiedPlantIdentity(parsed, {
+          variety: requestedVariety,
+          latinName: requestedLatinName,
+          locale: settings.locale,
+        });
+
         // 5. Filter out fields below the rejection threshold
         const filtered = filterLowConfidenceFields(
-          parsed,
+          verified,
           settings.locale,
           name,
         );
@@ -275,10 +289,10 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
           name,
           filtered,
           model,
-          filtered.latinName,
+          requestedLatinName,
           koeppenZone,
           settings.locale,
-          variety?.trim() || undefined,
+          requestedVariety,
         );
         if (isDev)
           console.log(
@@ -327,6 +341,178 @@ export function usePlantAILookup(settings: Settings): PlantAILookupState {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+interface VerifiedPlantIdentityInput {
+  variety?: string;
+  latinName?: string;
+  locale?: string;
+}
+
+function normalizeComparableValue(value?: string): string {
+  return value
+    ?.trim()
+    .toLowerCase()
+    .replace(/["'`“”‘’]/g, "")
+    .replace(/\s+/g, " ") ?? "";
+}
+
+function normalizeLatinNameForComparison(value?: string): string {
+  return normalizeComparableValue(value).replace(/\./g, "");
+}
+
+function areEquivalentLatinNames(left?: string, right?: string): boolean {
+  const normalizedLeft = normalizeLatinNameForComparison(left);
+  const normalizedRight = normalizeLatinNameForComparison(right);
+
+  if (!normalizedLeft || !normalizedRight) return false;
+  if (normalizedLeft === normalizedRight) return true;
+
+  const leftTokens = normalizedLeft.split(" ");
+  const rightTokens = normalizedRight.split(" ");
+  if (leftTokens.length < 2 || rightTokens.length < 2) return false;
+
+  if (leftTokens.slice(1).join(" ") !== rightTokens.slice(1).join(" ")) {
+    return false;
+  }
+
+  return leftTokens[0][0] === rightTokens[0][0];
+}
+
+function proseMentionsValue(prose: string | undefined, value?: string): boolean {
+  if (!value) return true;
+  return normalizeComparableValue(prose).includes(normalizeComparableValue(value));
+}
+
+function appendSentence(prose: string | undefined, sentence: string): string {
+  const trimmed = prose?.trim() ?? "";
+  if (!trimmed) return sentence;
+  if (/[.!?]$/.test(trimmed)) return `${trimmed} ${sentence}`;
+  return `${trimmed}. ${sentence}`;
+}
+
+function buildVerifiedIdentitySentence(
+  field: "description" | "growingTips",
+  locale: string | undefined,
+  variety?: string,
+  latinName?: string,
+): string | null {
+  if (!variety && !latinName) return null;
+
+  const isDutch = locale?.toLowerCase().startsWith("nl") ?? false;
+
+  if (isDutch) {
+    if (field === "description") {
+      if (variety && latinName) {
+        return `Dit gaat specifiek over ${variety} (${latinName}).`;
+      }
+      if (variety) {
+        return `Dit gaat specifiek over het ras ${variety}.`;
+      }
+      return `Dit gaat specifiek over ${latinName}.`;
+    }
+
+    if (variety && latinName) {
+      return `Deze tips gelden specifiek voor ${variety} (${latinName}).`;
+    }
+    if (variety) {
+      return `Deze tips gelden specifiek voor het ras ${variety}.`;
+    }
+    return `Deze tips gelden specifiek voor ${latinName}.`;
+  }
+
+  if (field === "description") {
+    if (variety && latinName) {
+      return `This entry specifically covers ${variety} (${latinName}).`;
+    }
+    if (variety) {
+      return `This entry specifically covers the ${variety} variety.`;
+    }
+    return `This entry specifically covers ${latinName}.`;
+  }
+
+  if (variety && latinName) {
+    return `These tips are specific to ${variety} (${latinName}).`;
+  }
+  if (variety) {
+    return `These tips are specific to the ${variety} variety.`;
+  }
+  return `These tips are specific to ${latinName}.`;
+}
+
+function ensureVerifiedIdentityMention(
+  prose: string | undefined,
+  field: "description" | "growingTips",
+  locale: string | undefined,
+  variety?: string,
+  latinName?: string,
+): string {
+  if (proseMentionsValue(prose, variety) && proseMentionsValue(prose, latinName)) {
+    return prose ?? "";
+  }
+
+  const sentence = buildVerifiedIdentitySentence(
+    field,
+    locale,
+    variety,
+    latinName,
+  );
+  if (!sentence) return prose ?? "";
+  return appendSentence(prose, sentence);
+}
+
+export function applyUserVerifiedPlantIdentity(
+  result: PlantAIResponse,
+  input: VerifiedPlantIdentityInput,
+): PlantAIResponse {
+  const requestedVariety = input.variety?.trim() || undefined;
+  const requestedLatinName = input.latinName?.trim() || undefined;
+
+  if (requestedVariety) {
+    const returnedVariety = result.variety?.trim();
+    if (
+      !returnedVariety ||
+      normalizeComparableValue(returnedVariety) !==
+        normalizeComparableValue(requestedVariety)
+    ) {
+      throw new Error(
+        `AI could not verify the provided variety (provided: ${requestedVariety}, received: ${returnedVariety ?? "none"})`,
+      );
+    }
+  }
+
+  if (
+    requestedLatinName &&
+    !areEquivalentLatinNames(result.latinName, requestedLatinName)
+  ) {
+    throw new Error(
+      `AI could not verify the provided latin name (provided: ${requestedLatinName}, received: ${result.latinName || "none"})`,
+    );
+  }
+
+  if (!requestedVariety && !requestedLatinName) {
+    return result;
+  }
+
+  return {
+    ...result,
+    variety: requestedVariety ?? result.variety?.trim(),
+    latinName: requestedLatinName ?? result.latinName,
+    description: ensureVerifiedIdentityMention(
+      result.description,
+      "description",
+      input.locale,
+      requestedVariety,
+      requestedLatinName,
+    ),
+    growingTips: ensureVerifiedIdentityMention(
+      result.growingTips,
+      "growingTips",
+      input.locale,
+      requestedVariety,
+      requestedLatinName,
+    ),
+  };
+}
 
 /**
  * Zero-out fields whose confidence is below the rejection threshold so they

@@ -95,13 +95,15 @@ export const CONFIDENCE = {
 // System prompt
 // ---------------------------------------------------------------------------
 
-export const PLANT_LOOKUP_SYSTEM_PROMPT = `You are a horticultural database assistant. Given a plant name and an optional variety, return structured growing data in JSON format.
+export const PLANT_LOOKUP_SYSTEM_PROMPT = `You are a horticultural database assistant. Given a plant name, an optional variety, and an optional user-provided latin name to verify, return structured growing data in JSON format.
 
 Rules:
 - Return ONLY valid JSON. No markdown, no prose.
 - Echo the requested plant name and variety instead of inventing a different plant.
 - Do not substitute a related plant or a different species just because the requested name is ambiguous or localized.
 - Include latinName using accepted botanical nomenclature when known.
+- If the user provides a variety or latinName, treat those as values to verify against the requested plant rather than as optional inspiration.
+- If a user-provided variety or latinName is verified, return that exact value and explicitly mention it in both description and growingTips.
 - If you are not confident about the botanical match, keep the requested plant name unchanged and lower confidence on uncertain fields instead of guessing.
 - All month fields use 1-indexed arrays (1=January, 12=December)
 - Interpret sowing and harvest windows using the supplied Köppen–Geiger climate zone and coordinates when provided
@@ -258,6 +260,7 @@ export function truncate(s: string, max: number, fieldName?: string): string {
 export function buildPlantLookupUserPrompt(input: {
   plantName: string;
   variety?: string;
+  latinName?: string;
   koeppenZone?: string;
   latitude?: number;
   longitude?: number;
@@ -266,6 +269,11 @@ export function buildPlantLookupUserPrompt(input: {
   const { locale, languageName } = getAIResponseLanguage(input.locale);
   const lines = [`Plant: "${truncate(input.plantName, 80, "plantName")}"`];
   if (input.variety) lines.push(`Variety: "${truncate(input.variety, 80, "variety")}"`);
+  if (input.latinName) {
+    lines.push(
+      `User-provided latin name to verify: "${truncate(input.latinName, 120, "latinName")}"`,
+    );
+  }
   if (input.koeppenZone) {
     lines.push(`Köppen–Geiger climate zone: ${input.koeppenZone}`);
   }
@@ -276,6 +284,11 @@ export function buildPlantLookupUserPrompt(input: {
     lines.push(`Coordinates: ${input.latitude}, ${input.longitude}`);
   }
   lines.push(`Response language: ${languageName} (${locale})`);
+  if (input.variety || input.latinName) {
+    lines.push(
+      "Verify any user-provided variety and latin name. When verified, repeat those exact values and mention them explicitly in description and growingTips.",
+    );
+  }
   lines.push(
     "Use canonical slug refs for companions/antagonists and provide localizedCompanionLabels/localizedAntagonistLabels keyed by those refs when known.",
   );

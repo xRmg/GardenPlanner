@@ -650,7 +650,9 @@ export function PlantDialog({
                     value={latinName}
                     onChange={(e) => {
                       setLatinName(e.target.value);
-                      markOverride("latinName");
+                      if (aiResult) {
+                        clearAiResult();
+                      }
                     }}
                     placeholder={t(
                       "dialogs.plantDefinitionDialog.latinNamePlaceholder",
@@ -670,7 +672,12 @@ export function PlantDialog({
                     id="plant-variety"
                     type="text"
                     value={variety}
-                    onChange={(e) => setVariety(e.target.value)}
+                    onChange={(e) => {
+                      setVariety(e.target.value);
+                      if (aiResult) {
+                        clearAiResult();
+                      }
+                    }}
                     placeholder={t(
                       "dialogs.plantDefinitionDialog.varietyPlaceholder",
                     )}
@@ -741,7 +748,7 @@ export function PlantDialog({
                     size="sm"
                     variant="outline"
                     disabled={!canLookupWithAi}
-                    onClick={() => handleAiLookup(name, variety)}
+                    onClick={() => handleAiLookup(name, variety, latinName)}
                     className="ml-auto shrink-0"
                   >
                     {t("dialogs.plantDefinitionDialog.askAI")}
