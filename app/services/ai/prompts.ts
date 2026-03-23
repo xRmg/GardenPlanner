@@ -103,7 +103,9 @@ Rules:
 - Do not substitute a related plant or a different species just because the requested name is ambiguous or localized.
 - Include latinName using accepted botanical nomenclature when known.
 - If the user provides a variety or latinName, treat those as values to verify against the requested plant rather than as optional inspiration.
-- If a user-provided variety or latinName is verified, return that exact value and explicitly mention it in both description and growingTips.
+- If a user-provided variety is verified, return that exact value and integrate it naturally into the first sentence of description.
+- Do not add a separate confirmation or concluding sentence that only restates the verified variety or latinName.
+- If a user-provided latinName is verified, return that exact value in latinName.
 - If you are not confident about the botanical match, keep the requested plant name unchanged and lower confidence on uncertain fields instead of guessing.
 - All month fields use 1-indexed arrays (1=January, 12=December)
 - Interpret sowing and harvest windows using the supplied Köppen–Geiger climate zone and coordinates when provided
@@ -286,7 +288,7 @@ export function buildPlantLookupUserPrompt(input: {
   lines.push(`Response language: ${languageName} (${locale})`);
   if (input.variety || input.latinName) {
     lines.push(
-      "Verify any user-provided variety and latin name. When verified, repeat those exact values and mention them explicitly in description and growingTips.",
+      "Verify any user-provided variety and latin name. When verified, mention the exact variety naturally in the first sentence of description. Do not add a separate concluding sentence that only repeats the variety or latin name.",
     );
   }
   lines.push(

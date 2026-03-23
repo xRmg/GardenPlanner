@@ -85,6 +85,12 @@ describe("buildPlantLookupUserPrompt", () => {
     expect(prompt).toContain(
       "Verify any user-provided variety and latin name.",
     );
+    expect(prompt).toContain(
+      "mention the exact variety naturally in the first sentence of description",
+    );
+    expect(prompt).toContain(
+      "Do not add a separate concluding sentence",
+    );
   });
 
   it("includes Köppen zone when provided", () => {
@@ -280,7 +286,7 @@ describe("PlantCache (in-memory)", () => {
 });
 
 describe("filterLowConfidenceFields", () => {
-  it("verifies user-provided variety and latin name and mentions them in prose", () => {
+  it("verifies user-provided variety and latin name without appending a separate confirmation sentence", () => {
     const verified = applyUserVerifiedPlantIdentity(
       {
         ...makeAiResponse("pumpkin"),
@@ -297,9 +303,10 @@ describe("filterLowConfidenceFields", () => {
     expect(verified.variety).toBe("Uchiki Kuri");
     expect(verified.latinName).toBe("Cucurbita maxima");
     expect(verified.description).toContain("Uchiki Kuri");
-    expect(verified.description).toContain("Cucurbita maxima");
-    expect(verified.growingTips).toContain("Uchiki Kuri");
-    expect(verified.growingTips).toContain("Cucurbita maxima");
+    expect(verified.description).toBe(
+      "For the 'Uchiki Kuri' variety, a fruiting vegetable.",
+    );
+    expect(verified.description).not.toContain("specifically covers");
   });
 
   it("rejects a mismatched user-provided latin name", () => {

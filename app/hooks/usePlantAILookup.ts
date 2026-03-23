@@ -408,81 +408,31 @@ function proseMentionsValue(prose: string | undefined, value?: string): boolean 
   return normalizeComparableValue(prose).includes(normalizeComparableValue(value));
 }
 
-function appendSentence(prose: string | undefined, sentence: string): string {
-  const trimmed = prose?.trim() ?? "";
-  if (!trimmed) return sentence;
-  if (/[.!?]$/.test(trimmed)) return `${trimmed} ${sentence}`;
-  return `${trimmed}. ${sentence}`;
+function lowercaseFirstChar(text: string): string {
+  if (!text) return text;
+  return text.charAt(0).toLowerCase() + text.slice(1);
 }
 
-function buildVerifiedIdentitySentence(
-  field: "description" | "growingTips",
+function buildVerifiedVarietyDescription(
+  prose: string | undefined,
   locale: string | undefined,
   variety?: string,
-  latinName?: string,
-): string | null {
-  if (!variety && !latinName) return null;
+): string {
+  const trimmed = prose?.trim() ?? "";
+  if (!variety || proseMentionsValue(trimmed, variety)) {
+    return trimmed;
+  }
 
   const isDutch = locale?.toLowerCase().startsWith("nl") ?? false;
+  if (!trimmed) {
+    return isDutch ? `Variëteit '${variety}'.` : `Variety '${variety}'.`;
+  }
 
   if (isDutch) {
-    if (field === "description") {
-      if (variety && latinName) {
-        return `Dit gaat specifiek over ${variety} (${latinName}).`;
-      }
-      if (variety) {
-        return `Dit gaat specifiek over het ras ${variety}.`;
-      }
-      return `Dit gaat specifiek over ${latinName}.`;
-    }
-
-    if (variety && latinName) {
-      return `Deze tips gelden specifiek voor ${variety} (${latinName}).`;
-    }
-    if (variety) {
-      return `Deze tips gelden specifiek voor het ras ${variety}.`;
-    }
-    return `Deze tips gelden specifiek voor ${latinName}.`;
+    return `Voor de variëteit '${variety}' geldt: ${lowercaseFirstChar(trimmed)}`;
   }
 
-  if (field === "description") {
-    if (variety && latinName) {
-      return `This entry specifically covers ${variety} (${latinName}).`;
-    }
-    if (variety) {
-      return `This entry specifically covers the ${variety} variety.`;
-    }
-    return `This entry specifically covers ${latinName}.`;
-  }
-
-  if (variety && latinName) {
-    return `These tips are specific to ${variety} (${latinName}).`;
-  }
-  if (variety) {
-    return `These tips are specific to the ${variety} variety.`;
-  }
-  return `These tips are specific to ${latinName}.`;
-}
-
-function ensureVerifiedIdentityMention(
-  prose: string | undefined,
-  field: "description" | "growingTips",
-  locale: string | undefined,
-  variety?: string,
-  latinName?: string,
-): string {
-  if (proseMentionsValue(prose, variety) && proseMentionsValue(prose, latinName)) {
-    return prose ?? "";
-  }
-
-  const sentence = buildVerifiedIdentitySentence(
-    field,
-    locale,
-    variety,
-    latinName,
-  );
-  if (!sentence) return prose ?? "";
-  return appendSentence(prose, sentence);
+  return `For the '${variety}' variety, ${lowercaseFirstChar(trimmed)}`;
 }
 
 export function applyUserVerifiedPlantIdentity(
@@ -522,20 +472,12 @@ export function applyUserVerifiedPlantIdentity(
     ...result,
     variety: requestedVariety ?? result.variety?.trim(),
     latinName: requestedLatinName ?? result.latinName,
-    description: ensureVerifiedIdentityMention(
+    description: buildVerifiedVarietyDescription(
       result.description,
-      "description",
       input.locale,
       requestedVariety,
-      requestedLatinName,
     ),
-    growingTips: ensureVerifiedIdentityMention(
-      result.growingTips,
-      "growingTips",
-      input.locale,
-      requestedVariety,
-      requestedLatinName,
-    ),
+    growingTips: result.growingTips,
   };
 }
 
