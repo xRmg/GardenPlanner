@@ -27,6 +27,8 @@
 - 2026-03-17: Hardened backend API access with fail-closed proxy token auth (`X-Garden-Proxy-Auth`), auto-generated shared secret bootstrap in Docker, and same-origin CORS restrictions.
 - 2026-03-17: Enforced gateway user identity on all API calls by requiring `X-Garden-User` (forwarded from gateway `X-Forwarded-User`) in addition to proxy token auth.
 - 2026-03-20: Re-sliced Phase 3 into shippable hosted increments so each release delivers a complete feature, preserves local mode, and avoids half-migrated backend work.
+- 2026-10-06: Fixed backend sync silently dropping fields without SQLite columns (event scope/suggestion context, planter layout + cell size, plant flower/fruit days) by storing full JSON snapshots; an empty backend is now re-seeded from the browser instead of wiping it.
+- 2026-10-06: Restored `npm run dev` (dev auth token + Vite proxy headers), fixed PlanterDialog showing a previous planter's values, made the calendar keyboard-accessible and phone-friendly, and added first-run empty-state actions.
 
 ---
 
@@ -119,6 +121,7 @@
 - [ ] Undo/redo stack for destructive actions
 - [ ] Community features (share garden layouts)
 - [ ] Accessibility audit (axe/Lighthouse) + keyboard navigation pass
+- [ ] Dark mode: `.dark` tokens exist in `styles/theme.css` but nothing applies the class, and ~500 hard-coded light palette classes (`bg-white`, `text-green-700`, …) need semantic tokens or `dark:` variants first
 
 ---
 
