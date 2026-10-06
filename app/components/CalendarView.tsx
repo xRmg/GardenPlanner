@@ -355,7 +355,7 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
   const harvestCount = day.harvests.length;
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-1">
+    <div className="hidden flex-wrap items-center justify-end gap-1 sm:flex">
       {suggestionCount > 0 && (
         <span
           className={cn(
@@ -385,8 +385,32 @@ function DayCounts({ day }: { day: CalendarDayCell }) {
   );
 }
 
+const PRIORITY_DOT: Record<CalendarSuggestionItem["priority"], string> = {
+  high: "bg-red-500",
+  medium: "bg-orange-500",
+  low: "bg-blue-500",
+};
+
+/** Phone-width summary: one dot per kind of activity on the day. */
+function DayDots({ day }: { day: CalendarDayCell }) {
+  const dots = [
+    day.suggestions[0] && PRIORITY_DOT[day.suggestions[0].priority],
+    day.events.length > 0 && "bg-primary",
+    day.harvests.length > 0 && "bg-emerald-500",
+  ].filter((dot): dot is string => Boolean(dot));
+
+  if (dots.length === 0) return null;
+  return (
+    <div className="mt-auto flex justify-center gap-1 sm:hidden" aria-hidden="true">
+      {dots.map((dot) => (
+        <span key={dot} className={cn("h-1.5 w-1.5 rounded-full", dot)} />
+      ))}
+    </div>
+  );
+}
+
 function DayCell({ day, onSelect }: { day: CalendarDayCell; onSelect: (day: CalendarDayCell) => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const harvestPreview = day.harvests[0];
   const suggestionPreview = day.suggestions[0];
   const eventPreview = day.events[0];
@@ -396,11 +420,34 @@ function DayCell({ day, onSelect }: { day: CalendarDayCell; onSelect: (day: Cale
   const overflowCount =
     day.harvests.length + day.suggestions.length + day.events.length - visibleItems;
 
+  const counts = [
+    day.suggestions.length > 0 &&
+      t("calendarView.taskCount", { count: day.suggestions.length }),
+    day.events.length > 0 &&
+      t("calendarView.logCount", { count: day.events.length }),
+    day.harvests.length > 0 &&
+      t("calendarView.harvestCount", { count: day.harvests.length }),
+  ].filter(Boolean);
+  const dateLabel = new Date(`${day.dateKey}T00:00:00`).toLocaleDateString(
+    i18n.language,
+    { weekday: "long", day: "numeric", month: "long" },
+  );
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={[dateLabel, ...counts].join(", ")}
+      aria-current={day.isToday ? "date" : undefined}
       onClick={() => onSelect(day)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(day);
+        }
+      }}
       className={cn(
-        "flex min-h-28 flex-col gap-2 rounded-2xl border p-2.5 shadow-sm transition-colors cursor-pointer hover:ring-2 hover:ring-primary/30 sm:min-h-32",
+        "flex min-h-14 flex-col gap-1 rounded-xl border p-1.5 shadow-sm transition-colors cursor-pointer hover:ring-2 hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-32 sm:gap-2 sm:rounded-2xl sm:p-2.5",
         day.inCurrentMonth
           ? "border-border/20 bg-card"
           : "border-border/10 bg-muted/20 text-muted-foreground/55",
@@ -420,11 +467,13 @@ function DayCell({ day, onSelect }: { day: CalendarDayCell; onSelect: (day: Cale
         <DayCounts day={day} />
       </div>
 
+      <DayDots day={day} />
+
       {harvestPreview && (
         <div
           title={`${harvestPreview.label} · ${harvestPreview.detail}`}
           className={cn(
-            "rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight",
+            "hidden rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight sm:block",
             HARVEST_STYLES[harvestPreview.state].chip,
           )}
         >
@@ -445,7 +494,7 @@ function DayCell({ day, onSelect }: { day: CalendarDayCell; onSelect: (day: Cale
             ? `${suggestionPreview.label} · ${suggestionPreview.detail}`
             : suggestionPreview.label}
           className={cn(
-            "rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight",
+            "hidden rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight sm:block",
             PRIORITY_STYLES[suggestionPreview.priority].chip,
           )}
         >
@@ -464,7 +513,7 @@ function DayCell({ day, onSelect }: { day: CalendarDayCell; onSelect: (day: Cale
             ? `${eventPreview.label} · ${eventPreview.detail}`
             : eventPreview.label}
           className={cn(
-            "rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight",
+            "hidden rounded-xl border px-2 py-1 text-[10px] font-bold leading-tight sm:block",
             getEventStyle(eventPreview.visualType).chip,
           )}
         >
@@ -478,7 +527,7 @@ function DayCell({ day, onSelect }: { day: CalendarDayCell; onSelect: (day: Cale
       )}
 
       {overflowCount > 0 && (
-        <p className="mt-auto text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+        <p className="mt-auto hidden text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 sm:block">
           {t("calendarView.overflowMore", { count: overflowCount })}
         </p>
       )}
@@ -564,7 +613,7 @@ export function CalendarView({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -577,9 +626,9 @@ export function CalendarView({
                 }
               >
                 <ChevronLeft className="h-4 w-4" />
-                {t("calendarView.prev")}
+                <span className="sr-only sm:not-sr-only">{t("calendarView.prev")}</span>
               </Button>
-              <div className="min-w-44 rounded-xl border border-border/20 bg-card px-4 py-2 text-center">
+              <div className="min-w-0 flex-1 rounded-xl border border-border/20 bg-card px-4 py-2 text-center sm:min-w-44 sm:flex-none">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
                   {t("calendarView.viewing")}
                 </p>
@@ -596,7 +645,7 @@ export function CalendarView({
                   )
                 }
               >
-                {t("calendarView.next")}
+                <span className="sr-only sm:not-sr-only">{t("calendarView.next")}</span>
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <Button
@@ -633,12 +682,12 @@ export function CalendarView({
               </div>
             )}
 
-            <div className="overflow-x-auto pb-1">
-              <div className="grid min-w-176 grid-cols-7 gap-2">
+            <div className="pb-1 sm:overflow-x-auto">
+              <div className="grid grid-cols-7 gap-1 sm:min-w-176 sm:gap-2">
                 {weekdayLabels.map((label) => (
                   <div
                     key={label}
-                    className="px-1 pb-1 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60"
+                    className="px-1 pb-1 text-center text-[10px] font-black uppercase tracking-normal text-muted-foreground/60 sm:text-left sm:tracking-[0.2em]"
                   >
                     {label}
                   </div>

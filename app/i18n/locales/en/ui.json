@@ -228,6 +228,8 @@
     "tabSeeds": "🌾 Seeds ({{count}})",
     "nothingFound": "Nothing found",
     "nothingFoundHint": "Try clearing the search or switching to 'All'",
+    "emptyTitle": "Your catalog is empty",
+    "emptyHint": "Add the plants and seeds you grow. With AI set up in Settings, a name is enough to fill in care details.",
     "sowThisMonth": "Sow This Month",
     "indoorsNow": "🌱 Indoors Now",
     "directNow": "🌾 Direct Now",

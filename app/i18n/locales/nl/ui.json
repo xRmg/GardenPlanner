@@ -228,6 +228,8 @@
     "tabSeeds": "🌾 Zaden ({{count}})",
     "nothingFound": "Niets gevonden",
     "nothingFoundHint": "Wis de zoekopdracht of schakel over naar 'Alles'",
+    "emptyTitle": "Je catalogus is leeg",
+    "emptyHint": "Voeg de planten en zaden toe die je kweekt. Met AI ingesteld bij Instellingen is een naam genoeg om de verzorgingsinfo in te vullen.",
     "sowThisMonth": "Zaai Deze Maand",
     "indoorsNow": "🌱 Nu Binnen",
     "directNow": "🌾 Nu Direct",

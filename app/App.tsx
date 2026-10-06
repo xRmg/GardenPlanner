@@ -984,6 +984,21 @@ export default function App() {
                         (p) => !inSeasonIds.has(p.id),
                       )
                     : filteredAvailablePlants;
+                  if (AVAILABLE_PLANTS.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center text-center w-full mt-6 py-12 border-2 border-dashed border-primary/20 rounded-2xl bg-primary/5">
+                        <div className="bg-primary/10 p-4 rounded-full mb-3">
+                          <Sprout className="w-6 h-6 text-primary" />
+                        </div>
+                        <p className="text-lg font-bold text-foreground">
+                          {t("plants.emptyTitle")}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground max-w-sm">
+                          {t("plants.emptyHint")}
+                        </p>
+                      </div>
+                    );
+                  }
                   if (filteredAvailablePlants.length === 0) {
                     return (
                       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
