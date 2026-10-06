@@ -22,6 +22,8 @@ import type { Area, Planter } from "../types";
 
 export interface AreaManagerState {
   planterDialogOpen: boolean;
+  /** Increments on every open; use as the dialog `key` so each open starts fresh. */
+  planterDialogSession: number;
   setPlanterDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editingPlanter: { areaId: string; planter: Planter | null } | null;
   handleAddArea: () => void;
@@ -53,6 +55,7 @@ export function useAreaManager({
   repositoryRef,
 }: UseAreaManagerParams): AreaManagerState {
   const [planterDialogOpen, setPlanterDialogOpen] = useState(false);
+  const [planterDialogSession, setPlanterDialogSession] = useState(0);
   const [editingPlanter, setEditingPlanter] = useState<{
     areaId: string;
     planter: Planter | null;
@@ -91,11 +94,13 @@ export function useAreaManager({
 
   const handleAddPlanter = (areaId: string) => {
     setEditingPlanter({ areaId, planter: null });
+    setPlanterDialogSession((n) => n + 1);
     setPlanterDialogOpen(true);
   };
 
   const handleEditPlanter = (areaId: string, planter: Planter) => {
     setEditingPlanter({ areaId, planter });
+    setPlanterDialogSession((n) => n + 1);
     setPlanterDialogOpen(true);
   };
 
@@ -183,6 +188,7 @@ export function useAreaManager({
 
   return {
     planterDialogOpen,
+    planterDialogSession,
     setPlanterDialogOpen,
     editingPlanter,
     handleAddArea,

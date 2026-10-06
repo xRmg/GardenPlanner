@@ -13,7 +13,9 @@ export default defineConfig({
         proxy: {
             '/api': {
                 target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:3000',
-                changeOrigin: true,
+                // Keep the browser's Host so the backend's same-origin CORS
+                // check matches the Origin header, as it does behind nginx.
+                changeOrigin: false,
                 // Stand in for the production nginx gateway, which injects the
                 // proxy token and authenticated user on every /api request.
                 headers: {

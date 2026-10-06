@@ -152,6 +152,7 @@
     "newAreaTagline": "Location description",
     "emptyTitle": "Your garden map is empty",
     "emptyHint": "Add your first area — like \"Backyard\" or \"Front Porch\" — then lay out planters inside it.",
+    "emptyCta": "Add your first area",
     "newPlanter": "New Planter",
     "removeAreaAriaLabel": "Remove area",
     "moveAreaUpAriaLabel": "Move area up",

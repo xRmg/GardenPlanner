@@ -176,6 +176,7 @@ export default function App() {
   // ── Area + planter management ─────────────────────────────────────────────
   const {
     planterDialogOpen,
+    planterDialogSession,
     setPlanterDialogOpen,
     editingPlanter,
     handleAddArea,
@@ -529,6 +530,16 @@ export default function App() {
                       <p className="mt-1 text-xs text-muted-foreground max-w-sm">
                         {t("areas.emptyHint")}
                       </p>
+                      <Button
+                        onClick={() => {
+                          setIsEditMode(true);
+                          handleAddArea();
+                        }}
+                        className="mt-5 h-9 rounded-lg px-4 shadow-md shadow-primary/20 text-sm font-semibold"
+                      >
+                        <Plus className="w-4 h-4 mr-1.5" />
+                        {t("areas.emptyCta")}
+                      </Button>
                     </div>
                   ) : (
                     areas.map((area, areaIdx) => (
@@ -2117,6 +2128,7 @@ export default function App() {
 
       {/* Planter Configuration Dialog */}
       <PlanterDialog
+        key={planterDialogSession}
         open={planterDialogOpen}
         onOpenChange={setPlanterDialogOpen}
         onSave={handleSavePlanter}

@@ -65,8 +65,7 @@ const PRESET_DIMS: Record<Exclude<CellPreset, "custom">, CellDimensions> = {
   "metric-25":     { width: 25, depth: 25, unit: "cm" },
 };
 
-function dimToPreset(dims: CellDimensions | undefined): CellPreset {
-  if (!dims) return "custom";
+function dimToPreset(dims: CellDimensions): CellPreset {
   if (dims.unit === "feet" && dims.width === 1 && dims.depth === 1) return "imperial-sqft";
   if (dims.unit === "cm" && dims.width === 30 && dims.depth === 30) return "metric-30";
   if (dims.unit === "cm" && dims.width === 25 && dims.depth === 25) return "metric-25";
@@ -105,7 +104,7 @@ export function PlanterDialog({
   const resolvedInitialDims: CellDimensions =
     initialConfig?.cellDimensions ?? defaultCellDimensions(unitSystem);
   const [cellPreset, setCellPreset] = useState<CellPreset>(
-    dimToPreset(initialConfig?.cellDimensions),
+    dimToPreset(resolvedInitialDims),
   );
   // Custom dimension inputs (raw string to allow free-form editing)
   const [customWidth, setCustomWidth] = useState(
