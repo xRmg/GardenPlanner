@@ -150,6 +150,8 @@
     "editLayout": "Edit Layout",
     "newArea": "New Area",
     "newAreaTagline": "Location description",
+    "nameAriaLabel": "Area name",
+    "taglineAriaLabel": "Area description",
     "emptyTitle": "Your garden map is empty",
     "emptyHint": "Add your first area — like \"Backyard\" or \"Front Porch\" — then lay out planters inside it.",
     "emptyCta": "Add your first area",

@@ -150,6 +150,8 @@
     "editLayout": "Indeling Bewerken",
     "newArea": "Nieuw Gebied",
     "newAreaTagline": "Locatiebeschrijving",
+    "nameAriaLabel": "Naam van gebied",
+    "taglineAriaLabel": "Beschrijving van gebied",
     "emptyTitle": "Je tuinkaart is leeg",
     "emptyHint": "Voeg je eerste gebied toe — zoals \"Achtertuin\" of \"Voortuin\" — en richt daarna planters in.",
     "emptyCta": "Voeg je eerste gebied toe",

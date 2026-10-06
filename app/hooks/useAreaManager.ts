@@ -26,7 +26,8 @@ export interface AreaManagerState {
   planterDialogSession: number;
   setPlanterDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editingPlanter: { areaId: string; planter: Planter | null } | null;
-  handleAddArea: () => void;
+  /** Appends a new area and returns its id. */
+  handleAddArea: () => string;
   handleRemoveArea: (id: string) => void;
   handleUpdateArea: (id: string, updates: Partial<Area>) => void;
   handleAddPlanter: (areaId: string) => void;
@@ -65,11 +66,12 @@ export function useAreaManager({
     const newArea: Area = {
       id: `area-${Date.now()}`,
       name: String(i18n.t("areas.newArea")),
-      tagline: String(i18n.t("areas.newAreaTagline")),
+      tagline: "",
       backgroundColor: "#f0fdf4",
       planters: [],
     };
     setAreas((prev) => [...prev, newArea]);
+    return newArea.id;
   };
 
   const handleRemoveArea = (id: string) => {
