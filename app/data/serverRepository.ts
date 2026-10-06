@@ -21,6 +21,7 @@ import {
   type Settings,
   type SettingsPatch,
 } from "./schema";
+import { toast } from "sonner";
 import {
   dismissErrorToast,
   ERROR_TOAST_IDS,
@@ -101,6 +102,27 @@ class ServerRepository implements GardenRepository {
       await settingsResponse.json(),
     );
 
+    // A backend with no garden at all (fresh or lost data volume) must not
+    // wipe the copy this browser still holds — push it back up instead.
+    const serverIsEmpty =
+      areas.length === 0 &&
+      plants.length === 0 &&
+      seedlings.length === 0 &&
+      events.length === 0;
+    if (serverIsEmpty && (await this.hasLocalGardenData())) {
+      console.warn(
+        "Backend has no garden data; restoring it from this browser's copy.",
+      );
+      await this.performSyncToServer();
+      await this.dexie.saveSettings(settings);
+      toast.info("Garden restored to the server", {
+        id: "server-garden-restored",
+        description:
+          "The backend had no garden data, so it was restored from this browser.",
+      });
+      return;
+    }
+
     // Clear local Dexie and repopulate from server
     await this.dexie.clearAll();
 
@@ -130,6 +152,21 @@ class ServerRepository implements GardenRepository {
 
     // Save settings
     await this.dexie.saveSettings(settings);
+  }
+
+  private async hasLocalGardenData(): Promise<boolean> {
+    const [areas, plants, seedlings, events] = await Promise.all([
+      this.dexie.getAreas(),
+      this.dexie.getCustomPlants(),
+      this.dexie.getSeedlings(),
+      this.dexie.getEvents(),
+    ]);
+    return (
+      areas.length > 0 ||
+      plants.length > 0 ||
+      seedlings.length > 0 ||
+      events.length > 0
+    );
   }
 
   private buildSettingsPatch(settings: Settings): SettingsPatch {
