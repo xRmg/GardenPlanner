@@ -5,6 +5,7 @@ import routes from "./routes.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
+const BIND_HOST = process.env.GARDEN_BIND_HOST?.trim() || "0.0.0.0";
 const PROXY_AUTH_HEADER = "x-garden-proxy-auth";
 const GATEWAY_IDENTITY_HEADER = (
   process.env.GARDEN_AUTH_IDENTITY_HEADER || "x-garden-user"
@@ -171,9 +172,9 @@ app.use(
 );
 
 // Start server
-const server = app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, BIND_HOST, () => {
   console.log(
-    `\n🌱 Garden Planner backend listening on http://0.0.0.0:${PORT}\n`,
+    `\n🌱 Garden Planner backend listening on http://${BIND_HOST}:${PORT}\n`,
   );
 });
 

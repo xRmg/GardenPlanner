@@ -207,6 +207,7 @@ Memory usage: ~10-20MB idle
 5. **Fail-closed backend**: Backend rejects all `/api/*` calls without valid proxy token and gateway identity.
 6. **HTTPS**: Terminate TLS at host/proxy edge rather than inside the container.
 7. **Open-Meteo API**: Location resolve runs through backend proxy endpoints; monitor external API usage and apply rate limiting.
+8. **AI request logging**: The backend logs one summary line per AI call (model, status, token usage, duration). Prompts and responses contain garden details, so full dumps are only written when `GARDEN_DEBUG_AI=1` is set on the backend container. Leave it unset in production.
 
 ## Updates
 

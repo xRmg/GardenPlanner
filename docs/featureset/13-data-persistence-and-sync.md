@@ -84,7 +84,9 @@ Wraps DexieRepository with server synchronization:
   ```
 - **Full-state sync**: Not incremental — entire garden state sent on each sync
 - **Mutation batching**: If sync already in progress, follow-up syncs queued
-- **Startup sync**: Attempts `GET /api/garden` and `GET /api/settings` to pull server state
+- **Startup sync**: Attempts `GET /api/garden` and `GET /api/settings` to pull server state and replaces local Dexie with it
+- **Empty-server recovery**: If the server holds no garden data at all but this browser does (e.g. a recreated backend volume), the local copy is pushed to the server instead of being wiped
+- **Backend storage** (`backend/src/gardenStore.ts`): each SQLite row keeps a full JSON snapshot of the record in a `data` column, which is authoritative on read, so new schema fields round-trip without a backend migration. The typed columns are still written for inspection and are the fallback for rows saved before `data` existed
 - **Graceful degradation**: If server unavailable, local Dexie remains authoritative; error toast shown
 - **Settings endpoints**: Dedicated routes for sensitive operations:
   - `PATCH /api/settings` — save growthZone, aiModel, locale

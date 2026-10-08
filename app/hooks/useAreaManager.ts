@@ -22,9 +22,12 @@ import type { Area, Planter } from "../types";
 
 export interface AreaManagerState {
   planterDialogOpen: boolean;
+  /** Increments on every open; use as the dialog `key` so each open starts fresh. */
+  planterDialogSession: number;
   setPlanterDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editingPlanter: { areaId: string; planter: Planter | null } | null;
-  handleAddArea: () => void;
+  /** Appends a new area and returns its id. */
+  handleAddArea: () => string;
   handleRemoveArea: (id: string) => void;
   handleUpdateArea: (id: string, updates: Partial<Area>) => void;
   handleAddPlanter: (areaId: string) => void;
@@ -53,6 +56,7 @@ export function useAreaManager({
   repositoryRef,
 }: UseAreaManagerParams): AreaManagerState {
   const [planterDialogOpen, setPlanterDialogOpen] = useState(false);
+  const [planterDialogSession, setPlanterDialogSession] = useState(0);
   const [editingPlanter, setEditingPlanter] = useState<{
     areaId: string;
     planter: Planter | null;
@@ -62,11 +66,12 @@ export function useAreaManager({
     const newArea: Area = {
       id: `area-${Date.now()}`,
       name: String(i18n.t("areas.newArea")),
-      tagline: String(i18n.t("areas.newAreaTagline")),
+      tagline: "",
       backgroundColor: "#f0fdf4",
       planters: [],
     };
     setAreas((prev) => [...prev, newArea]);
+    return newArea.id;
   };
 
   const handleRemoveArea = (id: string) => {
@@ -91,11 +96,13 @@ export function useAreaManager({
 
   const handleAddPlanter = (areaId: string) => {
     setEditingPlanter({ areaId, planter: null });
+    setPlanterDialogSession((n) => n + 1);
     setPlanterDialogOpen(true);
   };
 
   const handleEditPlanter = (areaId: string, planter: Planter) => {
     setEditingPlanter({ areaId, planter });
+    setPlanterDialogSession((n) => n + 1);
     setPlanterDialogOpen(true);
   };
 
@@ -183,6 +190,7 @@ export function useAreaManager({
 
   return {
     planterDialogOpen,
+    planterDialogSession,
     setPlanterDialogOpen,
     editingPlanter,
     handleAddArea,

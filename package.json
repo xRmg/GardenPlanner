@@ -8,7 +8,7 @@
     "predev": "npm run version:sync",
     "dev": "npm run build:backend && concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "vite --host 0.0.0.0",
-    "dev:backend": "cd backend && npm run dev",
+    "dev:backend": "node scripts/dev-backend.mjs",
     "prebuild": "npm run version:sync",
     "build:backend": "cd backend && npm run build",
     "build": "tsc -b && vite build && cd backend && npm run build",

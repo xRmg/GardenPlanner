@@ -176,6 +176,7 @@ export default function App() {
   // ── Area + planter management ─────────────────────────────────────────────
   const {
     planterDialogOpen,
+    planterDialogSession,
     setPlanterDialogOpen,
     editingPlanter,
     handleAddArea,
@@ -188,6 +189,10 @@ export default function App() {
     handleMoveArea,
     handleMovePlanter,
   } = useAreaManager({ setAreas, events, setEvents, repositoryRef });
+
+  // Focus the name of a freshly added area so it can be renamed right away.
+  const [focusAreaId, setFocusAreaId] = useState<string | null>(null);
+  const addAreaAndFocus = () => setFocusAreaId(handleAddArea());
 
   // ── Plant catalogue ───────────────────────────────────────────────────────
   const {
@@ -508,7 +513,7 @@ export default function App() {
                     </button>
                     {isEditMode && (
                       <Button
-                        onClick={handleAddArea}
+                        onClick={addAreaAndFocus}
                         className="bg-primary hover:bg-primary/90 h-8 rounded-lg px-3 shadow-md shadow-primary/20 text-xs font-bold uppercase tracking-wider"
                       >
                         <Plus className="w-4 h-4 mr-1.5" /> {t("areas.newArea")}
@@ -529,6 +534,16 @@ export default function App() {
                       <p className="mt-1 text-xs text-muted-foreground max-w-sm">
                         {t("areas.emptyHint")}
                       </p>
+                      <Button
+                        onClick={() => {
+                          setIsEditMode(true);
+                          addAreaAndFocus();
+                        }}
+                        className="mt-5 h-9 rounded-lg px-4 shadow-md shadow-primary/20 text-sm font-semibold"
+                      >
+                        <Plus className="w-4 h-4 mr-1.5" />
+                        {t("areas.emptyCta")}
+                      </Button>
                     </div>
                   ) : (
                     areas.map((area, areaIdx) => (
@@ -552,6 +567,13 @@ export default function App() {
                               {isEditMode ? (
                                 <input
                                   className="bg-transparent text-lg font-black text-foreground border-none focus:outline-none focus:ring-1 focus:ring-primary/20 rounded px-1 -ml-1 transition-shadow"
+                                  aria-label={t("areas.nameAriaLabel")}
+                                  autoFocus={area.id === focusAreaId}
+                                  onFocus={(e) => {
+                                    if (area.id !== focusAreaId) return;
+                                    e.currentTarget.select();
+                                    setFocusAreaId(null);
+                                  }}
                                   value={area.name}
                                   onChange={(e) =>
                                     handleUpdateArea(area.id, {
@@ -566,8 +588,10 @@ export default function App() {
                               )}
                               {isEditMode ? (
                                 <input
-                                  className="bg-transparent text-xs font-bold uppercase tracking-widest text-muted-foreground block border-none focus:outline-none focus:ring-1 focus:ring-primary/20 rounded px-1 -ml-1 mt-0"
-                                  value={area.tagline}
+                                  className="bg-transparent text-xs font-bold uppercase tracking-widest text-muted-foreground block border-none placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/20 rounded px-1 -ml-1 mt-0"
+                                  aria-label={t("areas.taglineAriaLabel")}
+                                  placeholder={t("areas.newAreaTagline")}
+                                  value={area.tagline ?? ""}
                                   onChange={(e) =>
                                     handleUpdateArea(area.id, {
                                       tagline: e.target.value,
@@ -575,9 +599,11 @@ export default function App() {
                                   }
                                 />
                               ) : (
-                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block px-1">
-                                  {area.tagline}
-                                </span>
+                                area.tagline && (
+                                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block px-1">
+                                    {area.tagline}
+                                  </span>
+                                )
                               )}
                             </div>
                           </div>
@@ -973,6 +999,21 @@ export default function App() {
                         (p) => !inSeasonIds.has(p.id),
                       )
                     : filteredAvailablePlants;
+                  if (AVAILABLE_PLANTS.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center text-center w-full mt-6 py-12 border-2 border-dashed border-primary/20 rounded-2xl bg-primary/5">
+                        <div className="bg-primary/10 p-4 rounded-full mb-3">
+                          <Sprout className="w-6 h-6 text-primary" />
+                        </div>
+                        <p className="text-lg font-bold text-foreground">
+                          {t("plants.emptyTitle")}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground max-w-sm">
+                          {t("plants.emptyHint")}
+                        </p>
+                      </div>
+                    );
+                  }
                   if (filteredAvailablePlants.length === 0) {
                     return (
                       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
@@ -2106,7 +2147,7 @@ export default function App() {
               plants={AVAILABLE_PLANTS}
               selectedPlant={selectedPlant}
               onSelectPlant={setSelectedPlant}
-              onAddArea={handleAddArea}
+              onAddArea={addAreaAndFocus}
               onAddPlant={() => setShowAddPlantModal(true)}
               seedlingCount={seedlings.length}
               onShowSeedlings={() => setActiveTab("seedlings")}
@@ -2117,6 +2158,7 @@ export default function App() {
 
       {/* Planter Configuration Dialog */}
       <PlanterDialog
+        key={planterDialogSession}
         open={planterDialogOpen}
         onOpenChange={setPlanterDialogOpen}
         onSave={handleSavePlanter}
